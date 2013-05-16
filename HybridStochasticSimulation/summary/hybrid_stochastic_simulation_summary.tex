@@ -1,0 +1,636 @@
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{amsmath}
+\usepackage{esint}
+\usepackage{babel}
+
+\makeatletter
+
+\usepackage{amsthm}
+\usepackage{amsfonts}
+
+\makeatother
+
+\begin{document}
+
+\title{Summary for Hybrid Stochastic Simulation}
+
+\author{Benjamin Hepp}
+
+\maketitle
+Here we summarize some thoretical results from the literature about
+Hybrid Stochastic Systems and approximation schemes for such systems.
+We mostly follow the notation in \cite{crudu2012convergence} and
+\cite{kang2013separation}.
+
+
+\section{Description of a biochemical stochastic reaction network}
+
+We assume a stochastic reaction network consisting of
+\begin{itemize}
+\item $s_{0}$ species $S_{i}$ with copy numbers $x_{i}$,
+    with $i=1,...,s_{0}$
+\item $r_{0}$ reactions with corresponding stochiometry vectors
+    $\xi_{k} = \nu'_{k} - \nu{}_{k}$ and reaction rates
+    $\lambda_{k}\left(x\right)$ with $k=1,...,r_{0}$
+\end{itemize}
+This network can be written as a Markov Jump Process in
+the random-time-change representation
+
+\[
+    X(t) = x(0) + \sum_{k=1}^{r_{0}} Y_{k} \left(
+        \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+    \right) \left( \nu'_{k} - \nu_{k} \right)
+\]
+
+
+whereas the $Y_{k}$ are independent unit Poisson processes.
+
+For the following we assume a decomposition $\left(x_{C},x_{D}\right)$
+of the $s_{0}$ species, such that $x_{C}$ represents species that
+are large, scaling with a parameter $N$, and $x_{D}$ represents
+species that are of order $O(1)$. We define
+$\psi_{i}^{C} = \frac{1}{N} x_{i}^{C}$.
+
+Additionally we partition the $r_{0}$ reactions into
+$\mathcal{R}_{C}, \mathcal{R}_{DC}, \mathcal{R}_{D}$, such that
+\begin{itemize}
+\item $\mathcal{R}_{C}$ corresponds to reactions that involve only
+    species from $x_{C}$ and whose reaction rate only depends
+    on $x_{C}$
+\item $\mathcal{R}_{D}$ corresponds to reactions that involve only
+    species from $x_{D}$ and whose reaction rate only depends
+    on $x_{D}$
+\item $\mathcal{R}_{DC}$ corresponds to reactions not belonging to
+    $\mathcal{R}_{C}$ or $\mathcal{R}_{D}$
+\end{itemize}
+
+\section{Convergence of Markov Jump Processes to Piecewise
+    Deterministic Markov Processes}
+
+\label{sub:PDMP_convergence}
+
+The following theorem states the convergence of a partially scaled
+Markov Jump Process into a PDMP (Piecewise Deterministic Markov
+Process) \cite{davis1984piecewise}.
+
+For $r \in \mathcal{R}_{C}$ define
+$\tilde{\lambda}_{r} = \frac{1}{N} \lambda_{r}$
+(we can implicitely assume that $\lambda_{r}$ is large and scales
+with $N$ for $r\in\mathcal{R}_{C}$ because otherwise these reactions
+will not appear in the limit process anyway).
+
+Define $S_{1} \subseteq \mathcal{R}_{DC}$ such that for a reaction
+$r \in S_{1}$ the rate $\lambda_{r}$ is large and scales with $N$
+and $\xi_{r}^{D} = 0$. For each $r \in S_{1}$ define
+$\tilde{\lambda}_{r} = \frac{1}{N} \lambda_{r}$.
+
+Define $S_{2} \subseteq \mathcal{R}_{DC}$ such that for a reaction
+$r \in S_{2}$ the stochiometry $\xi_{r}^{C}$ is large and scales
+with $N$. For each $r \in S_{1}$ define
+$\tilde{\xi}_{r}^{C} = \frac{1}{N} \xi_{r}^{C}$.
+
+Define $S = S_{1} \cup S_{2}$.
+
+Then we can write the random-time-change representation of the
+stochastic process corresponding to this reaction network as
+
+\begin{align*}
+X^{N}(t) & = \left( \Psi_{C}^{N},X_{D}^{N} \right)(t) = x(0) \\
+    & + \sum_{k \in \mathcal{R}_{C}} Y_{k} \left(
+        \int_{0}^{t} \tilde{\lambda}_{k} \left( \Psi_{C}(s) \right) ds
+    \right) \left( \frac{1}{N} \xi{}_{k}^{C}, 0 \right) \\
+    & + \sum_{k \in S_{1}}Y_{k} \left(
+        \int_{0}^{t} N \tilde{\lambda}_{k} \left( X(s) \right) ds
+    \right) \left( \frac{1}{N} \xi{}_{k}^{C}, 0 \right) \\
+    & + \sum_{k \in S_{2}}Y_{k} \left(
+        \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+    \right) \left( \tilde{\xi}_{k}^{C}, \xi_{k}^{D} \right) \\
+    & + \sum_{k \in \mathcal{R}_{DC \backslash S}} Y_{k} \left(
+        \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+    \right) \left( \frac{1}{N} \xi{}_{k}^{C}, \xi{}_{k}^{D} \right) \\
+    & + \sum_{k \in \mathcal{R}_{D}} Y_{k} \left(
+        \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+    \right) \left( 0, \xi{}_{k}^{D} \right)
+\end{align*}
+
+
+\newtheorem{theorem}{Theorem}
+
+\begin{theorem}
+\label{theo:theorem_convergence}
+The limit process of $X^{N}(t)$ for $N \rightarrow \infty$ is
+\begin{align*}
+    X(t) &
+        \equiv \underset{N \rightarrow \infty}{\lim} X^{N}(t)
+            = \left( \Psi_{C}(t), X_{D}(t) \right) \\
+    & = x(0) \\
+    & + \sum_{k \in \mathcal{R}_{C}} \int_{0}^{t} \tilde{\lambda}_{k}
+        \left( \Psi_{C}(s) \right) ds
+        \left( \xi{}_{k}^{C}, 0 \right) \\
+    & + \sum_{k \in S_{1}} \int_{0}^{t} \tilde{\lambda}_{k}
+        \left( X(s) \right) ds
+        \left( \xi{}_{k}^{C}, 0 \right) \\
+    & + \sum_{k \in S_{2}} Y_{k} \left(
+            \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+        \right) \left( \tilde{\xi}_{k}^{C}, \xi_{k}^{D} \right) \\
+    & + \sum_{k \in \mathcal{R}_{DC \backslash S}} Y_{k} \left(
+            \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+        \right) \left( 0, \xi{}_{k}^{D} \right) \\
+    & + \sum_{k \in \mathcal{R}_{D}} Y_{k} \left(
+            \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+        \right) \left( 0, \xi{}_{k}^{D} \right)
+\end{align*}
+which is equivalent to a PDMP.
+\end{theorem}
+
+See \cite{crudu2012convergence} for a rigerous proof.
+
+
+
+One should note that the distinction between $\mathcal{R}_{C}$ and
+$S_{1}$ is just a formality (the dependence of the
+$\tilde{\lambda}_{r}$) so we can define
+$S_{3}=\mathcal{R}_{C}\cup S_{1}$ and similarly
+$S_{4}=\mathcal{R}_{D}\cup(\mathcal{R}_{DC}\backslash S)$ and write
+the limit process as
+
+\begin{align*}
+X(t) & \equiv \underset{N \rightarrow \infty}{\lim} X^{N}(t)
+    = \left(\Psi_{C}(t),X_{D}(t)\right)\\
+ & = x(0)\\
+ & + \sum_{k \in S_{3}} \int_{0}^{t}
+    \tilde{\lambda}_{k} \left( X(s) \right) ds
+    \left( \xi{}_{k}^{C}, 0 \right) \\
+ & + \sum_{k \in S_{2}} Y_{k} \left(
+        \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+    \right) \left( \tilde{\xi}_{k}^{C}, \xi_{k}^{D} \right) \\
+ & + \sum_{k \in S_{4}} Y_{k} \left(
+        \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+    \right) \left( 0, \xi{}_{k}^{D} \right)
+\end{align*}
+
+
+
+\section{Averaging of some discrete variables}
+
+\label{sub:PDMP_averaging}
+
+Define $S_{5} \subseteq \mathcal{R}_{DC}$ such that for a reaction
+$r \in S_{1}$ the rate $\lambda_{r}$ is large and scales with $N$
+and $\xi_{r}^{D} \neq 0$. For each $r \in S_{5}$ define
+$\tilde{\lambda}_{r} = \frac{1}{N} \lambda_{r}$.
+Assume a decomposition $\left( x_{D}^{1}, x_{D}^{2} \right)$ of the
+$x_{D}$ such that $\xi_{r}^{D,1} = 0$ and $\xi_{r}^{D,2} \neq 0$
+(note that $x_{D}^{1}$ could be empty).
+
+Define $S = S_{1} \cup S_{2} \cup S_{5}$.
+
+Then the random-time-change representation of the stochastic process
+can be written as
+
+\begin{align*}
+    X^{N}(t) = \left( \Psi_{C}^{N}, X_{D}^{N} \right)(t) & = x(0) \\
+     & + \sum_{k \in \mathcal{R}_{C}} Y_{k} \left(
+            \int_{0}^{t} \tilde{\lambda}_{k}
+            \left( \Psi_{C}(s) \right) ds
+        \right) \left( \frac{1}{N} \xi_{k}^{C}, 0, 0 \right) \\
+     & + \sum_{k \in S_{1}} Y_{k} \left(
+            \int_{0}^{t} N \tilde{\lambda}_{k} \left( X(s) \right) ds
+        \right) \left( \frac{1}{N} \xi_{k}^{C}, 0, 0 \right) \\
+     & + \sum_{k \in S_{5}} Y_{k} \left(
+            \int_{0}^{t} N \tilde{\lambda}_{k} \left( X(s) \right) ds
+        \right) \left( \tilde{\xi}_{k}^{C}, 0, \xi_{k}^{D,2} \right) \\
+     & + \sum_{k \in S_{2}} Y_{k} \left(
+            \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+        \right) \left(
+            \tilde{\xi}_{k}^{C}, \xi_{k}^{D,1}, \xi_{k}^{D,2}
+        \right) \\
+     & + \sum_{k \in \mathcal{R}_{DC \backslash S}} Y_{k} \left(
+            \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+        \right) \left(
+            \frac{1}{N} \xi{}_{k}^{C}, \xi_{k}^{D,1}, \xi_{k}^{D,2}
+        \right) \\
+     & + \sum_{k \in \mathcal{R}_{D}} Y_{k} \left(
+            \int_{0}^{t} \lambda_{k} \left( X(s) \right) ds
+        \right) \left( 0, \xi_{k}^{D,1}, \xi_{k}^{D,2} \right)
+\end{align*}
+
+
+If $x_{D}^{2}$ only takes a finite number of values (i.e. there exists
+a finite set $K$ such that $X_{D}^{2} \in K$) then the process
+$X_{D}^{2}$ given $\psi_{C}, x_{D}^{1}$ is ergodic (every state can
+be reached from a given state).
+
+Define
+\[
+    \bar{\lambda}_{r} \left( \psi_{C}, x_{D}^{1} \right) = 
+        \int_{K} \tilde{\lambda}_{r} \left(
+            \psi_{C}, x_{D}^{1}, x_{D}^{2}
+        \right) \nu_{\Psi_{C}, x_{D}^{1}} \left( dx_{D}^{2} \right)
+\]
+for $r \in S_{5}$ where $\nu_{\Psi_{C}, x_{D}^{1}}$ is the unique
+invariant measure of the ergodic process $X_{D}^{2}$ given
+$\psi_{C}, x_{D}^{1}$.
+
+\begin{theorem}
+\label{theo:theorem_convergence_averaging}
+The limit process of $X^{N}(t)$ for $N\rightarrow\infty$ is
+\begin{align*}
+    X(t) &
+        \equiv \underset{N \rightarrow \infty}{\lim}
+			X^{N}(t)
+		= \left( \Psi_{C}(t), X_{D}(t) \right) \\
+    & = x(0) \\
+    & + \sum_{k \in \mathcal{R}_{C}} \int_{0}^{t}
+		\tilde{\lambda}_{k} \left( \Psi_{C}(s) \right) ds
+			\left( \xi{}_{k}^{C}, 0, 0 \right) \\
+    & + \sum_{k \in S_{1}} \int_{0}^{t} \tilde{\lambda}_{k}
+		\left( X(s) \right) ds \left( \xi{}_{k}^{C}, 0, 0 \right) \\
+    & + \sum_{k \in S_{5}} \int_{0}^{t} \bar{\lambda}_{k}
+		\left( X(s) \right) ds \left( \xi{}_{k}^{C}, 0, 0 \right) \\
+    & + \sum_{k \in S_{2}} Y_{k} \left( \int_{0}^{t} \lambda_{k}
+		\left( X(s) \right) ds \right) \left(
+			\tilde{\xi}_{k}^{C}, \xi_{k}^{D,1}, \xi_{k}^{D,2}
+		\right) \\
+    & + \sum_{k \in \mathcal{R}_{DC \backslash S}} Y_{k} \left(
+		\int_{0}^{t} \lambda_{k} \left( X(s) \right) ds \right)
+		\left( 0, \xi_{k}^{D,1}, \xi_{k}^{D,2} \right) \\
+    & + \sum_{k \in \mathcal{R}_{D}} Y_{k} \left( \int_{0}^{t}
+		\lambda_{k} \left( X(s) \right) ds \right)
+		\left( 0, \xi_{k}^{D,1}, \xi_{k}^{D,2} \right)
+\end{align*}
+which is again equivalent to a PDMP.
+\end{theorem}
+
+
+\section{Multiscale approximations of stochastic reaction networks}
+
+For the following we limit ourselves to four types of reactions
+
+\medskip{}
+
+
+\begin{tabular}{|c|c|c|}
+    \hline
+    $\lambda_{k}$ & Reaction & $\nu_{k}$ \\
+    \hline
+    \hline
+    $\kappa'_{k}$ & $\emptyset \rightarrow stuff$ & $0$ \\
+    \hline
+    $\kappa'_{k}x_{i}$ & $S_{i} \rightarrow stuff$ & $e_{i}$ \\
+    \hline
+    $\kappa'_{k}V^{-1}x_{i}(x_{i}-1)$ & $2S_{i}\rightarrow stuff$
+        & $2e_{i}$ \\
+    \hline
+    $\kappa'_{k}V^{-1}x_{i}x_{j}$ & $S_{i}+S_{j}\rightarrow stuff$
+        & $e_{i}+e_{j}$ \\
+    \hline
+\end{tabular}
+
+\bigskip{}
+
+
+whereas $V$ corresponds to the volume of the system and the
+$\kappa'_{k}$ correspond to molecular reaction rates.
+
+Define
+\begin{itemize}
+    \item $z_{i}^{N}(t) = N^{-\alpha_{i}} x_{i}^{N}(t)$ with
+        $\alpha_{i} \geq 0$ for $i = 1, ..., s_{0}$
+    \item $\kappa_{k} = N^{-\beta_{k}} \kappa'_{k}$ for
+        $k = 1, ..., r_{0}$
+\end{itemize}
+with a parameter $N$ that is assumed to be large.
+
+The rates of the four types of reactions can now be written as
+
+\medskip{}
+
+
+\begin{tabular}{|c|c|}
+    \hline
+    Reaction & $\lambda_{k}^{N}$ \\
+    \hline
+    \hline
+    $\emptyset \rightarrow stuff$ & $N^{\beta_{k}} \kappa_{k}$ \\
+    \hline
+    $S_{i}\rightarrow stuff$ &
+        $N^{\beta_{k} + \alpha_{i}} \kappa_{k} z_{i}$ \\
+    \hline
+    $2S_{i} \rightarrow stuff$
+        & $N^{\beta_{k} + 2\alpha_{i}} \kappa_{k} V^{-1} z_{i} \left(
+            z_{i} - N^{-\alpha_{i}}
+        \right)$ \\
+    \hline
+    $S_{i} + S_{j} \rightarrow stuff$
+        & $N^{\beta_{k} + \alpha_{i} + \alpha_{j}} \kappa_{k} V^{-1}
+            z_{i} z_{j}$ \\
+    \hline
+\end{tabular}
+
+\bigskip{}
+
+
+So we have 
+\[
+    \lambda_{k} \left(x \right) \left( \nu'_{k} - \nu_{k} \right)
+    = N^{\beta_{k} + \nu_{k} \cdot \alpha} \lambda_{k}^{N}
+        \left( z \right) \left( \nu'_{k} - \nu_{k} \right)
+\]
+ whereas $\alpha = \left( \alpha_{1}, ..., \alpha_{s_{0}} \right)^{T}$.
+With this we can write the corresponding multiscale Markov Jump
+Process as
+
+\[
+    Z_{i}^{N}(t) = z(0) + \sum_{k=1}^{r_{0}} N^{-\alpha_{i}} Y_{k}
+    \left(
+        \int_{0}^{t} N^{\beta_{k}+\nu_{k} \cdot \alpha}
+        \lambda_{k}^{N} \left( Z_{i}^{N} \left( s \right) \right) ds
+    \right) \left( \nu'_{ik} - \nu_{ik} \right)
+\]
+
+
+The $\alpha_{i}$ and $\beta_{i}$ should be choosen in such a way,
+that the $z_{i}$ and $\kappa_{k}$ are of order 1 in a loose sense.
+
+In addition we introduce a further scaling parameter $\gamma$ for
+the time-scale of the process and write
+
+\begin{align*}
+    Z_{i}^{N, \gamma}(t) & = Z_{i}^{N} \left(N^{\gamma}t \right) \\
+    & = z(0) + \sum_{k=1}^{r_{0}} N^{-\alpha_{i}} Y_{k} \left(
+            \int_{0}^{t} N^{\gamma + \beta_{k} + \nu_{k} \cdot \alpha}
+            \lambda_{k}^{N} \left( Z_{i}^{N, \gamma}
+            \left( s \right) \right) ds
+        \right) \left( \nu'_{ik} - \nu_{ik} \right)
+\end{align*}
+
+
+See \cite{kang2013separation} for a more elaborate discussion.
+
+
+\section{Constraints for selection of the scaling parameters}
+
+\label{sec:multiscale_parametrization_constraints}
+
+In \cite{kang2013separation} Kang et al. derive constraints for the
+selection of the scaling parameters $\alpha_{i}, \beta_{i},\gamma$
+that we recapitulate here.
+
+\newtheorem{condition}{Condition}
+
+\begin{condition}
+Define $\Gamma_{i}^{+} = \{ k: \nu'_{ik} > \nu_{ik} \}$ and
+$\Gamma_{i}^{-} = \{ k: \nu'_{ik} < \nu_{ik} \}$. Then the condition
+\[
+    \underset{k \in \Gamma_{i}^{-}}{\max} \left(
+        \beta_{k} + \nu_{k} \cdot \alpha
+    \right) = \underset{k \in \Gamma_{i}^{+}}{\max} \left(
+        \beta_{k} + \nu_{k} \cdot \alpha
+    \right)
+\]
+or
+\[
+    \gamma \leq \alpha_{i}
+    - \underset{k \in \Gamma_{i}^{+} \cup \Gamma_{i}^{-}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right)
+\]
+is called the \textbf{species balance condition} and ensures that no
+species explodes or is driven to zero.
+\end{condition}
+
+
+
+We can generalize this condition to linear combinations
+$\Theta \cdot z$ of species with $\Theta \in[0, \infty)^{s_{0}}$.
+
+\begin{condition}
+\label{cond:coll_species_balance}
+Define $\Gamma_{\Theta}^{+} = \{ k: \Theta \cdot \xi_{k} > 0 \}$ and
+	$\Gamma_{\Theta}^{-} = \{ k: \Theta \cdot \xi_{k} < 0 \}$.
+	Then the condition
+\begin{equation}
+    \label{cond:coll_species_balance1}
+    \underset{k \in \Gamma_{\Theta}^{-}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right) = \underset{k \in \Gamma_{\Theta}^{+}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right)
+\end{equation}
+or
+\begin{equation}
+    \label{cond:coll_species_balance2}
+    \gamma \leq \gamma_{i} \equiv \underset{i: \Theta_{i} > 0}{\max}
+		\alpha_{i} - \underset{
+			k \in \Gamma_{\Theta}^{+} \cup \Gamma_{\Theta}^{-}
+		}{\max} \left( \beta_{k} + \nu_{k} \cdot \alpha \right)
+\end{equation}
+is called the \textbf{collective species balance condition}. It
+ensures that no linear combination of species explodes or is driven
+to zero.
+\end{condition}
+
+
+
+Checking this condition is not trivial but in
+\cite{kang2013separation} Kang et al. show a significant
+simplification to check for the \textbf{collective species balance
+condition}:
+
+\newtheorem{lemma}{Lemma}
+\label{lemma:coll_species_balance_graph}
+
+\begin{lemma}
+Let $G$ be a directed graph where the nodes correspond to the species
+and a directed edge from $S_{i} \rightarrow S_{j}$ is drawn
+if there is a reaction consuming $S_{i}$ and producing $S_{j}$.
+
+Let $G_{j}$ be maximal strongly connected subgraphs such that
+$G = \cup_{j} G_{j}$ (this decomposition is unique).
+
+Let $\gamma \in \mathbb{R}$ be fixed. If Condition
+\ref{cond:coll_species_balance} holds for each
+$\Theta \in [0, \infty)^{s_0}$ with
+$\mbox{supp} \left( \Theta \right) \subset G_j$ for all maximal
+strongly connected subgraphs $G_j$, then Condition
+\ref{cond:coll_species_balance} holds for all
+$\Theta \in [0, \infty)^{s_0}$.
+\end{lemma}
+
+This reduces checking Condition \ref{cond:coll_species_balance} for
+all $\Theta \in[0, \infty)^{s_{0}}$ to checking Condition
+\ref{cond:coll_species_balance} for all $\Theta$ with
+$\mbox{supp} \left( \Theta \right) \subset G_{j}$
+for each of the subgraphs $G_{j}$ separately.
+
+\begin{lemma}
+\label{lemma:coll_species_balance_special_case1}
+Kang et al. continue to show that Condition
+\ref{cond:coll_species_balance} also holds for
+$c_{1} \Theta^{1} + c_{2} \Theta^{2}$ for all $c_{1},c_{2} > 0$ if
+either
+\[
+    \mbox{(\ref{cond:coll_species_balance2}) holds for } \Theta^1
+    \mbox{ or } \Theta^2
+\]
+or
+\begin{align*}
+    & \underset{k \in \Gamma_{\Theta^{1}}^{-}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right)
+	= \underset{k \in \Gamma_{\Theta^{1}}^{+}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right) \\
+    \neq & \underset{k \in \Gamma_{\Theta^{2}}^{-}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right)
+	= \underset{k \in \Gamma_{\Theta^{2}}^{+}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right)
+\end{align*}
+\end{lemma}
+
+
+
+\begin{lemma}
+\label{lemma:coll_species_balance_special_case2}
+If Lemma \ref{lemma:coll_species_balance_special_case1} does not
+apply but
+\[
+    \Gamma_{\Theta^{1}}^{+} \cap \Gamma_{\Theta^{2}}^{-} = \emptyset
+\]
+or
+\[
+    \Gamma_{\Theta^{1}}^{-} \cap \Gamma_{\Theta^{2}}^{+} = \emptyset
+\]
+(i.e. the support of $\Theta^{1}$ produces no species that are
+consumed in the support of $\Theta^{2}$ and vice versa),
+then Condition \ref{cond:coll_species_balance} holds for
+$c_{1} \Theta^{1} + c_{2} \Theta^{2}$ for all $c_{1}, c_{2} > 0$.
+\end{lemma}
+
+\begin{lemma}
+\label{lemma:coll_species_balance_special_case3}
+If Lemma \ref{lemma:coll_species_balance_special_case1} does not
+apply and
+$\Gamma_{\Theta^{1}}^{+} \cap \Gamma_{\Theta^{2}}^{-} \neq \emptyset$
+and
+$\Gamma_{\Theta^{1}}^{-} \cap \Gamma_{\Theta^{2}}^{+} \neq \emptyset$
+suppose that Condition \ref{cond:coll_species_balance} also holds for
+$\Theta^1 - \frac{\Theta^1 \cdot \xi_k}{\Theta^2 \cdot \xi_k} \Theta^2$
+for all $k \in \left(
+	\Gamma_{\Theta^1}^+ \cap \Gamma_{\Theta^2}^-
+\right) \cup \left(
+	\Gamma_{\Theta^1}^- \cap \Gamma_{\Theta^2}^{+}
+\right)$.
+Then Condition \ref{cond:coll_species_balance} also holds for
+$c_1 \Theta^1 + c_2 \Theta^2$ for all $c_1, c_2 > 0$.
+\end{lemma}
+
+The only case that is left now is that
+
+(\ref{cond:coll_species_balance2}) doesn't hold for both $\Theta^{1}$
+and $\Theta^{2}$ and
+$\Gamma_{\Theta^{1}}^{+} \cap \Gamma_{\Theta^{2}}^{-} \neq \emptyset$
+and
+$\Gamma_{\Theta^{1}}^{-} \cap \Gamma_{\Theta^{2}}^{+} \neq \emptyset$
+and Condition \ref{cond:coll_species_balance} doesn't hold for
+$\Theta^{1} - \frac{\Theta^{1} \cdot \xi_{k}}
+	{\Theta^{2} \cdot \xi_{k}} \Theta^{2}$
+and
+\begin{align*}
+	 & \underset{k \in \Gamma_{\Theta^{1}}^{-}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right)
+	= \underset{k \in \Gamma_{\Theta^{1}}^{+}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right) \\
+	= & \underset{k \in \Gamma_{\Theta^{2}}^{-}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right)
+	= \underset{k \in \Gamma_{\Theta^{2}}^{+}}{\max} \left(
+		\beta_{k} + \nu_{k} \cdot \alpha
+	\right)
+\end{align*}
+
+
+all hold. We call this case \emph{non-reducable collective species
+balance.} In this case Condition \ref{cond:coll_species_balance}
+has to be checked directly (of course this only needs to be done for
+all $\Theta \in[0, \infty)^{s_{0}}$ with support in the subgraphs
+$G_{j}$ with a \emph{non-reducable collective species balance}).
+
+In all other cases it is now sufficient to check Condition
+\ref{cond:coll_species_balance}
+on a set $\Theta^{j, k}$ spanning the subgraph $G_{j}$ for all $j$.
+
+\begin{theorem}
+For completeness we state that if
+\[
+	\gamma = \underset{i}{\min} \gamma_{i}
+	= \underset{i}{\min} \left(
+		\alpha_{i} - \underset{
+			k \in \Gamma_{\Theta}^{+} \cup \Gamma_{\Theta}^{-}
+		}{\max} \left( \beta_{k} + \nu_{k} \cdot \alpha \right)
+	\right)
+\]
+then each term
+\[
+	N^{-\alpha_{i}} Y_{k} \left(
+		\int_{0}^{t} N^{\gamma + \beta_{k} + \nu_{k} \cdot \alpha}
+		\lambda_{k}^{N} \left(
+			Z_{i}^{N, \gamma} \left( s \right)
+		\right) ds
+	\right)
+\]
+converges to
+\[
+\begin{cases}
+    0 & \mbox{for }
+			\alpha_{i} > \gamma + \beta_{k} + \nu_{k} \cdot \alpha \\
+    Y_{k} \left( \int_{0}^{t} \lambda_{k}^{N} \left(
+			Z_{i}^{N, \gamma}\left( s \right) \right) ds
+		\right) & \mbox{for } \alpha_{i}
+		= \gamma + \beta_{k} + \nu_{k} \cdot \alpha = 0 \\
+    \int_{0}^{t} \lambda_{k}^{N} \left(
+			Z_{i}^{N, \gamma}\left( s \right)
+		\right) ds & \mbox{for }
+			\alpha_{i} = \gamma + \beta_{k} + \nu_{k} \cdot \alpha
+            \neq 0
+\end{cases}
+\]
+for $N \rightarrow \infty$ which represents a PDMP of the
+multiscale network.
+\end{theorem}
+
+
+
+
+\section{Combination of convergence results and multiscale
+	parametrization}
+
+To combine the convergence results from \ref{sub:PDMP_convergence}
+with the multiscale Parametrization we note that the membership of
+a species $x_{i}$ in $x_{C}, x_{D}$ depends on $\alpha_{i}$:
+
+$\begin{cases}
+	x_{i} \mbox{ belongs to } x_{C} & \mbox{ for } \alpha_{i} > 0 \\
+	x_{i} \mbox{ belongs to } x_{D} & \mbox{ for } \alpha_{i} = 0
+\end{cases}$
+
+We also note that $r \in S_{1}$ if
+$\gamma + \beta_{r} + \nu_{r} \cdot \alpha > 0$
+and $\xi_{r}^{D} = 0$ (if $\xi_{r}^{D} \neq 0$ one can still take the
+approach in \ref{sub:PDMP_averaging}).
+
+We can then use Theorem \ref{theo:theorem_convergence} or Theorem
+\ref{theo:theorem_convergence_averaging} to derive the PDMP that
+corresponds to the limiting process of the multiscale network.
+
+\bibliographystyle{plain}
+\bibliography{/home/bhepp/Documents/papers}
+
+\end{document}

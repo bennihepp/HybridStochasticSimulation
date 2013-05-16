@@ -1,0 +1,64 @@
+# example model in YAML notation
+#
+parameters:
+    - c1: 0.5
+    - c2: 0.3
+    - c3: 0.9
+    - c4: 0.2
+    - c5: 0.4
+
+species:
+    - S1
+    - S2
+    - S3
+
+reactions:
+    - R1:
+        - propensity_parameter: c1
+        - reactants:
+            -
+                species: S1
+                stochiometry: 1
+            -
+                species: S2
+                stochiometry: 1
+        - products:
+            -
+                species: S3
+                stochiometry: 1
+    - R2:
+        - propensity_parameter: c2
+        - products:
+            -
+                species: S1
+                stochiometry: 1
+    - R3:
+        - propensity_parameter: c3
+        - reactants:
+            -
+                species: S2
+                stochiometry: 2
+        - products:
+            -
+                species: S1
+                stochiometry: 1
+    - R4:
+        - propensity_parameter: c4
+        - reactants:
+            -
+                species: S3
+                stochiometry: 1
+    - R5:
+        - propensity_parameter: c5
+        - reactants:
+            -
+                species: S1
+                stochiometry: 1
+            -
+                species: S3
+                stochiometry: 1
+        - products:
+            -
+                species: S2
+                stochiometry: 1
+

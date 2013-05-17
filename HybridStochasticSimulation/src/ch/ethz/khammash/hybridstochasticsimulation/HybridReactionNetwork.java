@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import static com.google.common.base.Preconditions.*;
+
 import java.util.List;
 
 // TODO: Check scaling of state variables
@@ -17,6 +19,9 @@ public class HybridReactionNetwork extends ReactionNetwork {
 
 	public HybridReactionNetwork(ReactionNetwork net, double N, int gamma, int[] alpha, int[] beta) {
 		super(net.getNumberOfSpecies(), net.getNumberOfReactions());
+		checkArgument(N > 0, "Expected N > 0");
+		checkArgument(alpha.length == getNumberOfSpecies(), "Expected alpha.length == getNumberOfSpecies()");
+		checkArgument(beta.length == getNumberOfReactions(), "Expected beta.length == getNumberOfReactions()");
 		this.N = N;
 		this.gamma = gamma;
 		this.alpha = alpha.clone();
@@ -46,19 +51,23 @@ public class HybridReactionNetwork extends ReactionNetwork {
 	}
 
 	public double getStateScaleFactor(int state) {
+		checkElementIndex(state, getNumberOfSpecies());
 		return Math.pow(N, -alpha[state]);
 	}
 
 	public double getStateRecoverFactor(int state) {
+		checkElementIndex(state, getNumberOfSpecies());
 		return Math.pow(N, alpha[state]);
 	}
 
 	public double scaleState(int state, double x) {
+		checkElementIndex(state, getNumberOfSpecies());
 		double scaledX = x * getStateScaleFactor(state);
 		return scaledX;
 	}
 
 	public double[] scaleState(double[] x) {
+		checkArgument(x.length == getNumberOfSpecies());
 		double[] scaledX = new double[x.length];
 		for (int s = 0; s < scaledX.length; s++)
 			scaledX[s] = x[s] * getStateScaleFactor(s);
@@ -66,11 +75,13 @@ public class HybridReactionNetwork extends ReactionNetwork {
 	}
 
 	public double recoverState(int state, double scaledX) {
+		checkElementIndex(state, getNumberOfSpecies());
 		double x = scaledX * getStateRecoverFactor(state);
 		return x;
 	}
 
 	public double[] recoverState(double[] scaledX) {
+		checkArgument(scaledX.length == getNumberOfSpecies());
 		double[] x = new double[scaledX.length];
 		for (int s = 0; s < x.length; s++)
 			x[s] = scaledX[s] * getStateRecoverFactor(s);
@@ -102,6 +113,7 @@ public class HybridReactionNetwork extends ReactionNetwork {
 	}
 
 	public int getAlpha(int species) {
+		checkElementIndex(species, getNumberOfSpecies());
 		return alpha[species];
 	}
 
@@ -119,10 +131,13 @@ public class HybridReactionNetwork extends ReactionNetwork {
 	}
 
 	public int getBeta(int reaction) {
+		checkElementIndex(reaction, getNumberOfReactions());
 		return beta[reaction];
 	}
 
 	public ConvergenceType getConvergenceType(int species, int reaction) {
+		checkElementIndex(species, getNumberOfSpecies());
+		checkElementIndex(reaction, getNumberOfReactions());
 		int rho = beta[reaction];
 		for (int s = 0; s < numOfSpecies; s++)
 			if (consumptionStochiometry[reaction][s] > 0)

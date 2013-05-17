@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import static com.google.common.base.Preconditions.*;
+
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -20,6 +22,8 @@ public class TrajectoryDistributionPlotData extends TrajectoryDistributionData i
 	public TrajectoryDistributionPlotData(String[] names, double[] plotScales, RealVector tVector, RealMatrix xMeanMatrix,
 			RealMatrix xStdDevMatrix) {
 		super(tVector, xMeanMatrix, xStdDevMatrix);
+		checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
+		checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
 		plotData = new DefaultPlotData(getNumberOfStates());
 		for (int s=0; s < getNumberOfStates(); s++) {
 			plotData.setName(s, names[s]);
@@ -84,9 +88,11 @@ public class TrajectoryDistributionPlotData extends TrajectoryDistributionData i
 	}
 
 	public TrajectoryDistributionPlotData getSubsetData(int[] states, double[] plotScales) {
+		checkArgument(states.length == plotScales.length, "Expected states.length == plotScales.length");
 		TrajectoryDistributionPlotData tdd = new TrajectoryDistributionPlotData(gettVector());
 		for (int i=0; i < states.length; i++) {
 			int s = states[i];
+			checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
 			double plotScale = (plotScales != null) ? plotScales[i] : getPlotScale(s);
 			tdd.addState(getName(s), plotScale, getxMeanVector(s), getxStdDevVector(s));
 		}

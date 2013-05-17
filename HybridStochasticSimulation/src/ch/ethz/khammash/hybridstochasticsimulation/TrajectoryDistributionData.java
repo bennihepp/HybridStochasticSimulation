@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import static com.google.common.base.Preconditions.*;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +21,8 @@ public class TrajectoryDistributionData extends TrajectoryData {
 
 	public TrajectoryDistributionData(RealVector tVector, RealMatrix xMeanMatrix, RealMatrix xStdDevMatrix) {
 		super(tVector, xMeanMatrix);
+		checkArgument(tVector.getDimension() == xStdDevMatrix.getColumnDimension(),
+				"Size of tVector must be equal to number of columns of xStdDevMatrix");
 		xStdDevVectors = new ArrayList<RealVector>(getNumberOfStates());
 		for (int s=0; s < xStdDevMatrix.getRowDimension(); s++)
 			xStdDevVectors.add(xStdDevMatrix.getRowVector(s));
@@ -26,6 +30,9 @@ public class TrajectoryDistributionData extends TrajectoryData {
 
 	public TrajectoryDistributionData(RealVector tVector, List<RealVector> xMeanVectors, List<RealVector> xStdDevVectors) {
 		super(tVector, xMeanVectors);
+		for (RealVector xVector : xStdDevVectors)
+			checkArgument(tVector.getDimension() == xVector.getDimension(),
+					"Size of tVector must be equal to size of each xStdDevVector");
 		this.xStdDevVectors = new ArrayList<RealVector>(xStdDevVectors);
 	}
 
@@ -42,15 +49,19 @@ public class TrajectoryDistributionData extends TrajectoryData {
 	}
 
 	public RealVector getxStdDevVector(int s) {
+		checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
 		return xStdDevVectors.get(s);
 	}
 
 	public void setxStdDevVector(int s, RealVector xStdDevVector) {
+		checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
 		xStdDevVectors.set(s, xStdDevVector);
 	}
 
 	public void addState(RealVector xMeanVector, RealVector xStdDevVector) {
 		super.addState(xMeanVector);
+		checkArgument(gettVector().getDimension() == xStdDevVector.getDimension(),
+				"Size of tVector must be equal to size of xStdDevVector");
 		xStdDevVectors.add(xStdDevVector);
 	}
 
@@ -76,13 +87,16 @@ public class TrajectoryDistributionData extends TrajectoryData {
 	}
 
 	public SingleTrajectoryDistributionData getSingleTrajectoryDistributionData(int s) {
+		checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
 		return new SingleTrajectoryDistributionData(gettVector(), getxMeanVector(s), getxStdDevVector(s));
 	}
 
 	public TrajectoryData getSubsetData(int[] states) {
 		TrajectoryDistributionData tdd = new TrajectoryDistributionData(gettVector());
-		for (int s : states)
+		for (int s : states) {
+			checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
 			tdd.addState(getxMeanVector(s),getxStdDevVector(s));
+		}
 		return tdd;
 	}
 

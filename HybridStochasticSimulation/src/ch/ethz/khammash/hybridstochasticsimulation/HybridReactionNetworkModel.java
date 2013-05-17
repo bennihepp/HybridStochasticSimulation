@@ -150,6 +150,7 @@ public class HybridReactionNetworkModel implements FirstOrderDifferentialEquatio
 
 	@Override
 	public void computeDerivatives(double t, double[] x, double[] xDot) {
+		// We don't check the length of x and xDot for performance reasons
 		for (int s = 0; s < xDot.length; s++)
 			xDot[s] = 0;
 		for (int i = 0; i < constitutiveReactionSpeciesIndices.length; i++) {
@@ -192,6 +193,7 @@ public class HybridReactionNetworkModel implements FirstOrderDifferentialEquatio
 
 	@Override
 	public void computePropensities(double t, double[] x, double[] propensities) {
+		// We don't check the length of x and propensities for performance reasons
 		for (int i = 0; i < stochasticRateParameters.length; i++) {
 			double p = stochasticRateParameters[i];
 			int[] choiceIndices = stochasticReactionChoiceIndices.get(i);
@@ -208,10 +210,16 @@ public class HybridReactionNetworkModel implements FirstOrderDifferentialEquatio
 
 	@Override
 	public void updateState(int reaction, double t, double[] x) {
+		// We don't check the length of x and the value of reaction for performance reasons
 		double[] stochiometry = stochasticReactionStochiometries[reaction];
 		for (int i = 0; i < stochiometry.length; i++) {
 			x[i] += stochiometry[i];
 		}
+	}
+
+	@Override
+	public int getNumberOfSpecies() {
+		return getDimension();
 	}
 
 }

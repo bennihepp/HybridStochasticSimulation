@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import static com.google.common.base.Preconditions.*;
+
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -19,6 +21,8 @@ public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 
 	public TrajectoryPlotData(String[] names, double[] plotScales, RealVector tVector, RealMatrix xMatrix) {
 		super(tVector, xMatrix);
+		checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
+		checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
 		plotData = new DefaultPlotData(getNumberOfStates());
 		for (int s=0; s < getNumberOfStates(); s++) {
 			plotData.setName(s, names[s]);
@@ -82,9 +86,11 @@ public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 	}
 
 	public TrajectoryPlotData getSubsetData(int[] states, double[] plotScales) {
+		checkArgument(states.length == plotScales.length, "Expected states.length == plotScales.length");
 		TrajectoryPlotData tdd = new TrajectoryPlotData(gettVector());
 		for (int i=0; i < states.length; i++) {
 			int s = states[i];
+			checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
 			double plotScale = (plotScales != null) ? plotScales[i] : getPlotScale(s);
 			tdd.addState(getName(s), plotScale, getxVector(s));
 		}

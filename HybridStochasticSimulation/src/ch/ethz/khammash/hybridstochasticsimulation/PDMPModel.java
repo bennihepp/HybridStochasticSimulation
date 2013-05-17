@@ -77,4 +77,9 @@ public class PDMPModel implements FirstOrderDifferentialEquations, EventHandler,
 	public void resetState(double t, double[] y) {
 	}
 
+	@Override
+	public int getNumberOfSpecies() {
+		return getDimension();
+	}
+
 }

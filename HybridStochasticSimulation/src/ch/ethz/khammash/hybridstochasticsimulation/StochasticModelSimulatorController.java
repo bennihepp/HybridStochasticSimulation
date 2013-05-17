@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import static com.google.common.base.Preconditions.*;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -116,6 +118,7 @@ public class StochasticModelSimulatorController {
     }
 
 	private RandomDataGenerator[] createRandomDataGenerators(int numOfGenerators) {
+		checkArgument(numOfGenerators > 0, "Expected numOfGenerators > 0");
     	RandomDataGenerator[] result = new RandomDataGenerator[numOfGenerators];
     	for (int i=0; i < result.length; i++) {
     		result[i] = createRandomDataGenerator();
@@ -124,6 +127,7 @@ public class StochasticModelSimulatorController {
     }
 
 	public double[][] simulateTrajectory(double[] tSeries, double[] x0) {
+		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
 		StochasticModelTrajectory mt = simulateTrajectory(tSeries[0], x0, tSeries[tSeries.length - 1]);
     	double[][] xSeries = new double[tSeries.length][x0.length];
 		for (int i = 0; i < tSeries.length; i++) {
@@ -142,6 +146,8 @@ public class StochasticModelSimulatorController {
 
 	public StatisticalSummary[][] computeTrajectoryDistribution(int runs, double[] tSeries, double[] x0)
 			throws InterruptedException, CancellationException, ExecutionException {
+		checkArgument(runs > 0, "Expected runs > 0");
+		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
 		SynchronizedSummaryStatistics[][] xSeriesStatistics = new SynchronizedSummaryStatistics[tSeries.length][x0.length];
         for (int i=0; i < tSeries.length; i++)
 	        for (int s=0; s < x0.length; s++)

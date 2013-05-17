@@ -2,20 +2,20 @@ function example_hybrid_network_simulation()
 
     %rng(101);
 
-%     simple_crystallization_example_network;
-%     gamma = 0;
-%     alpha = [1; 1; 0; 0];
-%     beta = [-1; -1];
+    simple_crystallization_example_network;
+    gamma = 0;
+    alpha = [1; 1; 0; 0];
+    beta = [-1; -1];
 
 %     two_species_birth_death_example_network;
 %     gamma = 0;
 %     alpha = [0; 0];
 %     beta = [0; 0; 0; 0];
 
-    regulated_transcription_example_network;
-    gamma = 0;
-    alpha = [1; 1; 0; 0; 0; 0];
-    beta = [-1; -2; -1; -1; -1; 0; -3; -2; -1; 0];
+%     regulated_transcription_example_network;
+%     gamma = 0;
+%     alpha = [1; 1; 0; 0; 0; 0];
+%     beta = [-1; -2; -1; -1; -1; 0; -3; -2; -1; 0];
 
     javaaddpath('JaCoP-3.2.jar');
     javaaddpath('jgrapht-jdk1.6.jar');

@@ -7,12 +7,14 @@ import java.util.List;
 
 public class StochasticModel implements ReactionNetworkModel {
 
+	final int numberOfSpecies;
 	protected int[] reactionChoiceIndex1;
 	protected int[] reactionChoiceIndex2;
 	protected double[] rateParameters;
 	protected int[][] reactionStochiometries;
 
     public StochasticModel(ReactionNetwork net) {
+    	numberOfSpecies = net.getNumberOfSpecies();
     	init(net);
     }
 
@@ -46,6 +48,11 @@ public class StochasticModel implements ReactionNetworkModel {
     	}
     }
 
+    @Override
+    public int getNumberOfSpecies() {
+    	return numberOfSpecies;
+    }
+
 	@Override
 	public int getPropensityDimension() {
 		return rateParameters.length;
@@ -53,6 +60,7 @@ public class StochasticModel implements ReactionNetworkModel {
 
 	@Override
 	public void computePropensities(double t, double[] x, double[] propensities) {
+		// We don't check the length of x and propensities for performance reasons
     	for (int i=0; i < rateParameters.length; i++) {
     		double p = rateParameters[i];
     		int choiceIndex1 = reactionChoiceIndex1[i];
@@ -74,6 +82,7 @@ public class StochasticModel implements ReactionNetworkModel {
 
 	@Override
 	public void updateState(int reaction, double t, double[] x) {
+		// We don't check the length of x and propensities for performance reasons
 		int[] stochiometry = reactionStochiometries[reaction];
     	for (int i=0; i < stochiometry.length; i++) {
     		x[i] += stochiometry[i];

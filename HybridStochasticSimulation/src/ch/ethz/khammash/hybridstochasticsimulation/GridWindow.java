@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import static com.google.common.base.Preconditions.*;
+
 import java.awt.Component;
 import java.awt.GridLayout;
 
@@ -12,6 +14,8 @@ public class GridWindow extends ApplicationFrame {
 
 	public GridWindow(String title, int rows, int cols) {
 		super(title);
+		checkArgument(rows > 0);
+		checkArgument(cols > 0);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLayout(new GridLayout(rows, cols));
 	}

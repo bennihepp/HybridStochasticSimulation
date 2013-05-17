@@ -33,7 +33,7 @@ public class NetworkSimulation {
 	}
 
 	public static void main(String[] args) {
-		//List<Component> plots = regulatedTranscriptionNetwork();
+//		List<Component> plots = regulatedTranscriptionNetwork();
 		List<Component> plots = simpleCrystallizationNetwork();
 		int rows = (int) Math.ceil(plots.size() / 2.0);
 		int cols = (int) Math.ceil(plots.size() / (double) rows);
@@ -46,7 +46,6 @@ public class NetworkSimulation {
 	public static List<Component> regulatedTranscriptionNetwork() {
 		List<Component> plots = new LinkedList<Component>();
 
-		// NetworkSimulationStruct nss = loadSimpleCrystallizationNetwork();
 		NetworkSimulationStruct nss = loadRegulatedTranscriptionNetwork();
 
 		nss.rng = new MersenneTwister(100);

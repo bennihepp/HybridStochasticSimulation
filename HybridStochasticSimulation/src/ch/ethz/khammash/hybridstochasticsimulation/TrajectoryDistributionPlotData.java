@@ -1,100 +1,95 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
-public class TrajectoryDistributionPlotData extends TrajectoryDistributionData
-		implements PlotData {
+public class TrajectoryDistributionPlotData extends TrajectoryDistributionData implements PlotData {
 
-	private List<String> names;
-	private List<Double> plotScales;
+	private DefaultPlotData plotData;
 
 	public TrajectoryDistributionPlotData(RealVector tVector) {
 		super(tVector);
-		names = new ArrayList<String>();
-		plotScales = new ArrayList<Double>();
+		plotData = new DefaultPlotData(0);
 	}
 
-	public TrajectoryDistributionPlotData(RealVector tVector,
-			RealMatrix xMeanMatrix, RealMatrix xStdDevMatrix) {
+	public TrajectoryDistributionPlotData(RealVector tVector, RealMatrix xMeanMatrix, RealMatrix xStdDevMatrix) {
 		super(tVector, xMeanMatrix, xStdDevMatrix);
-		names = new ArrayList<String>(getNumberOfStates());
-		plotScales = new ArrayList<Double>(getNumberOfStates());
-		for (int i=0; i < getNumberOfStates(); i++) {
-			names.add(null);
-			plotScales.add(Double.valueOf(1.0));
-		}
+		plotData = new DefaultPlotData(getNumberOfStates());
 	}
 
-	public TrajectoryDistributionPlotData(String[] names, double[] plotScales,
-			RealVector tVector, RealMatrix xMeanMatrix,
+	public TrajectoryDistributionPlotData(String[] names, double[] plotScales, RealVector tVector, RealMatrix xMeanMatrix,
 			RealMatrix xStdDevMatrix) {
 		super(tVector, xMeanMatrix, xStdDevMatrix);
-		this.names = new ArrayList<String>(getNumberOfStates());
-		this.plotScales = new ArrayList<Double>(getNumberOfStates());
-		for (int i=0; i < getNumberOfStates(); i++) {
-			this.names.add(names[i]);
-			this.plotScales.add(Double.valueOf(plotScales[i]));
+		plotData = new DefaultPlotData(getNumberOfStates());
+		for (int s=0; s < getNumberOfStates(); s++) {
+			plotData.setName(s, names[s]);
+			plotData.setPlotScale(s, Double.valueOf(plotScales[s]));
 		}
 	}
 
 	@Override
 	public String getName(int s) {
-		return names.get(s);
+		return plotData.getName(s);
 	}
 
-	@Override
-	public double getPlotScale(int s) {
-		return plotScales.get(s).doubleValue();
+	public void setName(int s, String name) {
+		plotData.setName(s,  name);
 	}
 
 	@Override
 	public String[] getNames() {
-		return names.toArray(new String[0]);
+		return plotData.getNames();
 	}
 
 	public void setNames(String[] names) {
-		this.names.clear();
-		for (String name : names)
-			this.names.add(name);
+		plotData.setNames(names);
+	}
+
+	@Override
+	public double getPlotScale(int s) {
+		return plotData.getPlotScale(s);
+	}
+
+	public void setPlotScale(int s, double plotScale) {
+		plotData.setPlotScale(s, Double.valueOf(plotScale));
 	}
 
 	@Override
 	public double[] getPlotScales() {
-		double[] d = new double[plotScales.size()];
-		for (int i=0; i < plotScales.size(); i++)
-			d[i] = plotScales.get(i);
-		return d;
+		return plotData.getPlotScales();
 	}
 
 	public void setPlotScales(double[] plotScales) {
-		this.plotScales.clear();
-		for (double plotScale : plotScales)
-			this.plotScales.add(plotScale);
+		plotData.setPlotScales(plotScales);
 	}
 
-	public void addState(String name, double plotScale, RealVector xMeanVector,
-			RealVector xStdDevVector) {
+	@Override
+	public void addState(RealVector xMeanVector, RealVector xStdDevVector) {
+		addState(plotData.DEFAULT_NAME, 1.0, xMeanVector, xStdDevVector);
+	}
+
+	public void addState(String name, double plotScale, RealVector xMeanVector, RealVector xStdDevVector) {
 		super.addState(xMeanVector, xStdDevVector);
-		names.add(name);
-		plotScales.add(Double.valueOf(plotScale));
+		plotData.addState(name, plotScale);
 	}
 
+	@Override
 	public void removeState(int s) {
 		super.removeState(s);
-		names.remove(s);
-		plotScales.remove(s);
+		plotData.removeState(s);
 	}
 
 	public TrajectoryDistributionPlotData getSubsetData(int[] states) {
-		TrajectoryDistributionPlotData tdd = new TrajectoryDistributionPlotData(
-				gettVector());
-		for (int s : states)
-			tdd.addState(names.get(s), plotScales.get(s), getxMeanVector(s),
-					getxStdDevVector(s));
+		return getSubsetData(states, null);
+	}
+
+	public TrajectoryDistributionPlotData getSubsetData(int[] states, double[] plotScales) {
+		TrajectoryDistributionPlotData tdd = new TrajectoryDistributionPlotData(gettVector());
+		for (int i=0; i < states.length; i++) {
+			int s = states[i];
+			double plotScale = (plotScales != null) ? plotScales[i] : getPlotScale(s);
+			tdd.addState(getName(s), plotScale, getxMeanVector(s), getxStdDevVector(s));
+		}
 		return tdd;
 	}
 

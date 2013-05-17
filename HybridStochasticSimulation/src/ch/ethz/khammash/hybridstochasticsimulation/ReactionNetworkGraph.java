@@ -8,8 +8,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.alg.StrongConnectivityInspector;
 
 
-public class ReactionNetworkGraph extends
-		DefaultDirectedGraph<Integer, DefaultEdge> {
+public class ReactionNetworkGraph extends DefaultDirectedGraph<Integer, DefaultEdge> {
 
 	private static final long serialVersionUID = -3348628197042070775L;
 
@@ -36,8 +35,7 @@ public class ReactionNetworkGraph extends
     }
 
     public List<Set<Integer>> stronglyConnectedSets() {
-    	StrongConnectivityInspector<Integer, DefaultEdge> si
-    			= new StrongConnectivityInspector<Integer, DefaultEdge>(this);
+		StrongConnectivityInspector<Integer, DefaultEdge> si = new StrongConnectivityInspector<Integer, DefaultEdge>(this);
     	return si.stronglyConnectedSets();
     }
 

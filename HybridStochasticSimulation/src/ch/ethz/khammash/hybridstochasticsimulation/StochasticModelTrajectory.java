@@ -5,8 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 
-public class StochasticModelTrajectory implements ModelTrajectory,
-		ReactionHandler {
+public class StochasticModelTrajectory implements ModelTrajectory, ReactionHandler {
 
 	protected List<ReactionRecord> reactions;
 
@@ -36,8 +35,7 @@ public class StochasticModelTrajectory implements ModelTrajectory,
 		// See Java API
 		int insertionPoint = -index - 1;
 		if (insertionPoint == 0)
-			throw new InvalidTimePointException(
-					"Time must be between start and end of simulation");
+			throw new InvalidTimePointException("Time must be between start and end of simulation");
 		ReactionRecord rr = reactions.get(insertionPoint - 1);
 		return rr.getNewX();
 	}

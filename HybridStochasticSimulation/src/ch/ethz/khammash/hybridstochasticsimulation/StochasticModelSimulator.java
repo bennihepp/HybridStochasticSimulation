@@ -22,8 +22,7 @@ public class StochasticModelSimulator {
 		reactionHandlers = new ArrayList<ReactionHandler>();
 	}
 
-	public double simulate(StochasticModel model, double t0, double[] x0,
-			double t1, double[] x1) {
+	public double simulate(StochasticModel model, double t0, double[] x0, double t1, double[] x1) {
 		double[] x = new double[x0.length];
 		for (int i=0; i < x0.length; i++)
 			x[i] = x0[i];

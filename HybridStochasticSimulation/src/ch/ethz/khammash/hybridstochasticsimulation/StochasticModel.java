@@ -41,9 +41,7 @@ public class StochasticModel implements ReactionNetworkModel {
     			reactionChoiceIndex2[r] = choiceIndices[1];
     			break;
 			default:
-				throw new RuntimeException(
-						"Only constitutive, unary and binary"
-						+ " reactions are allowed");
+				throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
     		}
     	}
     }
@@ -54,8 +52,7 @@ public class StochasticModel implements ReactionNetworkModel {
 	}
 
 	@Override
-	public void computePropensities(
-			double t, double[] x, double[] propensities) {
+	public void computePropensities(double t, double[] x, double[] propensities) {
     	for (int i=0; i < rateParameters.length; i++) {
     		double p = rateParameters[i];
     		int choiceIndex1 = reactionChoiceIndex1[i];

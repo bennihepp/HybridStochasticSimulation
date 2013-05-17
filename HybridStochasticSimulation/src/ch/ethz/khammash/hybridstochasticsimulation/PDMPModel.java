@@ -3,26 +3,22 @@ package ch.ethz.khammash.hybridstochasticsimulation;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.events.EventHandler;
 
-
-public class PDMPModel implements FirstOrderDifferentialEquations,
-		EventHandler, ReactionNetworkModel {
+public class PDMPModel implements FirstOrderDifferentialEquations, EventHandler, ReactionNetworkModel {
 
 	protected int baseODEDimension;
 	protected FirstOrderDifferentialEquations baseODE;
 	protected ReactionNetworkModel reactionModel;
 	protected double[] propVector;
 
-
 	public PDMPModel(PDMPModel model) {
 		this(model.baseODE, model.reactionModel);
 	}
 
-	public PDMPModel(FirstOrderDifferentialEquations baseODE,
-			ReactionNetworkModel reactionModel) {
+	public PDMPModel(FirstOrderDifferentialEquations baseODE, ReactionNetworkModel reactionModel) {
 		this.baseODE = baseODE;
 		baseODEDimension = baseODE.getDimension();
 		this.reactionModel = reactionModel;
-		propVector = new double[reactionModel.getPropensityDimension()]; 
+		propVector = new double[reactionModel.getPropensityDimension()];
 	}
 
 	public FirstOrderDifferentialEquations getBaseODE() {
@@ -39,8 +35,7 @@ public class PDMPModel implements FirstOrderDifferentialEquations,
 	}
 
 	@Override
-	public void computePropensities(
-			double t, double[] x, double[] propensities) {
+	public void computePropensities(double t, double[] x, double[] propensities) {
 		reactionModel.computePropensities(t, x, propensities);
 	}
 
@@ -50,19 +45,19 @@ public class PDMPModel implements FirstOrderDifferentialEquations,
 	}
 
 	@Override
-    public int getDimension() {
-        return baseODEDimension + 2;
+	public int getDimension() {
+		return baseODEDimension + 2;
 	}
 
 	@Override
-    public void computeDerivatives(double t, double[] x, double[] xDot) {
+	public void computeDerivatives(double t, double[] x, double[] xDot) {
 		baseODE.computeDerivatives(t, x, xDot);
-    	xDot[xDot.length - 2] = 0;
-    	computePropensities(t, x, propVector);
-    	for (int i=0; i < propVector.length; i++)
-    		xDot[xDot.length - 2] += propVector[i];
-    	xDot[xDot.length - 1] = 0;
-    }
+		xDot[xDot.length - 2] = 0;
+		computePropensities(t, x, propVector);
+		for (int i = 0; i < propVector.length; i++)
+			xDot[xDot.length - 2] += propVector[i];
+		xDot[xDot.length - 1] = 0;
+	}
 
 	@Override
 	public double g(double t, double[] x) {

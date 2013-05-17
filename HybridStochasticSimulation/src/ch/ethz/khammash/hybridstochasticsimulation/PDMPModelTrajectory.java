@@ -4,9 +4,7 @@ import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.apache.commons.math3.ode.ContinuousOutputModel;
 import org.apache.commons.math3.ode.sampling.StepInterpolator;
 
-
-public class PDMPModelTrajectory extends StochasticModelTrajectory implements
-		ModelTrajectory, PDMPStepHandler, ReactionHandler {
+public class PDMPModelTrajectory extends StochasticModelTrajectory implements ModelTrajectory, PDMPStepHandler, ReactionHandler {
 
 	ContinuousOutputModel com;
 	protected boolean initialized;
@@ -45,7 +43,7 @@ public class PDMPModelTrajectory extends StochasticModelTrajectory implements
 	public double[] getInterpolatedState() {
 		double[] x = com.getInterpolatedState();
 		double[] reducedX = new double[x.length - 2];
-		for (int i=0; i < reducedX.length; i++)
+		for (int i = 0; i < reducedX.length; i++)
 			reducedX[i] = x[i];
 		return reducedX;
 	}
@@ -57,8 +55,7 @@ public class PDMPModelTrajectory extends StochasticModelTrajectory implements
 	}
 
 	@Override
-	public void handleStep(StepInterpolator interpolator, boolean isLast)
-			throws MaxCountExceededException {
+	public void handleStep(StepInterpolator interpolator, boolean isLast) throws MaxCountExceededException {
 		com.handleStep(interpolator, isLast);
 	}
 

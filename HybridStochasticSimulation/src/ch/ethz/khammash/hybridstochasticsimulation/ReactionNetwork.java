@@ -37,31 +37,26 @@ public class ReactionNetwork {
 		return numOfReactions;
 	}
 
-	public void setStochiometry(int species, int reaction, int production,
-			int consumption) {
+	public void setStochiometry(int species, int reaction, int production, int consumption) {
 		productionStochiometry[reaction][species] = production;
 		consumptionStochiometry[reaction][species] = consumption;
 		stochiometry[reaction][species] = production - consumption;
 	}
 
-	public void setStochiometries(int[][] productionStoch,
-			int[][] consumptionStoch) {
+	public void setStochiometries(int[][] productionStoch, int[][] consumptionStoch) {
 		if (productionStoch.length != numOfReactions)
 			throw new IndexOutOfBoundsException();
-		if (productionStoch.length > 0
-				&& productionStoch[0].length != numOfSpecies)
+		if (productionStoch.length > 0 && productionStoch[0].length != numOfSpecies)
 			throw new IndexOutOfBoundsException();
 		if (consumptionStoch.length != numOfReactions)
 			throw new IndexOutOfBoundsException();
-		if (consumptionStoch.length > 0
-				&& consumptionStoch[0].length != numOfSpecies)
+		if (consumptionStoch.length > 0 && consumptionStoch[0].length != numOfSpecies)
 			throw new IndexOutOfBoundsException();
 		for (int r=0; r < numOfReactions; r++)
 			for (int s=0; s < numOfSpecies; s++) {
 				productionStochiometry[r][s] = productionStoch[r][s];
 				consumptionStochiometry[r][s] = consumptionStoch[r][s];
-				stochiometry[r][s] = productionStoch[r][s]
-						- consumptionStoch[r][s];
+				stochiometry[r][s] = productionStoch[r][s] - consumptionStoch[r][s];
 			}
 	}
 
@@ -108,9 +103,8 @@ public class ReactionNetwork {
 	public void setRateParameters(double[] rateParameters) {
 		if (rateParameters.length != numOfReactions)
 			throw new IndexOutOfBoundsException();
-		for (int r=0; r < numOfReactions; r++) {
+		for (int r=0; r < numOfReactions; r++)
 			this.rateParameters[r] = rateParameters[r];
-		}
 	}
 
 	public double getRateParameter(int reaction) {
@@ -140,23 +134,17 @@ public class ReactionNetwork {
 				else if (s2 == -1)
 					s2 = s;
 				else
-					throw new RuntimeException(
-							"Only constitutive, unary and binary"
-							+ " reactions are allowed");
+					throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
 				break;
 			case 2:
 				if (s1 == -1) {
 					s1 = s;
 					s2 = s;
 				} else
-					throw new RuntimeException(
-							"Only constitutive, unary and binary"
-							+ " reactions are allowed");
+					throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
 				break;
 			default:
-				throw new RuntimeException(
-						"Only constitutive, unary and binary"
-						+ " reactions are allowed");
+				throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
 			}
 		int[] result = null;
 		if (s1 != -1 && s2 != -1) {

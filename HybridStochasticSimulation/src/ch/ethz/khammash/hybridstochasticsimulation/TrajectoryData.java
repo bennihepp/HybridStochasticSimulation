@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -79,6 +80,22 @@ public class TrajectoryData {
 		for (int s : states)
 			td.addState(getxVector(s));
 		return td;
+	}
+
+	public RealVector getLinearCombinationOfxVectors(double[] coefficients) {
+		return getLinearCombinationOfVectors(xVectors, coefficients);
+	}
+
+	protected RealVector getLinearCombinationOfVectors(List<RealVector> vectors, double[] coefficients) {
+		// TODO: check length of coefficients
+		RealVector lc = new ArrayRealVector(vectors.get(0).getDimension());
+		for (int s=0; s < vectors.size(); s++) {
+			double coeff = coefficients[s];
+			RealVector v = vectors.get(s);
+			v = v.mapMultiply(coeff);
+			lc = lc.add(v);
+		}
+		return lc;
 	}
 
 }

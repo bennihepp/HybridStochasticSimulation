@@ -15,15 +15,13 @@ public class HybridReactionNetwork extends ReactionNetwork {
 	protected int[] beta;
 	protected int gamma;
 
-	public HybridReactionNetwork(ReactionNetwork net, double N, int gamma,
-			int[] alpha, int[] beta) {
+	public HybridReactionNetwork(ReactionNetwork net, double N, int gamma, int[] alpha, int[] beta) {
 		super(net.getNumberOfSpecies(), net.getNumberOfReactions());
 		this.N = N;
 		this.gamma = gamma;
 		this.alpha = alpha.clone();
 		this.beta = beta.clone();
-		setStochiometries(net.getProductionStochiometries(),
-				net.getConsumptionStochiometries());
+		setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
 		List<int[]> choiceIndicesList = net.getChoiceIndices();
 		for (int r = 0; r < choiceIndicesList.size(); r++)
 			setRateParameter(r, Math.pow(N, -beta[r]) * net.getRateParameter(r));
@@ -83,22 +81,22 @@ public class HybridReactionNetwork extends ReactionNetwork {
 		return N;
 	}
 
-//	public void setGamma(int gamma) {
-//		this.gamma = gamma;
-//	}
+	// public void setGamma(int gamma) {
+	// this.gamma = gamma;
+	// }
 	public int getGamma() {
 		return gamma;
 	}
 
-//	public void setAlpha(int species, int alpha) {
-//		this.alpha[species] = alpha;
-//	}
-//	public void setAlpha(int[] alpha) {
-//		if (alpha.length != numOfSpecies)
-//			throw new IndexOutOfBoundsException();
-//		for (int s=0; s < numOfSpecies; s++)
-//			this.alpha[s] = alpha[s];
-//	}
+	// public void setAlpha(int species, int alpha) {
+	// this.alpha[species] = alpha;
+	// }
+	// public void setAlpha(int[] alpha) {
+	// if (alpha.length != numOfSpecies)
+	// throw new IndexOutOfBoundsException();
+	// for (int s=0; s < numOfSpecies; s++)
+	// this.alpha[s] = alpha[s];
+	// }
 	public int[] getAlpha() {
 		return alpha.clone();
 	}
@@ -107,15 +105,15 @@ public class HybridReactionNetwork extends ReactionNetwork {
 		return alpha[species];
 	}
 
-//	public void setBeta(int reaction, int beta) {
-//		this.beta[reaction] = beta;
-//	}
-//	public void setBeta(int[] beta) {
-//		if (beta.length != numOfReactions)
-//			throw new IndexOutOfBoundsException();
-//		for (int r=0; r < numOfReactions; r++)
-//			this.beta[r] = beta[r];
-//	}
+	// public void setBeta(int reaction, int beta) {
+	// this.beta[reaction] = beta;
+	// }
+	// public void setBeta(int[] beta) {
+	// if (beta.length != numOfReactions)
+	// throw new IndexOutOfBoundsException();
+	// for (int r=0; r < numOfReactions; r++)
+	// this.beta[r] = beta[r];
+	// }
 	public int[] getBeta() {
 		return beta.clone();
 	}

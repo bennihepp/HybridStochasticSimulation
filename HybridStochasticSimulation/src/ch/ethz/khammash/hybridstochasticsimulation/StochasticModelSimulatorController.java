@@ -22,8 +22,7 @@ import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
 
 public class StochasticModelSimulatorController {
 
-	private class SimulationWorker implements
-			Callable<StochasticModelTrajectory> {
+	private class SimulationWorker implements Callable<StochasticModelTrajectory> {
 
 		protected StochasticModel model;
 		protected double t0;
@@ -31,8 +30,7 @@ public class StochasticModelSimulatorController {
 		protected double t1;
 		protected StochasticModelSimulator simulator;
 
-		public SimulationWorker(RandomDataGenerator rng, StochasticModel model,
-				double t0, double[] x0, double t1) {
+		public SimulationWorker(RandomDataGenerator rng, StochasticModel model, double t0, double[] x0, double t1) {
 			this.model = model;
 			this.t0 = t0;
 			this.x0 = x0;
@@ -56,16 +54,13 @@ public class StochasticModelSimulatorController {
 
 	}
 
-	private class TrajectoryDistributionSimulator extends SimulationWorker
-			implements Runnable {
+	private class TrajectoryDistributionSimulator extends SimulationWorker implements Runnable {
 
 		protected double[] tSeries;
 		protected SynchronizedSummaryStatistics[][] xStatistics;
 
-		TrajectoryDistributionSimulator(RandomDataGenerator rng,
-				StochasticModel model,
-				SynchronizedSummaryStatistics[][] xStatistics,
-				double[] tSeries, double[] x0) {
+		TrajectoryDistributionSimulator(RandomDataGenerator rng, StochasticModel model,
+				SynchronizedSummaryStatistics[][] xStatistics, double[] tSeries, double[] x0) {
 			super(rng, model, tSeries[0], x0, tSeries[tSeries.length - 1]);
 			this.xStatistics = xStatistics;
 			this.tSeries = tSeries;
@@ -99,14 +94,12 @@ public class StochasticModelSimulatorController {
         this(model, DEFAULT_NUMBER_OF_THREADS);
     }
 
-	public StochasticModelSimulatorController(StochasticModel model,
-			int numOfThreads) {
+	public StochasticModelSimulatorController(StochasticModel model, int numOfThreads) {
         this.model = model;
         executor = Executors.newFixedThreadPool(numOfThreads);
     }
 
-	public StochasticModelSimulatorController(StochasticModel mode,
-			ExecutorService executor) {
+	public StochasticModelSimulatorController(StochasticModel mode, ExecutorService executor) {
     	this.executor = executor;
     }
 
@@ -122,8 +115,7 @@ public class StochasticModelSimulatorController {
 		return rdg;
     }
 
-	private RandomDataGenerator[] createRandomDataGenerators(
-			int numOfGenerators) {
+	private RandomDataGenerator[] createRandomDataGenerators(int numOfGenerators) {
     	RandomDataGenerator[] result = new RandomDataGenerator[numOfGenerators];
     	for (int i=0; i < result.length; i++) {
     		result[i] = createRandomDataGenerator();
@@ -132,8 +124,7 @@ public class StochasticModelSimulatorController {
     }
 
 	public double[][] simulateTrajectory(double[] tSeries, double[] x0) {
-		StochasticModelTrajectory mt = simulateTrajectory(tSeries[0], x0,
-				tSeries[tSeries.length - 1]);
+		StochasticModelTrajectory mt = simulateTrajectory(tSeries[0], x0, tSeries[tSeries.length - 1]);
     	double[][] xSeries = new double[tSeries.length][x0.length];
 		for (int i = 0; i < tSeries.length; i++) {
 			double[] x = mt.getInterpolatedState(tSeries[i]);
@@ -142,29 +133,24 @@ public class StochasticModelSimulatorController {
         return xSeries;
 	}
 
-	public StochasticModelTrajectory simulateTrajectory(double t0, double[] x0,
-			double t1) {
+	public StochasticModelTrajectory simulateTrajectory(double t0, double[] x0, double t1) {
 		RandomDataGenerator rdg = createRandomDataGenerator();
     	SimulationWorker sw = new SimulationWorker(rdg, model, t0, x0, t1);
 		StochasticModelTrajectory mt = sw.simulate();
 		return mt;
 	}
 
-	public StatisticalSummary[][] computeTrajectoryDistribution(int runs,
-			double[] tSeries, double[] x0) throws InterruptedException,
-			CancellationException, ExecutionException {
-		SynchronizedSummaryStatistics[][] xSeriesStatistics
-			= new SynchronizedSummaryStatistics[tSeries.length][x0.length];
+	public StatisticalSummary[][] computeTrajectoryDistribution(int runs, double[] tSeries, double[] x0)
+			throws InterruptedException, CancellationException, ExecutionException {
+		SynchronizedSummaryStatistics[][] xSeriesStatistics = new SynchronizedSummaryStatistics[tSeries.length][x0.length];
         for (int i=0; i < tSeries.length; i++)
 	        for (int s=0; s < x0.length; s++)
-	                xSeriesStatistics[i][s]
-	                		= new SynchronizedSummaryStatistics();
+				xSeriesStatistics[i][s] = new SynchronizedSummaryStatistics();
         // We want to have different random number sequences for each run
         RandomDataGenerator[] rdgs = createRandomDataGenerators(runs);
         final long startTime = System.currentTimeMillis();
         for (int k=0; k < runs; k++) {
-            Runnable r = new TrajectoryDistributionSimulator(
-                    rdgs[k], model, xSeriesStatistics, tSeries, x0);
+			Runnable r = new TrajectoryDistributionSimulator(rdgs[k], model, xSeriesStatistics, tSeries, x0);
             executor.execute(r);
         }
         executor.shutdown();

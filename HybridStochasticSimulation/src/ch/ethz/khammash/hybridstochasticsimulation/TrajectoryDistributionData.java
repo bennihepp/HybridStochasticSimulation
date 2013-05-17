@@ -17,16 +17,14 @@ public class TrajectoryDistributionData extends TrajectoryData {
 		xStdDevVectors = new ArrayList<RealVector>();
 	}
 
-	public TrajectoryDistributionData(RealVector tVector,
-			RealMatrix xMeanMatrix, RealMatrix xStdDevMatrix) {
+	public TrajectoryDistributionData(RealVector tVector, RealMatrix xMeanMatrix, RealMatrix xStdDevMatrix) {
 		super(tVector, xMeanMatrix);
 		xStdDevVectors = new ArrayList<RealVector>(getNumberOfStates());
 		for (int s=0; s < xStdDevMatrix.getRowDimension(); s++)
 			xStdDevVectors.add(xStdDevMatrix.getRowVector(s));
 	}
 
-	public TrajectoryDistributionData(RealVector tVector,
-			List<RealVector> xMeanVectors, List<RealVector> xStdDevVectors) {
+	public TrajectoryDistributionData(RealVector tVector, List<RealVector> xMeanVectors, List<RealVector> xStdDevVectors) {
 		super(tVector, xMeanVectors);
 		this.xStdDevVectors = new ArrayList<RealVector>(xStdDevVectors);
 	}
@@ -77,18 +75,23 @@ public class TrajectoryDistributionData extends TrajectoryData {
 		return xStdDevVectors.iterator();
 	}
 
-	public SingleTrajectoryDistributionData
-		getSingleTrajectoryDistributionData(int s) {
-		return new SingleTrajectoryDistributionData(
-				gettVector(), getxMeanVector(s), getxStdDevVector(s));
+	public SingleTrajectoryDistributionData getSingleTrajectoryDistributionData(int s) {
+		return new SingleTrajectoryDistributionData(gettVector(), getxMeanVector(s), getxStdDevVector(s));
 	}
 
 	public TrajectoryData getSubsetData(int[] states) {
-		TrajectoryDistributionData tdd = new TrajectoryDistributionData(
-				gettVector());
+		TrajectoryDistributionData tdd = new TrajectoryDistributionData(gettVector());
 		for (int s : states)
 			tdd.addState(getxMeanVector(s),getxStdDevVector(s));
 		return tdd;
+	}
+
+	public RealVector getLinearCombinationOfxMeanVectors(double[] coefficients) {
+		return super.getLinearCombinationOfxVectors(coefficients);
+	}
+
+	public RealVector getLinearCombinationOfxStdDevVectors(double[] coefficients) {
+		return getLinearCombinationOfVectors(xStdDevVectors, coefficients);
 	}
 
 }

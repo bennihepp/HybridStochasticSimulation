@@ -29,8 +29,7 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 	XYLineAndShapeRenderer renderer;
 	final XYSeriesCollection seriesCollection;
 	final BasicStroke stroke;
-	final Color[] colorList = { Color.blue, Color.red, Color.green,
-			Color.cyan, Color.magenta, Color.orange };
+	final Color[] colorList = { Color.blue, Color.red, Color.green, Color.cyan, Color.magenta, Color.orange };
 	List<String> speciesNames;
 
 	public TrajectoryPlotChartPanel() {
@@ -47,8 +46,7 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 				true, // tooltips
 				false // urls
 				));
-		seriesCollection = (XYSeriesCollection) getChart().getXYPlot()
-				.getDataset();
+		seriesCollection = (XYSeriesCollection) getChart().getXYPlot().getDataset();
 		JFreeChart chart = getChart();
 		XYPlot plot = chart.getXYPlot();
 		plot.setBackgroundPaint(Color.white);
@@ -63,8 +61,7 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 			public LegendItemCollection getLegendItems() {
 				LegendItemCollection lic = new LegendItemCollection();
 				for (int i = 0; i < speciesNames.size(); i++) {
-					LegendItem li = new LegendItem(speciesNames.get(i),
-							colorList[i]);
+					LegendItem li = new LegendItem(speciesNames.get(i), colorList[i]);
 					li.setShape(new Rectangle(5, 5));
 					lic.add(li);
 				}
@@ -90,8 +87,7 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 		plot.setRenderer(renderer);
 	}
 
-	public void addSpecies(String name, double[] tSeries,
-			double[] xSeries, double plotScale) {
+	public void addSpecies(String name, double[] tSeries, double[] xSeries, double plotScale) {
 		XYSeries xySeries = new XYSeries(name);
 		for (int i = 0; i < xSeries.length; i++)
 			xySeries.add(tSeries[i], plotScale * xSeries[i]);
@@ -103,8 +99,7 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 		renderer.setSeriesPaint(i, color);
 	}
 
-	public void addSpecies(String[] names, double[] tSeries,
-			double[][] xSeries, double[] plotScale) {
+	public void addSpecies(String[] names, double[] tSeries, double[][] xSeries, double[] plotScale) {
 		for (int s=0; s < names.length; ++s) {
 			double[] tempXSeries = new double[xSeries.length];
 			for (int i=0; i < xSeries.length; i++)
@@ -113,24 +108,20 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 		}
 	}
 
-	public void addSpecies(String name, RealVector tVector,
-			RealVector xVector, double plotScale) {
+	public void addSpecies(String name, RealVector tVector, RealVector xVector, double plotScale) {
 		addSpecies(name, tVector.toArray(), xVector.toArray(), plotScale);
 	}
 
-	public void addSpecies(String[] names, RealVector tVector,
-			RealMatrix xMatrix, double[] plotScale) {
+	public void addSpecies(String[] names, RealVector tVector, RealMatrix xMatrix, double[] plotScale) {
 		for (int s=0; s < names.length; ++s) {
 			RealVector xSeries = xMatrix.getRowVector(s);
 			addSpecies(names[s], tVector, xSeries, plotScale[s]);
 		}
 	}
 
-	public void addSpecies(String[] names, TrajectoryPlotData td,
-			double[] plotScale) {
+	public void addSpecies(String[] names, TrajectoryPlotData td, double[] plotScale) {
 		for (int s=0; s < names.length; ++s) {
-			addSpecies(names[s], td.gettVector(), td.getxVector(s),
-					plotScale[s]);
+			addSpecies(names[s], td.gettVector(), td.getxVector(s), plotScale[s]);
 		}
 	}
 

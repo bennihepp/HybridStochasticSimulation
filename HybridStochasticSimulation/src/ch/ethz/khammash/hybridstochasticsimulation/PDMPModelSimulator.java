@@ -71,9 +71,7 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 			handler.reset();
 			integrator.addStepHandler(handler);
 		}
-		double conv = (ehConvergence != null)
-				? ehConvergence
-				: ehConvergenceFactor * (t1 - t0);
+		double conv = (ehConvergence != null) ? ehConvergence : ehConvergenceFactor * (t1 - t0);
 		integrator.addEventHandler(model, ehMaxCheckInterval, conv, ehMaxIterationCount);
     	for (ReactionHandler handler : reactionHandlers)
     		handler.setInitialState(t0, x0);

@@ -29,8 +29,7 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 	final XYSeriesCollection seriesCollection;
 	final BasicStroke stroke;
 	final BasicStroke dottedStroke;
-	final Color[] colorList = { Color.blue, Color.red, Color.green,
-			Color.cyan, Color.magenta, Color.orange };
+	final Color[] colorList = { Color.blue, Color.red, Color.green, Color.cyan, Color.magenta, Color.orange };
 	List<String> speciesNames;
 
 	public TrajectoryDistributionPlotChartPanel() {
@@ -43,8 +42,7 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 				true, // tooltips
 				false // urls
 				));
-		seriesCollection = (XYSeriesCollection)getChart().getXYPlot()
-				.getDataset();
+		seriesCollection = (XYSeriesCollection) getChart().getXYPlot().getDataset();
 		JFreeChart chart = getChart();
 		XYPlot plot = chart.getXYPlot();
 		plot.setBackgroundPaint(Color.white);
@@ -57,8 +55,7 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 			public LegendItemCollection getLegendItems() {
 				LegendItemCollection lic = new LegendItemCollection();
 				for (int i = 0; i < speciesNames.size(); i++) {
-					LegendItem li = new LegendItem(speciesNames.get(i),
-							colorList[i]);
+					LegendItem li = new LegendItem(speciesNames.get(i), colorList[i]);
 					li.setShape(new Rectangle(5, 5));
 					lic.add(li);
 				}
@@ -72,8 +69,7 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 		getChart().setTitle(title);
 	}
 
-	public void addSpecies(String name, XYSeries meanSeries,
-			XYSeries stdDevPlusSeries, XYSeries stdDevMinusSeries) {
+	public void addSpecies(String name, XYSeries meanSeries, XYSeries stdDevPlusSeries, XYSeries stdDevMinusSeries) {
 		int i = seriesCollection.getSeriesCount();
 		seriesCollection.addSeries(meanSeries);
 		seriesCollection.addSeries(stdDevPlusSeries);
@@ -89,8 +85,7 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 		}
 	}
 
-	public void addSpecies(String name, double[] tSeries,
-			StatisticalSummary[] statistics, double plotScale) {
+	public void addSpecies(String name, double[] tSeries, StatisticalSummary[] statistics, double plotScale) {
 		XYSeries meanSeries = new XYSeries(name);
 		XYSeries stdDevPlusSeries = new XYSeries(name + "+sigma");
 		XYSeries stdDevMinusSeries = new XYSeries(name + "-sigma");
@@ -104,19 +99,16 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 		addSpecies(name, meanSeries, stdDevPlusSeries, stdDevMinusSeries);
 	}
 
-	public void addSpecies(String[] names, double[] tSeries,
-			StatisticalSummary[][] statistics, double[] plotScale) {
+	public void addSpecies(String[] names, double[] tSeries, StatisticalSummary[][] statistics, double[] plotScale) {
 		for (int s=0; s < names.length; ++s) {
-			StatisticalSummary[] tempStatistics
-				= new StatisticalSummary[statistics.length];
+			StatisticalSummary[] tempStatistics = new StatisticalSummary[statistics.length];
 			for (int i=0; i < statistics.length; i++)
 				tempStatistics[i] = statistics[i][s];
 			addSpecies(names[s], tSeries, tempStatistics, plotScale[s]);
 		}
 	}
 
-	public void addSpecies(String name, RealVector tVector,
-			RealVector meanVector, RealVector stdDevVector, double plotScale) {
+	public void addSpecies(String name, RealVector tVector, RealVector meanVector, RealVector stdDevVector, double plotScale) {
 		XYSeries meanSeries = new XYSeries(name);
 		XYSeries stdDevPlusSeries = new XYSeries(name + "+sigma");
 		XYSeries stdDevMinusSeries = new XYSeries(name + "-sigma");
@@ -136,8 +128,7 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 			RealVector tVector = tdd.gettVector();
 			RealVector xMeanVector = tdd.getxMeanVector(s);
 			RealVector xStdDevVector = tdd.getxStdDevVector(s);
-			addSpecies(tdd.getName(s), tVector, xMeanVector, xStdDevVector,
-					tdd.getPlotScale(s));
+			addSpecies(tdd.getName(s), tVector, xMeanVector, xStdDevVector, tdd.getPlotScale(s));
 		}
 	}
 

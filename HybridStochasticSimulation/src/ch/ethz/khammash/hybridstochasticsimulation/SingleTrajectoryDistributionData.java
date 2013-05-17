@@ -7,8 +7,7 @@ public class SingleTrajectoryDistributionData extends SingleTrajectoryData {
 
 	private RealVector xStdDevVector;
 
-	public SingleTrajectoryDistributionData(RealVector tVector,
-			RealVector xMeanVector, RealVector xStdDevVector) {
+	public SingleTrajectoryDistributionData(RealVector tVector, RealVector xMeanVector, RealVector xStdDevVector) {
 		super(tVector, xMeanVector);
 		this.xStdDevVector = xStdDevVector;
 	}

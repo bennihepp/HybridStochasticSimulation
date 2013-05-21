@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.events.EventHandler;

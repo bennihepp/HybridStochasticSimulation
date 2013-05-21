@@ -1,8 +1,9 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
 import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.apache.commons.math3.ode.ContinuousOutputModel;
 import org.apache.commons.math3.ode.sampling.StepInterpolator;
+
 
 public class PDMPModelTrajectory extends StochasticModelTrajectory implements ModelTrajectory, PDMPStepHandler, ReactionHandler {
 

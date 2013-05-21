@@ -1,27 +1,28 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.plotting;
 
 import static com.google.common.base.Preconditions.*;
 
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
-public class TrajectoryDistributionPlotData extends TrajectoryDistributionData implements PlotData {
+import ch.ethz.khammash.hybridstochasticsimulation.models.TrajectoryData;
+
+public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 
 	private DefaultPlotData plotData;
 
-	public TrajectoryDistributionPlotData(RealVector tVector) {
+	public TrajectoryPlotData(RealVector tVector) {
 		super(tVector);
 		plotData = new DefaultPlotData(0);
 	}
 
-	public TrajectoryDistributionPlotData(RealVector tVector, RealMatrix xMeanMatrix, RealMatrix xStdDevMatrix) {
-		super(tVector, xMeanMatrix, xStdDevMatrix);
+	public TrajectoryPlotData(RealVector tVector, RealMatrix xMatrix) {
+		super(tVector, xMatrix);
 		plotData = new DefaultPlotData(getNumberOfStates());
 	}
 
-	public TrajectoryDistributionPlotData(String[] names, double[] plotScales, RealVector tVector, RealMatrix xMeanMatrix,
-			RealMatrix xStdDevMatrix) {
-		super(tVector, xMeanMatrix, xStdDevMatrix);
+	public TrajectoryPlotData(String[] names, double[] plotScales, RealVector tVector, RealMatrix xMatrix) {
+		super(tVector, xMatrix);
 		checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
 		checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
 		plotData = new DefaultPlotData(getNumberOfStates());
@@ -68,33 +69,33 @@ public class TrajectoryDistributionPlotData extends TrajectoryDistributionData i
 	}
 
 	@Override
-	public void addState(RealVector xMeanVector, RealVector xStdDevVector) {
-		addState(plotData.DEFAULT_NAME, 1.0, xMeanVector, xStdDevVector);
+	public void addState(RealVector xVector) {
+		addState(plotData.DEFAULT_NAME, 1.0, xVector);
 	}
 
-	public void addState(String name, double plotScale, RealVector xMeanVector, RealVector xStdDevVector) {
-		super.addState(xMeanVector, xStdDevVector);
+	public void addState(String name, double plotScale, RealVector xVector) {
+		super.addState(xVector);
 		plotData.addState(name, plotScale);
 	}
 
-	@Override
 	public void removeState(int s) {
 		super.removeState(s);
 		plotData.removeState(s);
 	}
 
-	public TrajectoryDistributionPlotData getSubsetData(int[] states) {
+	public TrajectoryPlotData getSubsetData(int[] states) {
 		return getSubsetData(states, null);
 	}
 
-	public TrajectoryDistributionPlotData getSubsetData(int[] states, double[] plotScales) {
-		checkArgument(states.length == plotScales.length, "Expected states.length == plotScales.length");
-		TrajectoryDistributionPlotData tdd = new TrajectoryDistributionPlotData(gettVector());
+	public TrajectoryPlotData getSubsetData(int[] states, double[] plotScales) {
+		if (plotScales != null)
+			checkArgument(states.length == plotScales.length, "Expected states.length == plotScales.length");
+		TrajectoryPlotData tdd = new TrajectoryPlotData(gettVector());
 		for (int i=0; i < states.length; i++) {
 			int s = states[i];
 			checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
 			double plotScale = (plotScales != null) ? plotScales[i] : getPlotScale(s);
-			tdd.addState(getName(s), plotScale, getxMeanVector(s), getxStdDevVector(s));
+			tdd.addState(getName(s), plotScale, getxVector(s));
 		}
 		return tdd;
 	}

@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -6,6 +6,8 @@ import java.util.Collection;
 import org.apache.commons.math3.ode.FirstOrderIntegrator;
 import org.apache.commons.math3.ode.nonstiff.DormandPrince853Integrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
+
+import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 
 
 public class PDMPModelSimulator extends StochasticModelSimulator{
@@ -32,8 +34,8 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 	public PDMPModelSimulator(FirstOrderIntegrator integrator, RandomDataGenerator rng) {
 		super(rng);
 		ehMaxCheckInterval = Double.POSITIVE_INFINITY;
-		ehConvergence = null;
-		ehConvergenceFactor = Double.valueOf(1e-9);
+		ehConvergence = Double.valueOf(1e-8);
+		ehConvergenceFactor = null;
 		ehMaxIterationCount = 1000;
 		if (integrator == null)
 			integrator = new DormandPrince853Integrator(1.0e-8, 100.0, 1.0e-10, 1.0e-10);

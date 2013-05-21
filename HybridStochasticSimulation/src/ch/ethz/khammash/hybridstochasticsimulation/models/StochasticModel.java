@@ -1,6 +1,8 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import java.util.List;
+
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 
 
 // TODO: Group computation of choices for each reaction
@@ -30,7 +32,7 @@ public class StochasticModel implements ReactionNetworkModel {
     	rateParameters = net.getRateParameters();
     	reactionStochiometries = net.getStochiometries();
 
-    	for (int r=0; r < net.numOfReactions; r++) {
+    	for (int r=0; r < net.getNumberOfReactions(); r++) {
     		int[] choiceIndices = choiceIndicesList.get(r);
     		switch (choiceIndices.length) {
     		case 0:

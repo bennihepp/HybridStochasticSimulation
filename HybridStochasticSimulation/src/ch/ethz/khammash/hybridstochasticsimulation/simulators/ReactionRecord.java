@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
 public class ReactionRecord implements Comparable<Double> {
 

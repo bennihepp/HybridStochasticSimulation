@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
 import java.util.ArrayList;
 import java.util.Collections;

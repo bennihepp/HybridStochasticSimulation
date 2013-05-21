@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.plotting;
 
 import static com.google.common.base.Preconditions.*;
 

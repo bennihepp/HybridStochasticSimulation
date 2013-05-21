@@ -1,15 +1,17 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.models;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
-import java.util.List;
-import java.util.ArrayList;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 
 // TODO: Group computation of choices for each reaction
 
-public class HybridReactionNetworkModel implements FirstOrderDifferentialEquations, ReactionNetworkModel {
+public class MSHybridReactionNetworkModel implements FirstOrderDifferentialEquations, ReactionNetworkModel {
 
-	protected int[] alpha;
+	protected double[] alpha;
 	protected double N;
 
 	protected int dimension;
@@ -32,27 +34,27 @@ public class HybridReactionNetworkModel implements FirstOrderDifferentialEquatio
 	protected int[] binaryReactionChoiceIndices2;
 	protected double[] binaryReactionParameters;
 
-	public HybridReactionNetworkModel(HybridReactionNetwork hrn) {
+	public MSHybridReactionNetworkModel(MSHybridReactionNetwork hrn) {
 		N = hrn.getN();
 		alpha = hrn.getAlpha();
 		init(hrn);
 		dimension = hrn.getNumberOfSpecies();
 	}
 
-	private void init(HybridReactionNetwork hrn) {
+	private void init(MSHybridReactionNetwork hrn) {
 		int numOfStochasticReactions = 0;
 		// int numOfDeterministicReactions = 0;
 		int numOfConstitutiveReactions = 0;
 		int numOfUnaryReactions = 0;
 		int numOfBinaryReactions = 0;
-		HybridReactionNetwork.ConvergenceType[][] ct = hrn.getConvergenceType();
+		MSHybridReactionNetwork.ConvergenceType[][] ct = hrn.getConvergenceType();
 		boolean[] stochasticReactionDetected = new boolean[hrn.getNumberOfReactions()];
 		List<int[]> choiceIndicesList = hrn.getChoiceIndices();
 
-		for (int r = 0; r < hrn.numOfReactions; r++) {
+		for (int r = 0; r < hrn.getNumberOfReactions(); r++) {
 			int[] choiceIndices = choiceIndicesList.get(r);
-			for (int s = 0; s < hrn.numOfSpecies; s++) {
-				if (ct[r][s] == HybridReactionNetwork.ConvergenceType.DETERMINISTIC) {
+			for (int s = 0; s < hrn.getNumberOfSpecies(); s++) {
+				if (ct[r][s] == MSHybridReactionNetwork.ConvergenceType.DETERMINISTIC) {
 					if (choiceIndices.length == 0)
 						++numOfConstitutiveReactions;
 					else if (choiceIndices.length == 1)
@@ -60,7 +62,7 @@ public class HybridReactionNetworkModel implements FirstOrderDifferentialEquatio
 					else
 						++numOfBinaryReactions;
 					// ++numOfDeterministicReactions;
-				} else if (ct[r][s] == HybridReactionNetwork.ConvergenceType.STOCHASTIC) {
+				} else if (ct[r][s] == MSHybridReactionNetwork.ConvergenceType.STOCHASTIC) {
 					if (stochasticReactionDetected[r] == false) {
 						stochasticReactionDetected[r] = true;
 						++numOfStochasticReactions;
@@ -98,10 +100,10 @@ public class HybridReactionNetworkModel implements FirstOrderDifferentialEquatio
 		// stochasticReactionDetected[r] = false;
 
 		// TODO: This is not working!!!
-		for (int r = 0; r < hrn.numOfReactions; r++) {
+		for (int r = 0; r < hrn.getNumberOfReactions(); r++) {
 			int[] choiceIndices = choiceIndicesList.get(r);
-			for (int s = 0; s < hrn.numOfSpecies; s++) {
-				if (ct[r][s] == HybridReactionNetwork.ConvergenceType.DETERMINISTIC) {
+			for (int s = 0; s < hrn.getNumberOfSpecies(); s++) {
+				if (ct[r][s] == MSHybridReactionNetwork.ConvergenceType.DETERMINISTIC) {
 					if (choiceIndices.length == 0) {
 						constitutiveReactionSpeciesIndices[ic] = s;
 						constitutiveReactionParameters[ic] = hrn.getStochiometry(s, r) * hrn.getRateParameter(r);
@@ -123,7 +125,7 @@ public class HybridReactionNetworkModel implements FirstOrderDifferentialEquatio
 					// deterministicReactionParameters[id] =
 					// net.getStochiometry(s, r) * net.rateParameters[r];
 					// ++id;
-				} else if (ct[r][s] == HybridReactionNetwork.ConvergenceType.STOCHASTIC) {
+				} else if (ct[r][s] == MSHybridReactionNetwork.ConvergenceType.STOCHASTIC) {
 					if (stochasticReactionDetected[r] == false) {
 						stochasticReactionDetected[r] = true;
 						stochasticReactionChoiceIndices.add(choiceIndices);

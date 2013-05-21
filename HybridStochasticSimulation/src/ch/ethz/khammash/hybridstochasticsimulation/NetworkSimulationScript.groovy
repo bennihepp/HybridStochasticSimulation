@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation
 
+import ch.ethz.khammash.hybridstochasticsimulation.plotting.GridWindow;
+
 class NetworkSimulationScript {
 
 	static main(args) {
@@ -38,12 +40,12 @@ class NetworkSimulationScript {
 		plot.setTitle("Stochastic single trajectory")
 		plots.add(plot)
 
-		std = NetworkSimulation.simulatePDMPDistribution(runs, nss, tVector)
+		std = NetworkSimulation.simulateMSPDMPDistribution(runs, nss, tVector)
 		plot = NetworkSimulation.plotTrajectoryDistribution(nss, std)
 		plot.setTitle("PDMP")
 		plots.add(plot)
 
-		st = NetworkSimulation.simulatePDMP(nss, tVector)
+		st = NetworkSimulation.simulateMSPDMP(nss, tVector)
 		plot = NetworkSimulation.plotTrajectory(nss, st)
 		plot.setTitle("PDMP single trajectory")
 		plots.add(plot)
@@ -60,7 +62,7 @@ class NetworkSimulationScript {
 		plot.setTitle("Stochatic, gamma=1")
 		plots.add(plot)
 
-		std = NetworkSimulation.simulatePDMPDistribution(runs, nss, tVector)
+		std = NetworkSimulation.simulateMSPDMPDistribution(runs, nss, tVector)
 		plot = NetworkSimulation.plotTrajectoryDistribution(nss, std)
 		plot.setTitle("PDMP, gamma=1")
 		plots.add(plot)

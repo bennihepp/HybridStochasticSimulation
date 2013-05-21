@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -6,18 +6,98 @@ import java.util.List;
 
 // TODO: Check scaling of state variables
 
-public class HybridReactionNetwork extends ReactionNetwork {
+public class MSHybridReactionNetwork extends ReactionNetwork {
 
 	public enum ConvergenceType {
 		NONE, DIEOUT, STOCHASTIC, DETERMINISTIC, EXPLODING
 	}
 
 	protected double N;
-	protected int[] alpha;
-	protected int[] beta;
-	protected int gamma;
+	protected double[] alpha;
+	protected double[] beta;
+	protected double gamma;
 
-	public HybridReactionNetwork(ReactionNetwork net, double N, int gamma, int[] alpha, int[] beta) {
+	public static double[] computeBeta(ReactionNetwork rn, double N) {
+		double[] beta = new double[rn.getNumberOfReactions()];
+		for (int r=0; r < rn.getNumberOfReactions(); r++) {
+			beta[r] = Math.log(rn.getRateParameter(r)) / Math.log(N);
+		}
+		return beta;
+	}
+
+	public static boolean[] checkBalanceEquations(ReactionNetwork rn, double[] alpha, double[] beta, double epsilon) {
+		boolean[] result = new boolean[rn.getNumberOfSpecies()];
+		for (int s=0; s < rn.getNumberOfSpecies(); s++) {
+			double maxPlus = Double.MIN_VALUE;
+			double maxMinus = Double.MIN_VALUE;
+			for (int r=0; r < rn.getNumberOfReactions(); r++) {
+				if (rn.getStochiometry(s, r) != 0) {
+					int[] consumptionStochiometries = rn.getConsumptionStochiometries(r);
+					double v = beta[r];
+					for (int s2=0; s2 < rn.getNumberOfSpecies(); s2++)
+						v += consumptionStochiometries[s2] * alpha[s2];
+					if (rn.getStochiometry(s, r) > 0 && v > maxPlus)
+						maxPlus = v;
+					else if (rn.getStochiometry(s, r) < 0 && v > maxMinus)
+						maxMinus = v;
+				}
+			}
+			result[s] = Math.abs(maxPlus - maxMinus) <= epsilon;
+		}
+		return result;
+	}
+
+	public static double[] computeTimeScaleConstraintValues(ReactionNetwork rn,
+			double gamma, double[] alpha, double[] beta, double epsilon) {
+		double[] result = new double[rn.getNumberOfSpecies()];
+		for (int s=0; s < rn.getNumberOfSpecies(); s++) {
+			double maxV = Double.MIN_VALUE;
+			for (int r=0; r < rn.getNumberOfReactions(); r++) {
+				if (rn.getStochiometry(s, r) != 0) {
+					int[] consumptionStochiometries = rn.getConsumptionStochiometries(r);
+					double v = beta[r];
+					for (int s2=0; s2 < rn.getNumberOfSpecies(); s2++)
+						v += consumptionStochiometries[s2] * alpha[s2];
+					if (v > maxV)
+						maxV = v;
+				}
+			}
+			result[s] = gamma - (alpha[s] - maxV);
+		}
+		return result;
+	}
+
+	public static boolean[] checkTimeScaleConstraints(ReactionNetwork rn,
+			double gamma, double[] alpha, double[] beta, double epsilon) {
+		boolean[] result = new boolean[rn.getNumberOfSpecies()];
+		for (int s=0; s < rn.getNumberOfSpecies(); s++) {
+			double maxV = Double.MIN_VALUE;
+			for (int r=0; r < rn.getNumberOfReactions(); r++) {
+				if (rn.getStochiometry(s, r) != 0) {
+					int[] consumptionStochiometries = rn.getConsumptionStochiometries(r);
+					double v = beta[r];
+					for (int s2=0; s2 < rn.getNumberOfSpecies(); s2++)
+						v += consumptionStochiometries[s2] * alpha[s2];
+					if (v > maxV)
+						maxV = v;
+				}
+			}
+			result[s] = alpha[s] - gamma - maxV >= -epsilon;
+		}
+		return result;
+	}
+
+	public static boolean[] checkSpeciesBalanceConditions(ReactionNetwork rn,
+			double gamma, double[] alpha, double[] beta, double epsilon) {
+		boolean[] balanceEquations = checkBalanceEquations(rn, alpha, beta, epsilon);
+		boolean[] timeScaleConstraints = checkTimeScaleConstraints(rn, gamma, alpha, beta, epsilon);
+		boolean[] result = new boolean[rn.getNumberOfSpecies()];
+		for (int s=0; s < rn.getNumberOfSpecies(); s++)
+			result[s] = balanceEquations[s] || timeScaleConstraints[s];
+		return result;
+	}
+
+	public MSHybridReactionNetwork(ReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
 		super(net.getNumberOfSpecies(), net.getNumberOfReactions());
 		checkArgument(N > 0, "Expected N > 0");
 		checkArgument(alpha.length == getNumberOfSpecies(), "Expected alpha.length == getNumberOfSpecies()");
@@ -95,7 +175,7 @@ public class HybridReactionNetwork extends ReactionNetwork {
 	// public void setGamma(int gamma) {
 	// this.gamma = gamma;
 	// }
-	public int getGamma() {
+	public double getGamma() {
 		return gamma;
 	}
 
@@ -108,11 +188,11 @@ public class HybridReactionNetwork extends ReactionNetwork {
 	// for (int s=0; s < numOfSpecies; s++)
 	// this.alpha[s] = alpha[s];
 	// }
-	public int[] getAlpha() {
+	public double[] getAlpha() {
 		return alpha.clone();
 	}
 
-	public int getAlpha(int species) {
+	public double getAlpha(int species) {
 		checkElementIndex(species, getNumberOfSpecies());
 		return alpha[species];
 	}
@@ -126,11 +206,11 @@ public class HybridReactionNetwork extends ReactionNetwork {
 	// for (int r=0; r < numOfReactions; r++)
 	// this.beta[r] = beta[r];
 	// }
-	public int[] getBeta() {
+	public double[] getBeta() {
 		return beta.clone();
 	}
 
-	public int getBeta(int reaction) {
+	public double getBeta(int reaction) {
 		checkElementIndex(reaction, getNumberOfReactions());
 		return beta[reaction];
 	}
@@ -138,7 +218,7 @@ public class HybridReactionNetwork extends ReactionNetwork {
 	public ConvergenceType getConvergenceType(int species, int reaction) {
 		checkElementIndex(species, getNumberOfSpecies());
 		checkElementIndex(reaction, getNumberOfReactions());
-		int rho = beta[reaction];
+		double rho = beta[reaction];
 		for (int s = 0; s < numOfSpecies; s++)
 			if (consumptionStochiometry[reaction][s] > 0)
 				rho += consumptionStochiometry[reaction][s] * alpha[s];
@@ -154,7 +234,7 @@ public class HybridReactionNetwork extends ReactionNetwork {
 
 	public ConvergenceType[][] getConvergenceType() {
 		ConvergenceType[][] result = new ConvergenceType[numOfReactions][numOfSpecies];
-		int[] rho = beta.clone();
+		double[] rho = beta.clone();
 		for (int r = 0; r < numOfReactions; r++)
 			for (int s = 0; s < numOfSpecies; s++)
 				if (consumptionStochiometry[r][s] > 0)

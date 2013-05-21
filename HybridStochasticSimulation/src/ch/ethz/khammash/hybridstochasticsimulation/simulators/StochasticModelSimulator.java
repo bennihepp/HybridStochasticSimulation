@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.commons.math3.random.RandomDataGenerator;
+
+import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticModel;
 
 
 public class StochasticModelSimulator {

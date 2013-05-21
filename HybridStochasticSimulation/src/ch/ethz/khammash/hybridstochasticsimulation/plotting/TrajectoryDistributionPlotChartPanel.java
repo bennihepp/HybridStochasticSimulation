@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.plotting;
 
 import java.awt.BasicStroke;
 import java.awt.Color;

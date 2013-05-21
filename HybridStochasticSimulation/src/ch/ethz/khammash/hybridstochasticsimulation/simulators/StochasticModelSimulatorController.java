@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -14,6 +14,8 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
+
+import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticModel;
 
 /**
  * Created by

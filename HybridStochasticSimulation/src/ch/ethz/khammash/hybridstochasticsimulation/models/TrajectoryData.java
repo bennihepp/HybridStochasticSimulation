@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
+
 
 
 public class TrajectoryData {

@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.plotting;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -119,9 +119,9 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 		}
 	}
 
-	public void addSpecies(String[] names, TrajectoryPlotData td, double[] plotScale) {
-		for (int s=0; s < names.length; ++s) {
-			addSpecies(names[s], td.gettVector(), td.getxVector(s), plotScale[s]);
+	public void addSpecies(TrajectoryPlotData td) {
+		for (int s=0; s < td.getNumberOfStates(); ++s) {
+			addSpecies(td.getName(s), td.gettVector(), td.getxVector(s), td.getPlotScale(s));
 		}
 	}
 

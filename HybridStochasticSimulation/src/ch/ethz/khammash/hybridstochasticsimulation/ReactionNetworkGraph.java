@@ -7,6 +7,8 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.alg.StrongConnectivityInspector;
 
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
+
 
 public class ReactionNetworkGraph extends DefaultDirectedGraph<Integer, DefaultEdge> {
 

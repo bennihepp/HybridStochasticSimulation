@@ -12,4 +12,8 @@ public interface PlotData {
 
 	public double[] getPlotScales();
 
+	public boolean isContinuous();
+
+	public boolean isDiscrete();
+
 }

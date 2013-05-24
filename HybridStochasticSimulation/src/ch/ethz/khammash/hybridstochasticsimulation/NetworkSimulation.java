@@ -1,6 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
 import java.awt.Component;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -15,10 +16,14 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 
+import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNFixedModelTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.HybridReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.MSHybridReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
+import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModelAdapter;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticModel;
+import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticModelTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
@@ -28,10 +33,11 @@ import ch.ethz.khammash.hybridstochasticsimulation.plotting.TrajectoryDistributi
 import ch.ethz.khammash.hybridstochasticsimulation.plotting.TrajectoryPlotChartPanel;
 import ch.ethz.khammash.hybridstochasticsimulation.plotting.TrajectoryPlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPModelSimulatorController;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.ReactionRecord;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPModelSimulatorController.DefaultIntegratorFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.ReactionEvent;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.StochasticModelSimulatorController;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.StochasticModelTrajectory;
 
+@SuppressWarnings("unused")
 public class NetworkSimulation {
 
 	public static class NetworkSimulationStruct {
@@ -40,6 +46,8 @@ public class NetworkSimulation {
 		public ReactionNetwork net;
 		public int[] continuousSpecies;
 		public double N;
+		public double deltaR;
+		public double deltaS;
 		public double gamma;
 		public double[] alpha;
 		public double[] beta;
@@ -52,8 +60,8 @@ public class NetworkSimulation {
 
 	public static void main(String[] args) {
 //		List<Component> plots = regulatedTranscriptionNetwork();
-//		List<Component> plots = simpleCrystallizationNetwork();
-		List<Component> plots = haploinsufficiencyNetwork();
+		List<Component> plots = simpleCrystallizationNetwork();
+//		List<Component> plots = haploinsufficiencyNetwork();
 		int rows = (int) Math.ceil(plots.size() / 2.0);
 		int cols = (int) Math.ceil(plots.size() / (double) rows);
 		GridWindow window = new GridWindow("PDMP simulations", rows, cols);
@@ -67,11 +75,8 @@ public class NetworkSimulation {
 
 		NetworkSimulationStruct nss = loadRegulatedTranscriptionNetwork();
 
-		nss.rng = new MersenneTwister(100);
-		nss.rdg = new RandomDataGenerator(nss.rng);
-
-		int PDMPRuns = 1000;
-		int stochasticRuns = 100;
+		int PDMPRuns = 10;
+		int stochasticRuns = 10;
 		int numberOfTimePoints = 1001;
 
 		RealVector tVector = Utilities.computeTimeVector(numberOfTimePoints, nss.t0, nss.t1);
@@ -81,69 +86,94 @@ public class NetworkSimulation {
 		TrajectoryPlotData td;
 		TrajectoryPlotChartPanel plot;
 
-		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
-		dplot = plotTrajectoryDistribution(nss, tdd);
-		dplot.setTitle("Stochastic");
-		plots.add(dplot);
+//		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
+//		dplot = plotTrajectoryDistribution(nss, tdd);
+//		dplot.setTitle("Stochastic");
+//		plots.add(dplot);
 
-		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
-		dplot = plotTrajectoryDistribution(nss, tdd);
-		dplot.setTitle("PDMP");
-		plots.add(dplot);
+//		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
+//		dplot = plotTrajectoryDistribution(nss, tdd);
+//		dplot.setTitle("MSPDMP");
+//		plots.add(dplot);
 
-		td = simulateStochastic(nss);
+//		td = simulateStochastic(nss);
+//		plot = plotTrajectory(nss, td);
+//		plot.setTitle("Stochastic single trajectory");
+//		plots.add(plot);
+
+//		td = simulateMSPDMP(nss, tVector);
+//		plot = plotTrajectory(nss, td);
+//		plot.setTitle("MSPDMP single trajectory");
+//		plots.add(plot);
+
+		nss.deltaR = 0.5;
+		nss.deltaS = 0.5;
+		nss.alpha = MSHybridReactionNetwork.computeAlpha(nss.x0, nss.N);
+		nss.beta = MSHybridReactionNetwork.computeBeta(nss.net, nss.N);
+		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
+				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+		Utilities.printArray("reactionType", hrn.computeReactionTypes());
+		Utilities.printArray("speciesType", hrn.computeSpeciesTypes());
+		Utilities.printArray("alpha", nss.alpha);
+		Utilities.printArray("beta", nss.beta);
+		nss.gamma = -1;
+		nss.t1 = 1000.0;
+		tVector = Utilities.computeTimeVector(numberOfTimePoints, nss.t0, nss.t1);
+		int[] states1 = { 2, 4 };
+		double[] plotScales1 = {1, 1};
+
+		td = simulateStochastic(nss, tVector);
 		plot = plotTrajectory(nss, td);
 		plot.setTitle("Stochastic single trajectory");
 		plots.add(plot);
 
 		td = simulateMSPDMP(nss, tVector);
 		plot = plotTrajectory(nss, td);
-		plot.setTitle("PDMP single trajectory");
+		plot.setTitle("MSPDMP single trajectory");
 		plots.add(plot);
 
-		nss.gamma = 1;
-		nss.t1 = 1000.0;
-		tVector = Utilities.computeTimeVector(numberOfTimePoints, nss.t0, nss.t1);
-		int[] states1 = { 2, 4 };
-		double[] plotScales1 = {1, 10};
+		td = simulateAdaptiveMSPDMP(nss, tVector);
+		plot = plotTrajectory(nss, td);
+		plot.setTitle("AdaptiveMSPDMP single trajectory");
+		plots.add(plot);
 
-		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
-		tdd = tdd.getSubsetData(states1, plotScales1);
-		dplot = plotTrajectoryDistribution(nss, tdd);
-		dplot.setTitle("Stochatic, gamma=1");
-		plots.add(dplot);
+//		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
+////		tdd = tdd.getSubsetData(states1, plotScales1);
+//		dplot = plotTrajectoryDistribution(nss, tdd);
+//		dplot.setTitle("Stochatic, gamma=1");
+//		plots.add(dplot);
+//
+//		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
+////		tdd = tdd.getSubsetData(states1, plotScales1);
+//		dplot = plotTrajectoryDistribution(nss, tdd);
+//		dplot.setTitle("MSPDMP, gamma=1");
+//		plots.add(dplot);
 
-		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
-		tdd = tdd.getSubsetData(states1, plotScales1);
-		dplot = plotTrajectoryDistribution(nss, tdd);
-		dplot.setTitle("MSPDMP, gamma=1");
-		plots.add(dplot);
-
-		nss.gamma = 2;
-		nss.t1 = 10000.0;
-		tVector = Utilities.computeTimeVector(numberOfTimePoints, nss.t0, nss.t1);
-		double[] coefficients1 = { 1, 2, 0, 0, 0, 0 };
-		double[] coefficients2 = { 0, 0, 0, 0, 0, 1 };
-
-		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
-		TrajectoryDistributionPlotData newTdd = new TrajectoryDistributionPlotData(tdd.gettVector());
-		newTdd.addState("X1+2*X2", 1.0, tdd.getLinearCombinationOfxMeanVectors(coefficients1),
-				tdd.getLinearCombinationOfxStdDevVectors(coefficients1));
-		newTdd.addState("X6", 100.0, tdd.getLinearCombinationOfxMeanVectors(coefficients2),
-				tdd.getLinearCombinationOfxStdDevVectors(coefficients2));
-		dplot = plotTrajectoryDistribution(nss, newTdd);
-		dplot.setTitle("Stochatic, gamma=2");
-		plots.add(dplot);
-
-		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
-		newTdd = new TrajectoryDistributionPlotData(tdd.gettVector());
-		newTdd.addState("X1+2*X2", 1.0, tdd.getLinearCombinationOfxMeanVectors(coefficients1),
-				tdd.getLinearCombinationOfxStdDevVectors(coefficients1));
-		newTdd.addState("X6", 100.0, tdd.getLinearCombinationOfxMeanVectors(coefficients2),
-				tdd.getLinearCombinationOfxStdDevVectors(coefficients2));
-		dplot = plotTrajectoryDistribution(nss, newTdd);
-		dplot.setTitle("MSPDMP, gamma=2");
-		plots.add(dplot);
+//		nss.gamma = 2;
+//		nss.t1 = 10000.0;
+//		tVector = Utilities.computeTimeVector(numberOfTimePoints, nss.t0, nss.t1);
+//		double[] coefficients1 = { 1, 2, 0, 0, 0, 0 };
+//		double[] coefficients2 = { 0, 0, 0, 0, 0, 1 };
+//
+//		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
+//		TrajectoryDistributionPlotData newTdd = new TrajectoryDistributionPlotData(tdd.gettVector());
+//		newTdd.addState("X1+2*X2", 1.0, tdd.getLinearCombinationOfxMeanVectors(coefficients1),
+//				tdd.getLinearCombinationOfxStdDevVectors(coefficients1));
+//		newTdd.addState("X6", 100.0, tdd.getLinearCombinationOfxMeanVectors(coefficients2),
+//				tdd.getLinearCombinationOfxStdDevVectors(coefficients2));
+//		dplot = plotTrajectoryDistribution(nss, newTdd);
+//		dplot.setTitle("Stochatic, gamma=2");
+//		plots.add(dplot);
+//
+//		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
+//		newTdd = new TrajectoryDistributionPlotData(tdd.gettVector());
+//		newTdd.addState("X1+2*X2", 1.0, tdd.getLinearCombinationOfxMeanVectors(coefficients1),
+//				tdd.getLinearCombinationOfxStdDevVectors(coefficients1));
+//		newTdd.addState("X6", 100.0, tdd.getLinearCombinationOfxMeanVectors(coefficients2),
+//				tdd.getLinearCombinationOfxStdDevVectors(coefficients2));
+//		dplot = plotTrajectoryDistribution(nss, newTdd);
+//		dplot.setTitle("MSPDMP, gamma=2");
+//		plots.add(dplot);
 
 		return plots;
 	}
@@ -153,12 +183,21 @@ public class NetworkSimulation {
 
 		NetworkSimulationStruct nss = loadSimpleCrystallizationNetwork();
 
-		nss.rng = new MersenneTwister(100);
-		nss.rdg = new RandomDataGenerator(nss.rng);
-
-		int PDMPRuns = 1000;
-		int stochasticRuns = 100;
+		int PDMPRuns = 10;
+		int stochasticRuns = 10;
 		int numberOfTimePoints = 1001;
+
+		nss.deltaR = 0.5;
+		nss.deltaS = 0.5;
+		nss.alpha = MSHybridReactionNetwork.computeAlpha(nss.x0, nss.N);
+		nss.beta = MSHybridReactionNetwork.computeBeta(nss.net, nss.N);
+		Utilities.printArray("alpha", nss.alpha);
+		Utilities.printArray("beta", nss.beta);
+
+		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
+				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+		Utilities.printArray("reactionType", hrn.computeReactionTypes());
+		Utilities.printArray("speciesType", hrn.computeSpeciesTypes());
 
 		RealVector tVector = Utilities.computeTimeVector(numberOfTimePoints, nss.t0, nss.t1);
 
@@ -167,17 +206,17 @@ public class NetworkSimulation {
 		TrajectoryPlotData td;
 		TrajectoryPlotChartPanel plot;
 
-		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
-		dplot = plotTrajectoryDistribution(nss, tdd);
-		dplot.setTitle("Stochastic");
-		plots.add(dplot);
+//		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
+//		dplot = plotTrajectoryDistribution(nss, tdd);
+//		dplot.setTitle("Stochastic");
+//		plots.add(dplot);
+//
+//		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
+//		dplot = plotTrajectoryDistribution(nss, tdd);
+//		dplot.setTitle("MSPDMP");
+//		plots.add(dplot);
 
-		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
-		dplot = plotTrajectoryDistribution(nss, tdd);
-		dplot.setTitle("MSPDMP");
-		plots.add(dplot);
-
-		td = simulateStochastic(nss);
+		td = simulateStochastic(nss, tVector);
 		plot = plotTrajectory(nss, td);
 		plot.setTitle("Stochastic single trajectory");
 		plots.add(plot);
@@ -185,6 +224,16 @@ public class NetworkSimulation {
 		td = simulateMSPDMP(nss, tVector);
 		plot = plotTrajectory(nss, td);
 		plot.setTitle("MSPDMP single trajectory");
+		plots.add(plot);
+
+		int[] states2 = {0, 1, 2, 3, 5};
+		double[] plotScales2 = { 1, 1, 1, 1, 1000000 };
+
+		nss.N = 1e5;
+		td = simulateAdaptiveMSPDMP(nss, tVector);
+		td = td.getSubsetData(states2, plotScales2);
+		plot = plotTrajectory(nss, td);
+		plot.setTitle("AdaptiveMSPDMP single trajectory");
 		plots.add(plot);
 
 		return plots;
@@ -196,19 +245,17 @@ public class NetworkSimulation {
 		NetworkSimulationStruct nss = loadHaploinsufficiencyNetwork();
 
 		double[] rateParameters = {
-				2.0e-3,
-				2.0e-3,
+				2.0e-4,
+				2.0e-4,
 				1,
 				4.8e-4,
 		};
+//		nss.t1 = 1000000;
 		nss.net.setRateParameters(rateParameters);
 		double[] x0 = { 1, 0, 0 };
 		nss.x0 = x0;
-		double[] plotScales = { 1, 1, 10 / (rateParameters[2] / rateParameters[3]) };
+		double[] plotScales = { (rateParameters[2] / rateParameters[3]) / 5, (rateParameters[2] / rateParameters[3]) / 5, 1  };
 		nss.plotScales = plotScales;
-
-		nss.rng = new MersenneTwister();
-		nss.rdg = new RandomDataGenerator(nss.rng);
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -223,56 +270,78 @@ public class NetworkSimulation {
 
 		int[] states = {1, 2};
 
-		double epsilon = 1e-8;
+		Utilities.printArray("rates", nss.net.getRateParameters());
 		double[] beta = MSHybridReactionNetwork.computeBeta(nss.net, nss.N);
+		double[] alpha = MSHybridReactionNetwork.computeAlpha(nss.x0, nss.N);
+		beta[2] = 1;
+		beta[3] = 1;
+//		double[] alpha = { 0, 0, 1 };
+		Utilities.printArray("x0", x0);
+		Utilities.printArray("alpha", alpha);
 		Utilities.printArray("beta", beta);
-		double[] alpha = { 0, 0, 1 };
-		nss.gamma = 1;
+		Utilities.printArray("continuous species", nss.continuousSpecies);
+		nss.N = 1000;
+		nss.gamma = 0;
 		nss.alpha = alpha;
 		nss.beta = beta;
-		boolean[] balanceEquations = MSHybridReactionNetwork.checkBalanceEquations(nss.net, nss.alpha, nss.beta, epsilon);
-		double[] timeScaleConstraintValues = MSHybridReactionNetwork.computeTimeScaleConstraintValues(nss.net, nss.gamma, nss.alpha, nss.beta, epsilon);
-		boolean[] timeScaleConstraints = MSHybridReactionNetwork.checkTimeScaleConstraints(nss.net, nss.gamma, nss.alpha, nss.beta, epsilon);
-		boolean[] speciesBalanceConditions = MSHybridReactionNetwork.checkSpeciesBalanceConditions(nss.net, nss.gamma, nss.alpha, nss.beta, epsilon);
-		Utilities.printArray("balanceEquations", balanceEquations);
-		Utilities.printArray("timeScaleConstraintValues", timeScaleConstraintValues);
-		Utilities.printArray("timeScaleConstraints", timeScaleConstraints);
-		Utilities.printArray("speciesBalanceConditions", speciesBalanceConditions);
 
-		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
-		tdd = tdd.getSubsetData(states);
-		dplot = plotTrajectoryDistribution(nss, tdd);
-		dplot.setTitle("Stochastic");
-		plots.add(dplot);
+		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
+				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+		Utilities.printArray("speciesType", hrn.computeSpeciesTypes());
+		Utilities.printArray("reactionType", hrn.computeReactionTypes());
 
-		td = simulateStochastic(nss);
+//		boolean[] balanceEquations = MSHybridReactionNetwork.checkBalanceEquations(nss.net, nss.alpha, nss.beta, nss.deltaR);
+//		double[] timeScaleConstraintValues = MSHybridReactionNetwork.computeTimeScaleConstraintValues(nss.net, nss.gamma, nss.alpha, nss.beta, nss.deltaR);
+//		boolean[] timeScaleConstraints = MSHybridReactionNetwork.checkTimeScaleConstraints(nss.net, nss.gamma, nss.alpha, nss.beta, nss.deltaR);
+//		boolean[] speciesBalanceConditions = MSHybridReactionNetwork.checkSpeciesBalanceConditions(nss.net, nss.gamma, nss.alpha, nss.beta, nss.deltaR);
+//		Utilities.printArray("balanceEquations", balanceEquations);
+//		Utilities.printArray("timeScaleConstraintValues", timeScaleConstraintValues);
+//		Utilities.printArray("timeScaleConstraints", timeScaleConstraints);
+//		Utilities.printArray("speciesBalanceConditions", speciesBalanceConditions);
+
+//		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
+//		tdd = tdd.getSubsetData(states);
+//		dplot = plotTrajectoryDistribution(nss, tdd);
+//		dplot.setTitle("Stochastic");
+//		plots.add(dplot);
+
+		td = simulateStochastic(nss, tVector);
 		td = td.getSubsetData(states);
 		plot = plotTrajectory(nss, td);
 		plot.setTitle("Stochastic single trajectory");
 		plots.add(plot);
 
-		tdd = simulatePDMPDistribution(PDMPRuns, nss, tVector);
-		tdd = tdd.getSubsetData(states);
-		dplot = plotTrajectoryDistribution(nss, tdd);
-		dplot.setTitle("PDMP");
-		plots.add(dplot);
+//		tdd = simulatePDMPDistribution(PDMPRuns, nss, tVector);
+//		tdd = tdd.getSubsetData(states);
+//		dplot = plotTrajectoryDistribution(nss, tdd);
+//		dplot.setTitle("PDMP");
+//		plots.add(dplot);
 
-		td = simulatePDMP(nss, tVector);
-		td = td.getSubsetData(states);
+//		td = simulatePDMP(nss, tVector);
+//		td = td.getSubsetData(states);
+//		plot = plotTrajectory(nss, td);
+//		plot.setTitle("PDMP single trajectory");
+//		plots.add(plot);
+
+//		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
+//		tdd = tdd.getSubsetData(states);
+//		dplot = plotTrajectoryDistribution(nss, tdd);
+//		dplot.setTitle("MSPDMP");
+//		plots.add(dplot);
+
+//		td = simulateMSPDMP(nss, tVector);
+//		td = td.getSubsetData(states);
+//		plot = plotTrajectory(nss, td);
+//		plot.setTitle("MSPDMP single trajectory");
+//		plots.add(plot);
+
+		int[] states2 = {1, 2, 5};
+		double[] plotScales2 = { (rateParameters[2] / rateParameters[3]) / 5, 1, -(rateParameters[2] / rateParameters[3]) / 5 };
+
+		td = simulateAdaptiveMSPDMP(nss, tVector);
+		td = td.getSubsetData(states2, plotScales2);
 		plot = plotTrajectory(nss, td);
-		plot.setTitle("PDMP single trajectory");
-		plots.add(plot);
-
-		tdd = simulateMSPDMPDistribution(PDMPRuns, nss, tVector);
-		tdd = tdd.getSubsetData(states);
-		dplot = plotTrajectoryDistribution(nss, tdd);
-		dplot.setTitle("MSPDMP");
-		plots.add(dplot);
-
-		td = simulateMSPDMP(nss, tVector);
-		td = td.getSubsetData(states);
-		plot = plotTrajectory(nss, td);
-		plot.setTitle("MSPDMP single trajectory");
+		plot.setTitle("AdaptiveMSPDMP single trajectory");
 		plots.add(plot);
 
 		return plots;
@@ -281,11 +350,10 @@ public class NetworkSimulation {
 	public static TrajectoryPlotData simulatePDMP(NetworkSimulationStruct nss, RealVector tVector) {
 		HybridReactionNetwork hrn = new HybridReactionNetwork(nss.net, nss.continuousSpecies);
 		HybridReactionNetworkModel hrnModel = new HybridReactionNetworkModel(hrn);
-		PDMPModel pdmpModel = new PDMPModel(hrnModel, hrnModel);
+		PDMPModelAdapter pdmpModel = new PDMPModelAdapter(hrnModel);
 		double[] x0 = nss.x0;
 		PDMPModelSimulatorController ctrl = new PDMPModelSimulatorController(pdmpModel);
 		ctrl.setRandomGenerator(nss.rng);
-		ctrl.setRandomGenerator(new MersenneTwister(100));
 		System.out.println("PDMP: Evaluating trajectory at " + tVector.getDimension() + " time points");
 
 		final long startTime = System.currentTimeMillis();
@@ -293,19 +361,25 @@ public class NetworkSimulation {
 		final long endTime = System.currentTimeMillis();
 		System.out.println("Total execution time: " + (endTime - startTime));
 
-		RealMatrix xMatrix = new Array2DRowRealMatrix(xSeries).transpose();
+		RealMatrix xMatrix = new Array2DRowRealMatrix(xSeries);
 		return new TrajectoryPlotData(nss.speciesNames, nss.plotScales, tVector, xMatrix);
 	}
 
 	public static TrajectoryPlotData simulateMSPDMP(NetworkSimulationStruct nss, RealVector tVector) {
-		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
+				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
 		MSHybridReactionNetworkModel hrnModel = new MSHybridReactionNetworkModel(hrn);
-		PDMPModel pdmpModel = new PDMPModel(hrnModel, hrnModel);
+		PDMPModelAdapter pdmpModel = new PDMPModelAdapter(hrnModel);
 		double[] x0 = nss.x0;
 		double[] z0 = hrn.scaleState(x0);
 		PDMPModelSimulatorController ctrl = new PDMPModelSimulatorController(pdmpModel);
+		DefaultIntegratorFactory iF = new DefaultIntegratorFactory();
+		iF.setMinStep(hrn.getTimeScaleFactor() * iF.getMinStep());
+		iF.setMaxStep(hrn.getTimeScaleFactor() * iF.getMaxStep());
+		iF.setScalAbsoluteTolerance(hrn.getTimeScaleFactor() * iF.getScalAbsoluteTolerance());
+		iF.setScalRelativeTolerance(hrn.getTimeScaleFactor() * iF.getScalRelativeTolerance());
+		ctrl.setIntegratorFactory(iF);
 		ctrl.setRandomGenerator(nss.rng);
-		ctrl.setRandomGenerator(new MersenneTwister(100));
 		System.out.println("MSPDMP: Evaluating trajectory at " + tVector.getDimension() + " time points");
 		RealVector tauVector = tVector.mapMultiply(hrn.getTimeScaleFactor());
 
@@ -315,21 +389,64 @@ public class NetworkSimulation {
 		System.out.println("Total execution time: " + (endTime - startTime));
 
 		RealMatrix zMatrix = new Array2DRowRealMatrix(zSeries);
-		RealMatrix xMatrix = new Array2DRowRealMatrix(zMatrix.getColumnDimension(), zMatrix.getRowDimension());
-		for (int s = 0; s < zMatrix.getColumnDimension(); s++) {
-			RealVector v = zMatrix.getColumnVector(s);
+		RealMatrix xMatrix = new Array2DRowRealMatrix(zMatrix.getRowDimension(), zMatrix.getColumnDimension());
+		for (int s = 0; s < zMatrix.getRowDimension(); s++) {
+			RealVector v = zMatrix.getRowVector(s);
 			v.mapMultiplyToSelf(hrn.recoverState(s, 1));
 			xMatrix.setRowVector(s, v);
 		}
 		return new TrajectoryPlotData(nss.speciesNames, nss.plotScales, tVector, xMatrix);
 	}
 
-	public static TrajectoryPlotData simulateStochastic(NetworkSimulationStruct nss) {
+	public static TrajectoryPlotData simulateAdaptiveMSPDMP(NetworkSimulationStruct nss, RealVector tVector) {
+		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
+				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+		MSHybridReactionNetworkModel hrnModel = new MSHybridReactionNetworkModel(hrn);
+		PDMPModelAdapter pdmpModel = new AdaptiveMSHRNModel(hrnModel);
+		double[] x0 = nss.x0;
+		double[] z0 = hrn.scaleState(x0);
+		PDMPModelSimulatorController ctrl = new PDMPModelSimulatorController(pdmpModel);
+		DefaultIntegratorFactory iF = new DefaultIntegratorFactory();
+		iF.setMinStep(hrn.getTimeScaleFactor() * iF.getMinStep());
+		iF.setMaxStep(hrn.getTimeScaleFactor() * iF.getMaxStep());
+		iF.setScalAbsoluteTolerance(hrn.getTimeScaleFactor() * iF.getScalAbsoluteTolerance());
+		iF.setScalRelativeTolerance(hrn.getTimeScaleFactor() * iF.getScalRelativeTolerance());
+		ctrl.setIntegratorFactory(iF);
+		ctrl.setRandomGenerator(nss.rng);
+		System.out.println("AdaptiveMSPDMP: Evaluating trajectory at " + tVector.getDimension() + " time points");
+		RealVector tauVector = tVector.mapMultiply(hrn.getTimeScaleFactor());
+		double tau0 = tauVector.getEntry(0);
+		double tau1 = tauVector.getEntry(tauVector.getDimension() - 1);
+
+		AdaptiveMSHRNFixedModelTrajectory mt = new AdaptiveMSHRNFixedModelTrajectory(hrnModel, tauVector.toArray());
+		final long startTime = System.currentTimeMillis();
+		ctrl.simulateTrajectory(mt, tau0, z0, tau1);
+		double[][] xSeries = mt.getxSeries();
+		final long endTime = System.currentTimeMillis();
+		System.out.println("Total execution time: " + (endTime - startTime));
+
+//		RealMatrix zMatrix = new Array2DRowRealMatrix(zSeries);
+//		RealMatrix xMatrix = new Array2DRowRealMatrix(zMatrix.getRowDimension(), zMatrix.getColumnDimension());
+//		for (int s = 0; s < zMatrix.getRowDimension(); s++) {
+//			RealVector v = zMatrix.getRowVector(s);
+//			v.mapMultiplyToSelf(hrn.recoverState(s, 1));
+//			xMatrix.setRowVector(s, v);
+//		}
+		RealMatrix xMatrix = new Array2DRowRealMatrix(xSeries);
+		String[] speciesNames = new String[2 * nss.speciesNames.length];
+		for (int s=0; s < nss.speciesNames.length; s++) {
+			speciesNames[s] = nss.speciesNames[s];
+			speciesNames[s + nss.speciesNames.length] = "alpha"+nss.speciesNames[s];
+		}
+		return new TrajectoryPlotData(speciesNames, null, tVector, xMatrix);
+//		return new TrajectoryPlotData(nss.speciesNames, null, tVector, xMatrix);
+	}
+
+	public static TrajectoryPlotData simulateStochastic(NetworkSimulationStruct nss, RealVector tVector) {
 		StochasticModel model = new StochasticModel(nss.net);
 		double[] x0 = nss.x0;
-		StochasticModelSimulatorController ctrl = new StochasticModelSimulatorController(model, 1);
+		StochasticModelSimulatorController ctrl = new StochasticModelSimulatorController(model);
 		ctrl.setRandomGenerator(nss.rng);
-		ctrl.setRandomGenerator(new MersenneTwister(100));
 		System.out.println("Stochastic: Evaluating trajectory");
 
 		final long startTime = System.currentTimeMillis();
@@ -338,26 +455,40 @@ public class NetworkSimulation {
 		final long endTime = System.currentTimeMillis();
 		System.out.println("Total execution time: " + (endTime - startTime));
 
-		double[] tSeries = new double[mt.getNumberOfReactions()];
-		double[][] xSeries = new double[mt.getNumberOfReactions()][mt.getRecordOfReaction(0).getNewX().length];
-		for (int i = 0; i < mt.getNumberOfReactions(); i++) {
-			ReactionRecord rr = mt.getRecordOfReaction(i);
-			tSeries[i] = rr.getTime();
-			xSeries[i] = rr.getNewX();
+		RealMatrix xMatrix;
+		boolean isDiscrete;
+		if (tVector == null || (mt.getNumberOfReactionEvents() < tVector.getDimension())) {
+			System.out.println("DISCRETE PLOT!");
+			tVector = new ArrayRealVector(mt.getNumberOfReactionEvents());
+			xMatrix = new Array2DRowRealMatrix(x0.length, mt.getNumberOfReactionEvents());
+			Iterator<ReactionEvent> it = mt.iterator();
+			int i = 0;
+			while (it.hasNext()) {
+				ReactionEvent re = it.next();
+				tVector.setEntry(i, re.getTime());
+				xMatrix.setColumnVector(i, re.getNewXVector());
+				i++;
+			}
+			isDiscrete = true;
+		} else {
+			xMatrix = new Array2DRowRealMatrix(x0.length, tVector.getDimension());
+			for (int i=0; i < tVector.getDimension(); i++) {
+				xMatrix.setColumnVector(i, mt.getInterpolatedStateVector(tVector.getEntry(i)));
+			}
+			isDiscrete = false;
 		}
-
-		RealVector tVector = new ArrayRealVector(tSeries);
-		RealMatrix xMatrix = new Array2DRowRealMatrix(xSeries).transpose();
-		return new TrajectoryPlotData(nss.speciesNames, nss.plotScales, tVector, xMatrix);
+		TrajectoryPlotData td = new TrajectoryPlotData(nss.speciesNames, nss.plotScales, tVector, xMatrix);
+		td.setDiscrete(isDiscrete);
+		return td;
 	}
 
 	public static TrajectoryDistributionPlotData simulatePDMPDistribution(int runs, NetworkSimulationStruct nss,
 			RealVector tVector) {
 		HybridReactionNetwork hrn = new HybridReactionNetwork(nss.net, nss.continuousSpecies);
 		HybridReactionNetworkModel hrnModel = new HybridReactionNetworkModel(hrn);
-		PDMPModel pdmpModel = new PDMPModel(hrnModel, hrnModel);
+		PDMPModelAdapter pdmpModel = new PDMPModelAdapter(hrnModel, hrnModel);
 		double[] x0 = nss.x0;
-		PDMPModelSimulatorController ctrl = new PDMPModelSimulatorController(pdmpModel, 1);
+		PDMPModelSimulatorController ctrl = new PDMPModelSimulatorController(pdmpModel);
 		ctrl.setRandomGenerator(nss.rng);
 		System.out.println("PDMP: Evaluating " + runs + " trajectories at " + tVector.getDimension() + " time points");
 
@@ -390,12 +521,13 @@ public class NetworkSimulation {
 
 	public static TrajectoryDistributionPlotData simulateMSPDMPDistribution(int runs, NetworkSimulationStruct nss,
 			RealVector tVector) {
-		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
+				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
 		MSHybridReactionNetworkModel hrnModel = new MSHybridReactionNetworkModel(hrn);
-		PDMPModel pdmpModel = new PDMPModel(hrnModel, hrnModel);
+		PDMPModelAdapter pdmpModel = new PDMPModelAdapter(hrnModel, hrnModel);
 		double[] x0 = nss.x0;
 		double[] z0 = hrn.scaleState(x0);
-		PDMPModelSimulatorController ctrl = new PDMPModelSimulatorController(pdmpModel, 1);
+		PDMPModelSimulatorController ctrl = new PDMPModelSimulatorController(pdmpModel);
 		ctrl.setRandomGenerator(nss.rng);
 		System.out.println("MSPDMP: Evaluating " + runs + " trajectories at " + tVector.getDimension() + " time points");
 		RealVector tauVector = tVector.mapMultiply(hrn.getTimeScaleFactor());
@@ -433,7 +565,7 @@ public class NetworkSimulation {
 			RealVector tVector) {
 		StochasticModel model = new StochasticModel(nss.net);
 		double[] x0 = nss.x0;
-		StochasticModelSimulatorController ctrl = new StochasticModelSimulatorController(model, 1);
+		StochasticModelSimulatorController ctrl = new StochasticModelSimulatorController(model);
 		ctrl.setRandomGenerator(nss.rng);
 		System.out.println("Stochastic: Evaluating " + runs + " trajectories at " + tVector.getDimension() + " time points");
 		try {
@@ -465,15 +597,15 @@ public class NetworkSimulation {
 	}
 
 	public static TrajectoryPlotChartPanel plotTrajectory(NetworkSimulationStruct nss, TrajectoryPlotData td) {
-		TrajectoryPlotChartPanel panel = new TrajectoryPlotChartPanel(true);
+		TrajectoryPlotChartPanel panel = new TrajectoryPlotChartPanel();
 		panel.addSpecies(td);
 		return panel;
 	}
 
 	public static TrajectoryPlotChartPanel plotTrajectory(NetworkSimulationStruct nss, RealVector tVector, RealMatrix xMatrix,
-			double[] plotScales) {
+			double[] plotScales, boolean isDiscrete) {
 		TrajectoryPlotChartPanel panel = new TrajectoryPlotChartPanel();
-		panel.addSpecies(nss.speciesNames, tVector, xMatrix, plotScales);
+		panel.addSpecies(nss.speciesNames, tVector, xMatrix, plotScales, isDiscrete);
 		return panel;
 	}
 
@@ -494,6 +626,8 @@ public class NetworkSimulation {
 	public static NetworkSimulationStruct loadSimpleCrystallizationNetwork() {
 		int[] continuousSpecies = { };
 		double N = 1e6;
+		double deltaR = 0.5;
+		double deltaS = 0.5;
 		double gamma = 0;
 		double[] alpha = { 1, 1, 0, 0 };
 		double[] beta = { -1, -1 };
@@ -518,6 +652,8 @@ public class NetworkSimulation {
 		nss.net = net;
 		nss.continuousSpecies = continuousSpecies;
 		nss.N = N;
+		nss.deltaR = deltaR;
+		nss.deltaS = deltaS;
 		nss.gamma = gamma;
 		nss.alpha = alpha;
 		nss.beta = beta;
@@ -526,12 +662,17 @@ public class NetworkSimulation {
 		nss.x0 = x0;
 		nss.plotScales = plotScales;
 		nss.speciesNames = speciesNames;
+		nss.rng = new MersenneTwister();
+		nss.rdg = new RandomDataGenerator(nss.rng);
+
 		return nss;
 	}
 
 	public static NetworkSimulationStruct loadRegulatedTranscriptionNetwork() {
 		int[] continuousSpecies = { };
 		double N = 100;
+		double deltaR = 0.5;
+		double deltaS = 0.5;
 		double gamma = 0;
 		double[] alpha = { 1, 1, 0, 0, 0, 0 };
 		double[] beta = { -1, -2, -1, -1, -1, 0, -3, -2, -1, 0 };
@@ -584,6 +725,8 @@ public class NetworkSimulation {
 		nss.net = net;
 		nss.continuousSpecies = continuousSpecies;
 		nss.N = N;
+		nss.deltaR = deltaR;
+		nss.deltaS = deltaS;
 		nss.gamma = gamma;
 		nss.alpha = alpha;
 		nss.beta = beta;
@@ -592,12 +735,17 @@ public class NetworkSimulation {
 		nss.x0 = x0;
 		nss.plotScales = plotScales;
 		nss.speciesNames = speciesNames;
+		nss.rng = new MersenneTwister();
+		nss.rdg = new RandomDataGenerator(nss.rng);
+
 		return nss;
 	}
 
 	public static NetworkSimulationStruct loadHaploinsufficiencyNetwork() {
 		int[] continuousSpecies = { 2 };
 		double N = 100;
+		double deltaR = 0.5;
+		double deltaS = 0.5;
 		double gamma = 0;
 		double[] alpha = { 0, 0, 1 };
 		double[] beta = { 0, 0, 1, 0 };
@@ -632,6 +780,8 @@ public class NetworkSimulation {
 		nss.net = net;
 		nss.continuousSpecies = continuousSpecies;
 		nss.N = N;
+		nss.deltaR = deltaR;
+		nss.deltaS = deltaS;
 		nss.gamma = gamma;
 		nss.alpha = alpha;
 		nss.beta = beta;
@@ -640,6 +790,9 @@ public class NetworkSimulation {
 		nss.x0 = x0;
 		nss.plotScales = plotScales;
 		nss.speciesNames = speciesNames;
+		nss.rng = new MersenneTwister();
+		nss.rdg = new RandomDataGenerator(nss.rng);
+
 		return nss;
 	}
 

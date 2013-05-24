@@ -2,13 +2,11 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import java.util.ArrayList;
 
-import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
-
 import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwork;
 
 // TODO: Group computation of choices for each reaction
 
-public class HybridReactionNetworkModel implements FirstOrderDifferentialEquations, ReactionNetworkModel {
+public class HybridReactionNetworkModel implements HybridModel {
 
 	protected int dimension;
 
@@ -179,6 +177,16 @@ public class HybridReactionNetworkModel implements FirstOrderDifferentialEquatio
 	@Override
 	public int getNumberOfSpecies() {
 		return getDimension();
+	}
+
+	@Override
+	public boolean hasDeterministicPart() {
+		return deterministicRateParameters.length > 0;
+	}
+
+	@Override
+	public boolean isTimeIndependent() {
+		return true;
 	}
 
 }

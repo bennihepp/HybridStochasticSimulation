@@ -3,11 +3,14 @@ package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.FirstOrderIntegrator;
+import org.apache.commons.math3.ode.events.EventHandler;
 import org.apache.commons.math3.ode.nonstiff.DormandPrince853Integrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
+import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 
 
 public class PDMPModelSimulator extends StochasticModelSimulator{
@@ -34,14 +37,13 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 	public PDMPModelSimulator(FirstOrderIntegrator integrator, RandomDataGenerator rng) {
 		super(rng);
 		ehMaxCheckInterval = Double.POSITIVE_INFINITY;
-		ehConvergence = Double.valueOf(1e-8);
+		ehConvergence = Double.valueOf(1e-10);
 		ehConvergenceFactor = null;
 		ehMaxIterationCount = 1000;
 		if (integrator == null)
 			integrator = new DormandPrince853Integrator(1.0e-8, 100.0, 1.0e-10, 1.0e-10);
-		if (rng == null)
-			rng = new RandomDataGenerator();
-		this.integrator = integrator;
+		else
+			this.integrator = integrator;
 		stepHandlers = new ArrayList<PDMPStepHandler>();
 	}
 
@@ -64,33 +66,72 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 	}
 
 	public double simulate(PDMPModel model, double t0, double[] x0, double t1, double[] x1) {
+    	FirstOrderDifferentialEquations ode = model.getFirstOrderDifferentialEquations();
+    	ReactionNetworkModel rnm = model.getReactionNetworkModel();
+    	EventHandler pdmpEventHandler = model.getPDMPEventHandler();
 		double[] x = new double[x0.length + 2];
 		for (int i=0; i < x0.length; i++)
 			x[i] = x0[i];
+		double[] xDot = x.clone();
 		double t = t0;
-		double[] propVec = new double[model.getPropensityDimension()];
+		double[] propVec = new double[rnm.getPropensityDimension()];
 		for (PDMPStepHandler handler : stepHandlers) {
 			handler.reset();
+			handler.init(t0, x, t1);
 			integrator.addStepHandler(handler);
 		}
 		double conv = (ehConvergence != null) ? ehConvergence : ehConvergenceFactor * (t1 - t0);
-		integrator.addEventHandler(model, ehMaxCheckInterval, conv, ehMaxIterationCount);
-    	for (ReactionHandler handler : reactionHandlers)
+		integrator.addEventHandler(pdmpEventHandler, ehMaxCheckInterval, conv, ehMaxIterationCount);
+    	for (ReactionEventHandler handler : reactionHandlers)
     		handler.setInitialState(t0, x0);
+    	for (EventHandler eh : model.getOptionalEventHandlers())
+    		integrator.addEventHandler(eh, ehMaxCheckInterval, conv, ehMaxIterationCount);
 		while (t < t1) {
-			// Evolve ODE until next stochastic reaction fires
-	        x[x.length - 1] = -Math.log(rng.nextUniform(0.0,  1.0));
-	        x[x.length - 2] = 0.0;
-	        t = integrator.integrate(model, t, x, t1, x);
+			boolean hasDeterministicPart = model.hasDeterministicPart();
+			if (hasDeterministicPart && model.isTimeIndependent()) {
+				ode.computeDerivatives(t, x, xDot);
+				boolean allZero = true;
+				for (int s=0; s < x0.length; s++)
+					if (xDot[s] != 0.0) {
+						allZero = false;
+						break;
+					}
+					if (allZero)
+						hasDeterministicPart = false;
+			}
+			double propSum = 0.0;
+			boolean propensitiesComputed = false;
+			if (hasDeterministicPart) {
+				// Evolve ODE until next stochastic reaction fires
+		        x[x.length - 2] = 0.0;
+		        x[x.length - 1] = -Math.log(rng.nextUniform(0.0,  1.0));
+		        do {
+		        	model.handleOptionalEvent(t, x);
+		        	t = integrator.integrate(ode, t, x, t1, x);
+		        } while (model.getOptionalEventFlag());
+			} else {
+		        rnm.computePropensities(t, x, propVec);
+		        for (int i=0; i < propVec.length; i++)
+		        	propSum += propVec[i];
+		        propensitiesComputed = true;
+		        // Find next reaction time point
+		        if (propSum == 0)
+		        	break;
+		        // -Math.log(rng.nextUniform(0.0,  1.0))
+		        double tau = rng.nextExponential(1 / propSum);
+		        t = t + tau;
+			}
+
 	        // Stop if we reached the end-timepoint
 	        if (t >= t1)
 	        	break;
 
-	        // Determine which reaction fired and update state
-	        model.computePropensities(t, x, propVec);
-	        double propSum = 0.0;
-	        for (int i=0; i < propVec.length; i++)
-	        	propSum += propVec[i];
+	        if (!propensitiesComputed) {
+		        // Determine which reaction fired and update state
+		        rnm.computePropensities(t, x, propVec);
+		        for (int i=0; i < propVec.length; i++)
+		        	propSum += propVec[i];
+	        }
 	        double u = rng.nextUniform(0.0, 1.0);
 	        double w = 0.0;
 	        int reaction = -1;
@@ -98,19 +139,19 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 	        	w = w + propVec[l] / propSum;
 	        	if (u < w) {
 	        		reaction = l;
-	        		model.updateState(reaction, t, x);
+	        		rnm.updateState(reaction, t, x);
 	        		break;
 	        	}
 	        }
 	        if (reaction >= 0)
-	        	for (ReactionHandler handler : reactionHandlers)
-	        		handler.handleReaction(reaction, t, x);
+	        	for (ReactionEventHandler handler : reactionHandlers)
+	        		handler.handleReactionEvent(reaction, t, x);
 		}
 		integrator.clearEventHandlers();
 		integrator.clearStepHandlers();
 		for (int i=0; i < x1.length; i++)
 			x1[i] = x[i];
-    	for (ReactionHandler handler : reactionHandlers)
+    	for (ReactionEventHandler handler : reactionHandlers)
     		handler.setFinalState(t1, x1);
 		return t;
 	}

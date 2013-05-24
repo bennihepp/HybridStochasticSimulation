@@ -15,11 +15,11 @@ import java.util.List;
  */
 public class ReactionNetwork {
 
-	protected int numOfSpecies;
-	protected int numOfReactions;
-	protected int[][] productionStochiometry;
-	protected int[][] consumptionStochiometry;
-	protected int[][] stochiometry;
+	private int numOfSpecies;
+	private int numOfReactions;
+	private int[][] productionStochiometry;
+	private int[][] consumptionStochiometry;
+	private int[][] stochiometry;
 	private double[] rateParameters;
 
 	public ReactionNetwork(int numOfSpecies, int numOfReactions) {
@@ -73,7 +73,7 @@ public class ReactionNetwork {
 	public int getConsumptionStochiometry(int species, int reaction) {
 		checkElementIndex(species, getNumberOfSpecies());
 		checkElementIndex(reaction, getNumberOfReactions());
-		return productionStochiometry[reaction][species];
+		return consumptionStochiometry[reaction][species];
 	}
 
 	public int getStochiometry(int species, int reaction) {

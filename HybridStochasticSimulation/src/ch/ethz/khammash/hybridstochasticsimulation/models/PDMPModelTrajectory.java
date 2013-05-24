@@ -1,11 +1,14 @@
-package ch.ethz.khammash.hybridstochasticsimulation.simulators;
+package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.apache.commons.math3.ode.ContinuousOutputModel;
 import org.apache.commons.math3.ode.sampling.StepInterpolator;
 
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPStepHandler;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.ReactionEventHandler;
 
-public class PDMPModelTrajectory extends StochasticModelTrajectory implements ModelTrajectory, PDMPStepHandler, ReactionHandler {
+public class PDMPModelTrajectory extends StochasticModelTrajectory implements
+		ModelTrajectory, PDMPStepHandler, ReactionEventHandler {
 
 	ContinuousOutputModel com;
 	protected boolean initialized;
@@ -13,6 +16,18 @@ public class PDMPModelTrajectory extends StochasticModelTrajectory implements Mo
 	public PDMPModelTrajectory() {
 		com = new ContinuousOutputModel();
 		initialized = false;
+	}
+
+	public void setInterpolatedTime(double t) {
+		com.setInterpolatedTime(t);
+	}
+
+	public double[] getInterpolatedState() {
+		double[] x = com.getInterpolatedState();
+		double[] reducedX = new double[x.length - 2];
+		for (int i = 0; i < reducedX.length; i++)
+			reducedX[i] = x[i];
+		return reducedX;
 	}
 
 	public void reset() {
@@ -35,18 +50,6 @@ public class PDMPModelTrajectory extends StochasticModelTrajectory implements Mo
 	@Override
 	public double getFinalTime() {
 		return com.getFinalTime();
-	}
-
-	public void setInterpolatedTime(double t) {
-		com.setInterpolatedTime(t);
-	}
-
-	public double[] getInterpolatedState() {
-		double[] x = com.getInterpolatedState();
-		double[] reducedX = new double[x.length - 2];
-		for (int i = 0; i < reducedX.length; i++)
-			reducedX[i] = x[i];
-		return reducedX;
 	}
 
 	@Override

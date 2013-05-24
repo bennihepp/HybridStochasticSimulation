@@ -5,12 +5,12 @@ import java.lang.reflect.Array;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.MSHybridReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
+import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModelAdapter;
+import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModelTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPModelSimulator;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPModelTrajectory;
 
 
 public class MatlabInterface {
@@ -21,8 +21,8 @@ public class MatlabInterface {
 	}
 
 	public MSHybridReactionNetwork createHybridReactionNetwork(
-			ReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
-		return new MSHybridReactionNetwork(net, N, gamma, alpha, beta);
+			ReactionNetwork net, double N, double deltaR, double deltaS, double gamma, double[] alpha, double[] beta) {
+		return new MSHybridReactionNetwork(net, N, deltaR, deltaS, gamma, alpha, beta);
 	}
 
 	public MSHybridReactionNetworkModel createHybridReactionNetworkModel(
@@ -30,9 +30,9 @@ public class MatlabInterface {
 		return new MSHybridReactionNetworkModel(net);
 	}
 
-	public PDMPModel createPDMPModel(FirstOrderDifferentialEquations baseODE,
+	public PDMPModelAdapter createPDMPModel(FirstOrderDifferentialEquations baseODE,
 			ReactionNetworkModel reactionModel) {
-		return new PDMPModel(baseODE, reactionModel);
+		return new PDMPModelAdapter(baseODE, reactionModel);
 	}
 
 	public PDMPModelSimulator createPDMPModelSimulator() {

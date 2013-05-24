@@ -102,4 +102,14 @@ public class TrajectoryDistributionPlotData extends TrajectoryDistributionData i
 		return tdd;
 	}
 
+	@Override
+	public boolean isContinuous() {
+		return true;
+	}
+
+	@Override
+	public boolean isDiscrete() {
+		return false;
+	}
+
 }

@@ -86,4 +86,16 @@ public class DefaultPlotData implements PlotData {
 		return names.size();
 	}
 
+	@Override
+	public boolean isContinuous() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isDiscrete() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }

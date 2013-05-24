@@ -1,4 +1,6 @@
-package ch.ethz.khammash.hybridstochasticsimulation.simulators;
+package ch.ethz.khammash.hybridstochasticsimulation.models;
+
+import org.apache.commons.math3.linear.RealVector;
 
 public interface ModelTrajectory {
 
@@ -13,5 +15,7 @@ public interface ModelTrajectory {
 	};
 
 	public double[] getInterpolatedState(double t);
+
+	public RealVector getInterpolatedStateVector(double t);
 
 }

@@ -16,6 +16,7 @@ import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticModel;
+import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticModelTrajectory;
 
 /**
  * Created by

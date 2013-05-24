@@ -10,25 +10,39 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.TrajectoryData;
 public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 
 	private DefaultPlotData plotData;
+	private boolean isDiscrete;
 
 	public TrajectoryPlotData(RealVector tVector) {
 		super(tVector);
-		plotData = new DefaultPlotData(0);
+		init();
 	}
 
 	public TrajectoryPlotData(RealVector tVector, RealMatrix xMatrix) {
 		super(tVector, xMatrix);
-		plotData = new DefaultPlotData(getNumberOfStates());
+		init();
 	}
 
 	public TrajectoryPlotData(String[] names, double[] plotScales, RealVector tVector, RealMatrix xMatrix) {
 		super(tVector, xMatrix);
-		checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
-		checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
+		init(names, plotScales);
+	}
+
+	private void init() {
+		init(null, null);
+	}
+
+	private void init(String[] names, double[] plotScales) {
 		plotData = new DefaultPlotData(getNumberOfStates());
+		isDiscrete = false;
+		if (names != null)
+			checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
+		if (plotScales != null)
+			checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
 		for (int s=0; s < getNumberOfStates(); s++) {
-			plotData.setName(s, names[s]);
-			plotData.setPlotScale(s, Double.valueOf(plotScales[s]));
+			if (names != null)
+				plotData.setName(s, names[s]);
+			if (plotScales != null)
+				plotData.setPlotScale(s, Double.valueOf(plotScales[s]));
 		}
 	}
 
@@ -91,6 +105,7 @@ public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 		if (plotScales != null)
 			checkArgument(states.length == plotScales.length, "Expected states.length == plotScales.length");
 		TrajectoryPlotData tdd = new TrajectoryPlotData(gettVector());
+		tdd.setDiscrete(isDiscrete());
 		for (int i=0; i < states.length; i++) {
 			int s = states[i];
 			checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
@@ -98,6 +113,28 @@ public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 			tdd.addState(getName(s), plotScale, getxVector(s));
 		}
 		return tdd;
+	}
+
+	public void setContinuous() {
+		isDiscrete = false;
+	}
+
+	public void setDiscrete() {
+		isDiscrete = true;
+	}
+
+	public void setDiscrete(boolean isDiscrete) {
+		this.isDiscrete = isDiscrete;
+	}
+
+	@Override
+	public boolean isContinuous() {
+		return !isDiscrete;
+	}
+
+	@Override
+	public boolean isDiscrete() {
+		return isDiscrete;
 	}
 
 }

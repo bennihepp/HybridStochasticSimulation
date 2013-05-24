@@ -13,7 +13,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticModel;
 public class StochasticModelSimulator {
 
 	protected RandomDataGenerator rng;
-	protected Collection<ReactionHandler> reactionHandlers;
+	protected Collection<ReactionEventHandler> reactionHandlers;
 
 	public StochasticModelSimulator() {
 		this(null);
@@ -23,7 +23,7 @@ public class StochasticModelSimulator {
 		if (rng == null)
 			rng = new RandomDataGenerator();
 		this.rng = rng;
-		reactionHandlers = new ArrayList<ReactionHandler>();
+		reactionHandlers = new ArrayList<ReactionEventHandler>();
 	}
 
 	public double simulate(StochasticModel model, double t0, double[] x0, double t1, double[] x1) {
@@ -34,7 +34,7 @@ public class StochasticModelSimulator {
 			x[i] = x0[i];
 		double t = t0;
 		double[] propVec = new double[model.getPropensityDimension()];
-    	for (ReactionHandler handler : reactionHandlers)
+    	for (ReactionEventHandler handler : reactionHandlers)
     		handler.setInitialState(t0, x0);
 		while (true) {
 	        model.computePropensities(t, x, propVec);
@@ -62,25 +62,25 @@ public class StochasticModelSimulator {
 	        	}
 	        }
 	        if (reaction >= 0)
-	        	for (ReactionHandler handler : reactionHandlers)
-	        		handler.handleReaction(reaction, t, x);
+	        	for (ReactionEventHandler handler : reactionHandlers)
+	        		handler.handleReactionEvent(reaction, t, x);
 		}
 		for (int i=0; i < x1.length; i++)
 			x1[i] = x[i];
-    	for (ReactionHandler handler : reactionHandlers)
+    	for (ReactionEventHandler handler : reactionHandlers)
     		handler.setFinalState(t1, x1);
 		return t;
 	}
 
-	public void addReactionHandler(ReactionHandler handler) {
+	public void addReactionHandler(ReactionEventHandler handler) {
 		if (reactionHandlers.contains(handler) == false)
 			reactionHandlers.add(handler);
 	}
-	public void removeReactionHandler(ReactionHandler handler) {
+	public void removeReactionHandler(ReactionEventHandler handler) {
 		if (reactionHandlers.contains(handler))
 			reactionHandlers.remove(handler);
 	}
-	public Collection<ReactionHandler> getReactionHandlers() {
+	public Collection<ReactionEventHandler> getReactionHandlers() {
 		return reactionHandlers;
 	}
 	public void clearReactionHandlers() {

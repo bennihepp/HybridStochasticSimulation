@@ -24,12 +24,15 @@ public class TrajectoryDistributionPlotData extends TrajectoryDistributionData i
 	public TrajectoryDistributionPlotData(String[] names, double[] plotScales, RealVector tVector, RealMatrix xMeanMatrix,
 			RealMatrix xStdDevMatrix) {
 		super(tVector, xMeanMatrix, xStdDevMatrix);
-		checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
-		checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
+//		checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
+//		if (plotScales != null)
+//			checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
 		plotData = new DefaultPlotData(getNumberOfStates());
 		for (int s=0; s < getNumberOfStates(); s++) {
-			plotData.setName(s, names[s]);
-			plotData.setPlotScale(s, Double.valueOf(plotScales[s]));
+			if (names != null)
+				plotData.setName(s, names[s]);
+			if (plotScales != null)
+				plotData.setPlotScale(s, Double.valueOf(plotScales[s]));
 		}
 	}
 

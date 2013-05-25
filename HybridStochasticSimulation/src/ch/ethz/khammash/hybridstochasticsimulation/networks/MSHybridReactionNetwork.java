@@ -375,7 +375,7 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 	}
 
 	public static ReactionType computeReactionType(ReactionNetwork net,
-			double[] alpha, double[] beta, double gamma, double deltaR, int r) {
+			double[] alpha, double[] beta, double gamma, double deltaR, double deltaS, int r) {
 		double rho = gamma + beta[r];
 		for (int s = 0; s < alpha.length; s++)
 			if (net.getConsumptionStochiometry(s, r) > 0)
@@ -383,8 +383,18 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 		ReactionType rt;
 		if (rho > deltaR)
 			rt = ReactionType.DETERMINISTIC;
-		else
-			rt = ReactionType.STOCHASTIC;
+		else {
+			boolean anyInvolvedSpeciesDiscrete = false;
+			for (int s = 0; s < alpha.length; s++)
+				if (net.getStochiometry(s, r) != 0 && alpha[s] <= deltaS) {
+					anyInvolvedSpeciesDiscrete = true;
+					break;
+				}
+			if (anyInvolvedSpeciesDiscrete)
+				rt = ReactionType.STOCHASTIC;
+			else
+				rt = ReactionType.DETERMINISTIC;
+		}
 		return rt;
 	}
 

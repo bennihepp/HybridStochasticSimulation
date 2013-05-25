@@ -111,7 +111,7 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 	private MSHybridReactionNetworkModel hrnModel;
 	private List<EventHandler> optionalEventHandlers;
 	private boolean optionalEventFlag;
-	private int optionalEventSpeciesIndex;
+//	private int optionalEventSpeciesIndex;
 
 	public AdaptiveMSHRNModel(MSHybridReactionNetworkModel hrnModel) {
 		super(hrnModel);
@@ -154,7 +154,7 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 
 	private void fireOptionalEvent(int s) {
 		optionalEventFlag = true;
-		optionalEventSpeciesIndex = s;
+//		optionalEventSpeciesIndex = s;
 	}
 
 	@Override
@@ -165,30 +165,35 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 	@Override
 	public void handleOptionalEvent(double t, double[] x) {
 		if (optionalEventFlag) {
-			// Update only alpha
-			int s = optionalEventSpeciesIndex;
-			x[s] *= hrnModel.speciesScales[s];
-			double newAlpha;
-			if (x[s] < Math.pow(hrnModel.N,  1 - hrnModel.epsilon))
-				newAlpha = 0.0;
-			else
-				newAlpha = Math.log(x[s]) / Math.log(hrnModel.N);
-			hrnModel.alpha[s] = newAlpha;
-			hrnModel.adaptScales();
-			x[s] *= hrnModel.inverseSpeciesScales[s];
-			updateOptionalEventHandler(s, x[s]);
-			// or update all alphas?
-//			for (int s=0; s < hrnModel.getNumberOfSpecies(); s++) {
-//				x[s] *= hrnModel.speciesScales[s];
-//				double newAlpha = Math.log(x[s]) / Math.log(hrnModel.N);
-//				newAlpha = Math.max(newAlpha, 0.0);
-//				hrnModel.alpha[s] = newAlpha;
-//			}
+//			// Update only alpha
+//			int s = optionalEventSpeciesIndex;
+//			x[s] *= hrnModel.speciesScales[s];
+//			double newAlpha;
+//			if (x[s] < Math.pow(hrnModel.N,  1 - hrnModel.epsilon))
+//				newAlpha = 0.0;
+//			else
+//				newAlpha = Math.log(x[s]) / Math.log(hrnModel.N);
+//			hrnModel.alpha[s] = newAlpha;
 //			hrnModel.adaptScales();
-//			for (int s=0; s < hrnModel.getNumberOfSpecies(); s++) {
-//				x[s] *= hrnModel.inverseSpeciesScales[s];
-//				updateOptionalEventHandler(s, x[s]);
-//			}
+//			x[s] *= hrnModel.inverseSpeciesScales[s];
+//			updateOptionalEventHandler(s, x[s]);
+			// or update all alphas?
+			for (int s=0; s < hrnModel.getNumberOfSpecies(); s++) {
+				x[s] *= hrnModel.speciesScales[s];
+				double newAlpha;
+				if (x[s] < Math.pow(hrnModel.N,  1 - hrnModel.epsilon))
+					newAlpha = 0.0;
+				else
+					newAlpha = Math.log(x[s]) / Math.log(hrnModel.N);
+				hrnModel.alpha[s] = newAlpha;
+			}
+			hrnModel.adaptScales();
+			for (int s=0; s < hrnModel.getNumberOfSpecies(); s++) {
+				x[s] *= hrnModel.inverseSpeciesScales[s];
+				if (hrnModel.alpha[s] == 0.0)
+					x[s] = Math.round(x[s]);
+				updateOptionalEventHandler(s, x[s]);
+			}
 			optionalEventFlag = false;
 		}
 	}

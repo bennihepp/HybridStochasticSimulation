@@ -18,6 +18,7 @@ public class PDMPFixedModelTrajectory implements PDMPStepHandler, ReactionEventH
 		initialized = false;
 	}
 
+	@Override
 	public void reset() {
 		initialized = false;
 	}

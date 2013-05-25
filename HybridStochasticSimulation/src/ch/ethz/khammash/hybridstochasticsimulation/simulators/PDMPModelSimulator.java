@@ -69,6 +69,7 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
     	FirstOrderDifferentialEquations ode = model.getFirstOrderDifferentialEquations();
     	ReactionNetworkModel rnm = model.getReactionNetworkModel();
     	EventHandler pdmpEventHandler = model.getPDMPEventHandler();
+    	model.initialize(t0, x0);
 		double[] x = new double[x0.length + 2];
 		for (int i=0; i < x0.length; i++)
 			x[i] = x0[i];
@@ -143,9 +144,11 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 	        		break;
 	        	}
 	        }
-	        if (reaction >= 0)
+	        if (reaction >= 0) {
 	        	for (ReactionEventHandler handler : reactionHandlers)
 	        		handler.handleReactionEvent(reaction, t, x);
+	        	model.manualCheckOptionalEvent(t, x);
+	        }
 		}
 		integrator.clearEventHandlers();
 		integrator.clearStepHandlers();

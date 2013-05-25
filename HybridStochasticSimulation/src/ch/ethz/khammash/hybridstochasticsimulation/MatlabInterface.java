@@ -21,8 +21,8 @@ public class MatlabInterface {
 	}
 
 	public MSHybridReactionNetwork createHybridReactionNetwork(
-			ReactionNetwork net, double N, double deltaR, double deltaS, double gamma, double[] alpha, double[] beta) {
-		return new MSHybridReactionNetwork(net, N, deltaR, deltaS, gamma, alpha, beta);
+			ReactionNetwork net, double N, double deltaR, double deltaS, double epsilon, double gamma, double[] alpha, double[] beta) {
+		return new MSHybridReactionNetwork(net, N, deltaR, deltaS, epsilon, gamma, alpha, beta);
 	}
 
 	public MSHybridReactionNetworkModel createHybridReactionNetworkModel(

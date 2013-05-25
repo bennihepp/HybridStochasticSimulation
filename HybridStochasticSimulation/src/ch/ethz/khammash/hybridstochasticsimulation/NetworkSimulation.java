@@ -48,6 +48,7 @@ public class NetworkSimulation {
 		public double N;
 		public double deltaR;
 		public double deltaS;
+		public double epsilon;
 		public double gamma;
 		public double[] alpha;
 		public double[] beta;
@@ -59,8 +60,8 @@ public class NetworkSimulation {
 	}
 
 	public static void main(String[] args) {
-//		List<Component> plots = regulatedTranscriptionNetwork();
-		List<Component> plots = simpleCrystallizationNetwork();
+		List<Component> plots = regulatedTranscriptionNetwork();
+//		List<Component> plots = simpleCrystallizationNetwork();
 //		List<Component> plots = haploinsufficiencyNetwork();
 		int rows = (int) Math.ceil(plots.size() / 2.0);
 		int cols = (int) Math.ceil(plots.size() / (double) rows);
@@ -84,6 +85,7 @@ public class NetworkSimulation {
 		TrajectoryDistributionPlotData tdd;
 		TrajectoryDistributionPlotChartPanel dplot;
 		TrajectoryPlotData td;
+		TrajectoryPlotData tds;
 		TrajectoryPlotChartPanel plot;
 
 //		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
@@ -106,12 +108,15 @@ public class NetworkSimulation {
 //		plot.setTitle("MSPDMP single trajectory");
 //		plots.add(plot);
 
+		nss.N = 100;
 		nss.deltaR = 0.5;
 		nss.deltaS = 0.5;
+		nss.epsilon = 0.2;
 		nss.alpha = MSHybridReactionNetwork.computeAlpha(nss.x0, nss.N);
 		nss.beta = MSHybridReactionNetwork.computeBeta(nss.net, nss.N);
 		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
-				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+				nss.N, nss.deltaR, nss.deltaS, nss.epsilon, nss.gamma,
+				nss.alpha, nss.beta);
 		Utilities.printArray("reactionType", hrn.computeReactionTypes());
 		Utilities.printArray("speciesType", hrn.computeSpeciesTypes());
 		Utilities.printArray("alpha", nss.alpha);
@@ -132,9 +137,18 @@ public class NetworkSimulation {
 		plot.setTitle("MSPDMP single trajectory");
 		plots.add(plot);
 
+		int[] speciesStates = { 0, 1, 2, 3, 4, 5 };
+		int[] alphaStates = { 6, 7, 8, 9, 10, 11 };
+
 		td = simulateAdaptiveMSPDMP(nss, tVector);
-		plot = plotTrajectory(nss, td);
+		tds = td.getSubsetData(speciesStates);
+		plot = plotTrajectory(nss, tds);
 		plot.setTitle("AdaptiveMSPDMP single trajectory");
+		plots.add(plot);
+
+		tds = td.getSubsetData(alphaStates);
+		plot = plotTrajectory(nss, tds);
+		plot.setTitle("AdaptiveMSPDMP single trajectory alphas");
 		plots.add(plot);
 
 //		tdd = simulateStochasticDistribution(stochasticRuns, nss, tVector);
@@ -187,18 +201,22 @@ public class NetworkSimulation {
 		int stochasticRuns = 10;
 		int numberOfTimePoints = 1001;
 
+		nss.N = 1e6;
 		nss.deltaR = 0.5;
 		nss.deltaS = 0.5;
+		nss.epsilon = 0.1;
 		nss.alpha = MSHybridReactionNetwork.computeAlpha(nss.x0, nss.N);
 		nss.beta = MSHybridReactionNetwork.computeBeta(nss.net, nss.N);
 		Utilities.printArray("alpha", nss.alpha);
 		Utilities.printArray("beta", nss.beta);
 
 		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
-				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+				nss.N, nss.deltaR, nss.deltaS, nss.epsilon, nss.gamma,
+				nss.alpha, nss.beta);
 		Utilities.printArray("reactionType", hrn.computeReactionTypes());
 		Utilities.printArray("speciesType", hrn.computeSpeciesTypes());
 
+		nss.t1 = 100;
 		RealVector tVector = Utilities.computeTimeVector(numberOfTimePoints, nss.t0, nss.t1);
 
 		TrajectoryDistributionPlotData tdd;
@@ -221,19 +239,24 @@ public class NetworkSimulation {
 		plot.setTitle("Stochastic single trajectory");
 		plots.add(plot);
 
-		td = simulateMSPDMP(nss, tVector);
-		plot = plotTrajectory(nss, td);
-		plot.setTitle("MSPDMP single trajectory");
+//		td = simulateMSPDMP(nss, tVector);
+//		plot = plotTrajectory(nss, td);
+//		plot.setTitle("MSPDMP single trajectory");
+//		plots.add(plot);
+
+		int[] states2 = { 0, 1, 2, 3 };
+		double[] plotScales2 = { 1, 1, 70000, 70000 };
+		int[] alphaStates = { 4, 5, 6, 7 };
+
+		td = simulateAdaptiveMSPDMP(nss, tVector);
+		TrajectoryPlotData tds = td.getSubsetData(states2, plotScales2);
+		plot = plotTrajectory(nss, tds);
+		plot.setTitle("AdaptiveMSPDMP single trajectory");
 		plots.add(plot);
 
-		int[] states2 = {0, 1, 2, 3, 5};
-		double[] plotScales2 = { 1, 1, 1, 1, 1000000 };
-
-		nss.N = 1e5;
-		td = simulateAdaptiveMSPDMP(nss, tVector);
-		td = td.getSubsetData(states2, plotScales2);
-		plot = plotTrajectory(nss, td);
-		plot.setTitle("AdaptiveMSPDMP single trajectory");
+		tds = td.getSubsetData(alphaStates);
+		plot = plotTrajectory(nss, tds);
+		plot.setTitle("AdaptiveMSPDMP single trajectory alphas");
 		plots.add(plot);
 
 		return plots;
@@ -247,7 +270,7 @@ public class NetworkSimulation {
 		double[] rateParameters = {
 				2.0e-4,
 				2.0e-4,
-				1,
+				10,
 				4.8e-4,
 		};
 //		nss.t1 = 1000000;
@@ -261,6 +284,7 @@ public class NetworkSimulation {
 		int stochasticRuns = 10;
 		int numberOfTimePoints = 1001;
 
+//		nss.t1 = 1000000;
 		RealVector tVector = Utilities.computeTimeVector(numberOfTimePoints, nss.t0, nss.t1);
 
 		TrajectoryDistributionPlotData tdd;
@@ -281,12 +305,14 @@ public class NetworkSimulation {
 		Utilities.printArray("beta", beta);
 		Utilities.printArray("continuous species", nss.continuousSpecies);
 		nss.N = 1000;
+		nss.epsilon = 0.1;
 		nss.gamma = 0;
 		nss.alpha = alpha;
 		nss.beta = beta;
 
 		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
-				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+				nss.N, nss.deltaR, nss.deltaS, nss.epsilon, nss.gamma,
+				nss.alpha, nss.beta);
 		Utilities.printArray("speciesType", hrn.computeSpeciesTypes());
 		Utilities.printArray("reactionType", hrn.computeReactionTypes());
 
@@ -367,7 +393,8 @@ public class NetworkSimulation {
 
 	public static TrajectoryPlotData simulateMSPDMP(NetworkSimulationStruct nss, RealVector tVector) {
 		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
-				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+				nss.N, nss.deltaR, nss.deltaS, nss.epsilon, nss.gamma,
+				nss.alpha, nss.beta);
 		MSHybridReactionNetworkModel hrnModel = new MSHybridReactionNetworkModel(hrn);
 		PDMPModelAdapter pdmpModel = new PDMPModelAdapter(hrnModel);
 		double[] x0 = nss.x0;
@@ -400,7 +427,8 @@ public class NetworkSimulation {
 
 	public static TrajectoryPlotData simulateAdaptiveMSPDMP(NetworkSimulationStruct nss, RealVector tVector) {
 		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
-				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+				nss.N, nss.deltaR, nss.deltaS, nss.epsilon, nss.gamma,
+				nss.alpha, nss.beta);
 		MSHybridReactionNetworkModel hrnModel = new MSHybridReactionNetworkModel(hrn);
 		PDMPModelAdapter pdmpModel = new AdaptiveMSHRNModel(hrnModel);
 		double[] x0 = nss.x0;
@@ -522,7 +550,8 @@ public class NetworkSimulation {
 	public static TrajectoryDistributionPlotData simulateMSPDMPDistribution(int runs, NetworkSimulationStruct nss,
 			RealVector tVector) {
 		MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net,
-				nss.N, nss.deltaR, nss.deltaS, nss.gamma, nss.alpha, nss.beta);
+				nss.N, nss.deltaR, nss.deltaS, nss.epsilon, nss.gamma,
+				nss.alpha, nss.beta);
 		MSHybridReactionNetworkModel hrnModel = new MSHybridReactionNetworkModel(hrn);
 		PDMPModelAdapter pdmpModel = new PDMPModelAdapter(hrnModel, hrnModel);
 		double[] x0 = nss.x0;
@@ -628,6 +657,7 @@ public class NetworkSimulation {
 		double N = 1e6;
 		double deltaR = 0.5;
 		double deltaS = 0.5;
+		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 1, 1, 0, 0 };
 		double[] beta = { -1, -1 };
@@ -654,6 +684,7 @@ public class NetworkSimulation {
 		nss.N = N;
 		nss.deltaR = deltaR;
 		nss.deltaS = deltaS;
+		nss.epsilon = epsilon;
 		nss.gamma = gamma;
 		nss.alpha = alpha;
 		nss.beta = beta;
@@ -673,6 +704,7 @@ public class NetworkSimulation {
 		double N = 100;
 		double deltaR = 0.5;
 		double deltaS = 0.5;
+		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 1, 1, 0, 0, 0, 0 };
 		double[] beta = { -1, -2, -1, -1, -1, 0, -3, -2, -1, 0 };
@@ -727,6 +759,7 @@ public class NetworkSimulation {
 		nss.N = N;
 		nss.deltaR = deltaR;
 		nss.deltaS = deltaS;
+		nss.epsilon = epsilon;
 		nss.gamma = gamma;
 		nss.alpha = alpha;
 		nss.beta = beta;
@@ -746,6 +779,7 @@ public class NetworkSimulation {
 		double N = 100;
 		double deltaR = 0.5;
 		double deltaS = 0.5;
+		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 0, 0, 1 };
 		double[] beta = { 0, 0, 1, 0 };
@@ -782,6 +816,7 @@ public class NetworkSimulation {
 		nss.N = N;
 		nss.deltaR = deltaR;
 		nss.deltaS = deltaS;
+		nss.epsilon = epsilon;
 		nss.gamma = gamma;
 		nss.alpha = alpha;
 		nss.beta = beta;

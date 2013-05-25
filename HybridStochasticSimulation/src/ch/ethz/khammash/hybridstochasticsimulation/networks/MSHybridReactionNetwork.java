@@ -24,6 +24,7 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 	protected double N;
 	protected double deltaR;
 	protected double deltaS;
+	protected double epsilon;
 	protected double[] alpha;
 	protected double[] beta;
 	protected double gamma;
@@ -120,8 +121,8 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 	}
 
 	public MSHybridReactionNetwork(ReactionNetwork net, double N,
-			double deltaR, double deltaS, double gamma, double[] alpha,
-			double[] beta) {
+			double deltaR, double deltaS, double epsilon, double gamma,
+			double[] alpha, double[] beta) {
 		super(net.getNumberOfSpecies(), net.getNumberOfReactions());
 		checkArgument(N > 0, "Expected N > 0");
 		checkArgument(alpha.length == getNumberOfSpecies(), "Expected alpha.length == getNumberOfSpecies()");
@@ -129,6 +130,7 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 		this.N = N;
 		this.deltaR = deltaR;
 		this.deltaS = deltaS;
+		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha.clone();
 		this.beta = beta.clone();
@@ -211,6 +213,10 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 
 	public double getDeltaS() {
 		return deltaS;
+	}
+
+	public double getEpsilon() {
+		return epsilon;
 	}
 
 	// public void setAlpha(int species, int alpha) {

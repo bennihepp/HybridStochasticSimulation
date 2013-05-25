@@ -14,6 +14,7 @@ public class MSHybridReactionNetworkModel implements HybridModel {
 	protected double[] beta;
 	protected double gamma;
 	protected double deltaR;
+	protected double epsilon;
 
 	protected double[] speciesScales;
 	protected double[] inverseSpeciesScales;
@@ -38,6 +39,7 @@ public class MSHybridReactionNetworkModel implements HybridModel {
 		beta = hrn.getBeta();
 		gamma = hrn.getGamma();
 		deltaR = hrn.getDeltaR();
+		epsilon = hrn.getEpsilon();
 		speciesScales = new double[alpha.length];
 		inverseSpeciesScales = new double[alpha.length];
 		rateScales = new double[beta.length];
@@ -165,6 +167,8 @@ public class MSHybridReactionNetworkModel implements HybridModel {
 	@Override
 	public void computePropensities(double t, double[] x, double[] propensities) {
 		// We don't check the length of x and propensities for performance reasons
+		for (int r = 0; r < propensities.length; r++)
+			propensities[r] = 0;
 		for (int r : stochasticReactionIndices) {
 			double p = rateParameters[r];
 			int choiceIndex1 = reactionChoiceIndices1[r];

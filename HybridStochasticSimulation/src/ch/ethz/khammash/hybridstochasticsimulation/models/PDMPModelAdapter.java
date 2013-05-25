@@ -130,4 +130,12 @@ public class PDMPModelAdapter implements PDMPModel,
 	public void handleOptionalEvent(double t, double[] x) {
 	}
 
+	@Override
+	public void manualCheckOptionalEvent(double t, double[] x) {
+	}
+
+	@Override
+	public void initialize(double t0, double[] x0) {
+	}
+
 }

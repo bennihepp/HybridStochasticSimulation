@@ -17,8 +17,6 @@ public class AdaptiveMSHRNFixedModelTrajectory extends PDMPFixedModelTrajectory 
 
 	@Override
 	protected void setState(int index, double[] x) {
-		double scale = hrnModel.speciesScales[2];
-		double y = x[2];
 		for (int s=0; s < xSeries.length; s++)
 			if (s < hrnModel.getNumberOfSpecies())
 				xSeries[s][index] = x[s] * hrnModel.speciesScales[s];

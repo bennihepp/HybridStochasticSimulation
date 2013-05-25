@@ -11,11 +11,15 @@ public interface PDMPModel {
 
 	public EventHandler getPDMPEventHandler();
 
+	public void initialize(double t0, double[] x0);
+
 	public Collection<EventHandler> getOptionalEventHandlers();
 
 	public boolean getOptionalEventFlag();
 
 	public void handleOptionalEvent(double t, double[] x);
+
+	public void manualCheckOptionalEvent(double t, double[] x);
 
 	public ReactionNetworkModel getReactionNetworkModel();
 

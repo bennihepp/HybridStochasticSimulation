@@ -28,7 +28,7 @@ public class StochasticModelSimulator {
 
 	public double simulate(StochasticModel model, double t0, double[] x0, double t1, double[] x1) {
 		checkArgument(x0.length == x1.length, "Expected x0.length == x1.length");
-		checkArgument(x0.length == model.getNumberOfSpecies(), "Expected x0.length == model.getNumberOfSpecies()");
+		checkArgument(x0.length == model.getNumberOfStates(), "Expected x0.length == model.getNumberOfSpecies()");
 		double[] x = new double[x0.length];
 		for (int i=0; i < x0.length; i++)
 			x[i] = x0[i];

@@ -8,10 +8,10 @@ import ch.ethz.khammash.hybridstochasticsimulation.simulators.ReactionEventHandl
 
 public class PDMPFixedModelTrajectory implements PDMPStepHandler, ReactionEventHandler {
 
-	double[] tSeries;
-	double[][] xSeries;
-	int index;
-	private boolean initialized;
+	protected double[] tSeries;
+	protected double[][] xSeries;
+	protected int index;
+	protected boolean initialized;
 
 	public PDMPFixedModelTrajectory(double[] tSeries) {
 		this.tSeries = tSeries;
@@ -23,9 +23,13 @@ public class PDMPFixedModelTrajectory implements PDMPStepHandler, ReactionEventH
 		initialized = false;
 	}
 
-	protected void initialize(double[] x0, int stateDimension) {
+	@Override
+	public void setPDMPModel(PDMPModel model) {
+	}
+
+	protected void initialize(double[] x0, int numberOfStates) {
 		if (initialized == false) {
-			xSeries = new double[stateDimension][tSeries.length];
+			xSeries = new double[numberOfStates][tSeries.length];
 			setState(0, x0);
 			initialized = true;
 			index = 0;

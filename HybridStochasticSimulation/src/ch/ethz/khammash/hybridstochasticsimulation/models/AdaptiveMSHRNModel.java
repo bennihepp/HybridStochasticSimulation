@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.apache.commons.math3.ode.events.EventHandler;
 
+import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
+
 
 public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 
@@ -111,20 +113,22 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 	private MSHybridReactionNetworkModel hrnModel;
 	private List<EventHandler> optionalEventHandlers;
 	private boolean optionalEventFlag;
-//	private int optionalEventSpeciesIndex;
+	private int optionalEventSpeciesIndex;
 
 	public AdaptiveMSHRNModel(MSHybridReactionNetworkModel hrnModel) {
-		super(hrnModel);
-		this.hrnModel = hrnModel;
-		optionalEventHandlers = new ArrayList<EventHandler>(hrnModel.getNumberOfSpecies());
-		for (int s=0; s < hrnModel.getNumberOfSpecies(); s++)
-//			optionalEventHandlers.add(new StateBoundEventHandler(s, 0, Double.MAX_VALUE));
+		super();
+		this.hrnModel = new MSHybridReactionNetworkModel(hrnModel);
+		super.setHybridModel(this.hrnModel);
+		optionalEventHandlers = new ArrayList<EventHandler>(this.hrnModel.getNumberOfStates());
+		for (int s=0; s < this.hrnModel.getNumberOfStates(); s++)
 			optionalEventHandlers.add(new StateBoundEventHandler(s, Double.MAX_VALUE, BoundType.UPPER));
 		optionalEventFlag = false;
 	}
 
 	@Override
 	public void initialize(double t0, double[] x0) {
+		for (int s=0; s < hrnModel.alpha.length; s++)
+			hrnModel.alpha[s] = 0.0;
 		for (int s=0; s < optionalEventHandlers.size(); s++) {
 			fireOptionalEvent(s);
 			handleOptionalEvent(t0, x0);
@@ -140,9 +144,9 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 			seh.setUpperBound(upperBound);
 			seh.setBoundType(BoundType.UPPER);
 		} else {
-			double lowerBound = Math.pow(hrnModel.N,  -hrnModel.epsilon);
+			double lowerBound = x * Math.pow(hrnModel.N,  -hrnModel.epsilon);
 			lowerBound = Math.min(lowerBound, x);
-			double upperBound = Math.pow(hrnModel.N,  hrnModel.epsilon);
+			double upperBound = x * Math.pow(hrnModel.N,  hrnModel.epsilon);
 			upperBound = Math.max(upperBound, x);
 //			double lowerBound = 0.5;
 //			double upperBound = 2.0;
@@ -154,7 +158,7 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 
 	private void fireOptionalEvent(int s) {
 		optionalEventFlag = true;
-//		optionalEventSpeciesIndex = s;
+		optionalEventSpeciesIndex = s;
 	}
 
 	@Override
@@ -165,7 +169,7 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 	@Override
 	public void handleOptionalEvent(double t, double[] x) {
 		if (optionalEventFlag) {
-//			// Update only alpha
+////			// Update only one alpha
 //			int s = optionalEventSpeciesIndex;
 //			x[s] *= hrnModel.speciesScales[s];
 //			double newAlpha;
@@ -176,9 +180,16 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 //			hrnModel.alpha[s] = newAlpha;
 //			hrnModel.adaptScales();
 //			x[s] *= hrnModel.inverseSpeciesScales[s];
+//			if (hrnModel.alpha[s] == 0.0)
+//				x[s] = Math.round(x[s]);
 //			updateOptionalEventHandler(s, x[s]);
+
+			boolean checkForExplodingTerms = true;
+			MSHybridReactionNetwork hrn = hrnModel.getNetwork();
 			// or update all alphas?
-			for (int s=0; s < hrnModel.getNumberOfSpecies(); s++) {
+//			int s = optionalEventSpeciesIndex;
+//			{
+			for (int s=0; s < hrnModel.getNumberOfStates(); s++) {
 				x[s] *= hrnModel.speciesScales[s];
 				double newAlpha;
 				if (x[s] < Math.pow(hrnModel.N,  1 - hrnModel.epsilon))
@@ -187,8 +198,46 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 					newAlpha = Math.log(x[s]) / Math.log(hrnModel.N);
 				hrnModel.alpha[s] = newAlpha;
 			}
+			// TODO
+//			if (checkForExplodingTerms) {
+//				for (int i=0; i < 5; i++) {
+//					for (int s=0; s < hrnModel.getNumberOfStates(); s++) {
+//						double newAlpha = hrnModel.alpha[s];
+//						for (int r=0; r < hrn.getNumberOfReactions(); r++)
+//							if (hrn.getStochiometry(s, r) != 0) {
+//								double rho = hrnModel.computeInsideScalingExponent(r);
+//								if (rho > newAlpha)
+//									newAlpha = rho;
+//							}
+//						hrnModel.alpha[s] = newAlpha;
+//					}
+//					i = i;
+//				}
+//			}
+//			boolean[] b1 = MSHybridReactionNetwork.checkSpeciesBalanceConditions(hrn, hrnModel.gamma, hrnModel.alpha, hrnModel.beta, 0.0);
+//			boolean[] b2 = MSHybridReactionNetwork.checkTimeScaleConstraints(hrn, hrnModel.gamma, hrnModel.alpha, hrnModel.beta, 0.0);
+//			boolean[] b3 = MSHybridReactionNetwork.checkBalanceEquations(hrn, hrnModel.alpha, hrnModel.beta, 0.0);
+//			for (int i=0; i < b1.length; i++) {
+//				if (!b1[i])
+//					b1[i] = b1[i];
+//				if (!b2[i])
+//					b2[i] = b2[i];
+//				if (!b3[i])
+//					b3[i] = b3[i];
+//			}
+			// TODO
+//			if (checkForExplodingTerms) {
+//				for (int r=0; r < hrn.getNumberOfReactions(); r++)
+//					for (int s2=0; s2 < hrn.getNumberOfSpecies(); s2++) {
+//						ReactionTermType rt = hrnModel.computeReactionTermType(s2, r);
+//						if (rt == ReactionTermType.EXPLODING)
+//							throw new UnsupportedOperationException("Exploding reaction term encountered!");
+//					}
+//			}
+			System.out.println("adapt");
 			hrnModel.adaptScales();
-			for (int s=0; s < hrnModel.getNumberOfSpecies(); s++) {
+//			{
+			for (int s=0; s < hrnModel.getNumberOfStates(); s++) {
 				x[s] *= hrnModel.inverseSpeciesScales[s];
 				if (hrnModel.alpha[s] == 0.0)
 					x[s] = Math.round(x[s]);

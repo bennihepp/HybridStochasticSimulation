@@ -8,8 +8,7 @@ import java.util.List;
 
 public class DefaultPlotData implements PlotData {
 
-	protected final String DEFAULT_NAME = "<unnamed>";
-
+	private String title;
 	private List<String> names;
 	private List<Double> plotScales;
 
@@ -17,7 +16,7 @@ public class DefaultPlotData implements PlotData {
 		names = new ArrayList<String>(numberOfStates);
 		plotScales = new ArrayList<Double>(numberOfStates);
 		for (int i=0; i < numberOfStates; i++) {
-			names.add(DEFAULT_NAME);
+			names.add("S" + i);
 			plotScales.add(Double.valueOf(1.0));
 		}
 	}
@@ -88,14 +87,21 @@ public class DefaultPlotData implements PlotData {
 
 	@Override
 	public boolean isContinuous() {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean isDiscrete() {
-		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
 	}
 
 }

@@ -9,14 +9,14 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 
 public class StochasticModel implements ReactionNetworkModel {
 
-	final int numberOfSpecies;
+	final int numberOfStates;
 	protected int[] reactionChoiceIndex1;
 	protected int[] reactionChoiceIndex2;
 	protected double[] rateParameters;
 	protected int[][] reactionStochiometries;
 
     public StochasticModel(ReactionNetwork net) {
-    	numberOfSpecies = net.getNumberOfSpecies();
+    	numberOfStates = net.getNumberOfSpecies();
     	init(net);
     }
 
@@ -51,8 +51,8 @@ public class StochasticModel implements ReactionNetworkModel {
     }
 
     @Override
-    public int getNumberOfSpecies() {
-    	return numberOfSpecies;
+    public int getNumberOfStates() {
+    	return numberOfStates;
     }
 
 	@Override

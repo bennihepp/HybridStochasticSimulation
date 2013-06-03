@@ -5,7 +5,7 @@ import java.util.Collection;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.events.EventHandler;
 
-public interface PDMPModel {
+public interface PDMPModel extends ReactionNetworkModel {
 
 	public FirstOrderDifferentialEquations getFirstOrderDifferentialEquations();
 

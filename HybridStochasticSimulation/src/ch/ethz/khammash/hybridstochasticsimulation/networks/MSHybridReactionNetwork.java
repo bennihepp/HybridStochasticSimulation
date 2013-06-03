@@ -18,7 +18,11 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 	}
 
 	public enum ReactionType {
-		STOCHASTIC, DETERMINISTIC
+		STOCHASTIC, DETERMINISTIC, EXPLODING,
+	}
+
+	public enum ReactionTermType {
+		NONE, STOCHASTIC, DETERMINISTIC, EXPLODING,
 	}
 
 	protected double N;
@@ -51,8 +55,8 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 	public static boolean[] checkBalanceEquations(ReactionNetwork rn, double[] alpha, double[] beta, double epsilon) {
 		boolean[] result = new boolean[rn.getNumberOfSpecies()];
 		for (int s=0; s < rn.getNumberOfSpecies(); s++) {
-			double maxPlus = Double.MIN_VALUE;
-			double maxMinus = Double.MIN_VALUE;
+			double maxPlus = -Double.MAX_VALUE;
+			double maxMinus = -Double.MAX_VALUE;
 			for (int r=0; r < rn.getNumberOfReactions(); r++) {
 				if (rn.getStochiometry(s, r) != 0) {
 					int[] consumptionStochiometries = rn.getConsumptionStochiometries(r);
@@ -138,6 +142,11 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 		List<int[]> choiceIndicesList = net.getChoiceIndices();
 		for (int r = 0; r < choiceIndicesList.size(); r++)
 			setRateParameter(r, Math.pow(N, -beta[r]) * net.getRateParameter(r));
+	}
+
+	public MSHybridReactionNetwork(MSHybridReactionNetwork hrn) {
+		this(hrn, hrn.getN(), hrn.getDeltaR(), hrn.getDeltaS(), hrn
+				.getEpsilon(), hrn.getGamma(), hrn.getAlpha(), hrn.getBeta());
 	}
 
 	public double getTimeScaleFactor() {
@@ -330,47 +339,51 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 		return result;
 	}
 
-	public ReactionType computeReactionType(int r) {
-		checkElementIndex(r, getNumberOfReactions(), "Expected 0 <= r < getNumberOfReactions()");
-		double rho = gamma + beta[r];
-		for (int s = 0; s < getNumberOfSpecies(); s++)
-			if (getConsumptionStochiometry(s, r) > 0)
-				rho += getConsumptionStochiometry(s, r) * alpha[s];
-		ReactionType rt;
-		if (rho > deltaR)
-			rt = ReactionType.DETERMINISTIC;
-		else
-			rt = ReactionType.STOCHASTIC;
-
-		// If all consumed species are DISCRETE, the reaction should be approximated as STOCHASTIC
-//		boolean allConsumedSpeciesDiscrete = true;
-//		for (int s=0; s < getNumberOfSpecies(); s++)
-//			if (getConsumptionStochiometry(s, r) > 0 && speciesTypes[s] != SpeciesType.DISCRETE) {
-//				allConsumedSpeciesDiscrete = false;
-//				break;
-//			}
-//		if (allConsumedSpeciesDiscrete)
-//			rt = ReactionType.STOCHASTIC;
-
-//		// If all changed species are CONTINUOUS, the reaction can be approximated as DETERMINISTIC
-//		SpeciesType[] speciesTypes = computeSpeciesTypes();
-//		boolean allChangedSpeciesContinuous = true;
-//		for (int s=0; s < getNumberOfSpecies(); s++) {
-//			if (getStochiometry(s, r) != 0 && speciesTypes[s] == SpeciesType.DISCRETE) {
-//				allChangedSpeciesContinuous = false;
-//				break;
-//			}
-//		}
-//		if (allChangedSpeciesContinuous)
+//	public ReactionType computeReactionType(int r) {
+//		checkElementIndex(r, getNumberOfReactions(), "Expected 0 <= r < getNumberOfReactions()");
+//		double rho = gamma + beta[r];
+//		for (int s = 0; s < getNumberOfSpecies(); s++)
+//			if (getConsumptionStochiometry(s, r) > 0)
+//				rho += getConsumptionStochiometry(s, r) * alpha[s];
+//		ReactionType rt;
+//		if (rho > deltaR)
 //			rt = ReactionType.DETERMINISTIC;
+//		else
+//			rt = ReactionType.STOCHASTIC;
+//
+//		// If all consumed species are DISCRETE, the reaction should be approximated as STOCHASTIC
+////		boolean allConsumedSpeciesDiscrete = true;
+////		for (int s=0; s < getNumberOfSpecies(); s++)
+////			if (getConsumptionStochiometry(s, r) > 0 && speciesTypes[s] != SpeciesType.DISCRETE) {
+////				allConsumedSpeciesDiscrete = false;
+////				break;
+////			}
+////		if (allConsumedSpeciesDiscrete)
+////			rt = ReactionType.STOCHASTIC;
+//
+////		// If all changed species are CONTINUOUS, the reaction can be approximated as DETERMINISTIC
+////		SpeciesType[] speciesTypes = computeSpeciesTypes();
+////		boolean allChangedSpeciesContinuous = true;
+////		for (int s=0; s < getNumberOfSpecies(); s++) {
+////			if (getStochiometry(s, r) != 0 && speciesTypes[s] == SpeciesType.DISCRETE) {
+////				allChangedSpeciesContinuous = false;
+////				break;
+////			}
+////		}
+////		if (allChangedSpeciesContinuous)
+////			rt = ReactionType.DETERMINISTIC;
+//
+//		return rt;
+//	}
 
-		return rt;
+	public ReactionType computeReactionType(int r) {
+		return computeReactionType(this, this.alpha, this.beta, this.gamma, this.deltaR, this.deltaS, r);
 	}
 
 	public ReactionType[] computeReactionTypes() {
 		ReactionType[] result = new ReactionType[getNumberOfReactions()];
-		for (int s=0; s < getNumberOfReactions(); s++)
-			result[s] = computeReactionType(s);
+		for (int r=0; r < getNumberOfReactions(); r++)
+			result[r] = computeReactionType(r);
 		return result;
 	}
 
@@ -380,22 +393,54 @@ public class MSHybridReactionNetwork extends ReactionNetwork {
 		for (int s = 0; s < alpha.length; s++)
 			if (net.getConsumptionStochiometry(s, r) > 0)
 				rho += net.getConsumptionStochiometry(s, r) * alpha[s];
-		ReactionType rt;
+		for (int s = 0; s < alpha.length; s++)
+			if (net.getStochiometry(s, r) != 0)
+				if (rho > alpha[s])
+					return ReactionType.EXPLODING;
 		if (rho > deltaR)
-			rt = ReactionType.DETERMINISTIC;
-		else {
-			boolean anyInvolvedSpeciesDiscrete = false;
-			for (int s = 0; s < alpha.length; s++)
-				if (net.getStochiometry(s, r) != 0 && alpha[s] <= deltaS) {
-					anyInvolvedSpeciesDiscrete = true;
-					break;
-				}
-			if (anyInvolvedSpeciesDiscrete)
-				rt = ReactionType.STOCHASTIC;
-			else
-				rt = ReactionType.DETERMINISTIC;
-		}
-		return rt;
+			return ReactionType.DETERMINISTIC;
+		else
+			return ReactionType.STOCHASTIC;
+//		ReactionType rt;
+//		if (rho > deltaR)
+//			rt = ReactionType.DETERMINISTIC;
+//		else {
+//			boolean anyInvolvedSpeciesDiscrete = false;
+//			for (int s = 0; s < alpha.length; s++)
+//				if (net.getStochiometry(s, r) != 0 && alpha[s] <= deltaS) {
+//					anyInvolvedSpeciesDiscrete = true;
+//					break;
+//				}
+//			if (anyInvolvedSpeciesDiscrete)
+//				rt = ReactionType.STOCHASTIC;
+//			else
+//				rt = ReactionType.DETERMINISTIC;
+//		}
+//		return rt;
+	}
+
+	public static ReactionTermType computeReactionTermType(ReactionNetwork net,
+			double[] alpha, double[] beta, double gamma, double deltaR, double deltaS, int s, int r) {
+		if (net.getStochiometry(s, r) == 0)
+			return ReactionTermType.NONE;
+		double rho = gamma + beta[r];
+		for (int s2 = 0; s2 < alpha.length; s2++)
+			if (net.getConsumptionStochiometry(s2, r) > 0)
+				rho += net.getConsumptionStochiometry(s2, r) * alpha[s2];
+		if (rho > alpha[s])
+			return ReactionTermType.EXPLODING;
+		else if (rho > deltaR)
+			return ReactionTermType.DETERMINISTIC;
+		else
+			return ReactionTermType.STOCHASTIC;
+	}
+
+	public double computeInsideScalingExponent(int reaction) {
+		double rho = gamma + beta[reaction];
+		for (int s = 0; s < alpha.length; s++)
+			if (getConsumptionStochiometry(s, reaction) > 0)
+				rho += getConsumptionStochiometry(s, reaction) * alpha[s];
+		return rho;
 	}
 
 }

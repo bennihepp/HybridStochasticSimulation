@@ -72,11 +72,6 @@ public class TrajectoryDistributionPlotData extends TrajectoryDistributionData i
 		plotData.setPlotScales(plotScales);
 	}
 
-	@Override
-	public void addState(RealVector xMeanVector, RealVector xStdDevVector) {
-		addState(plotData.DEFAULT_NAME, 1.0, xMeanVector, xStdDevVector);
-	}
-
 	public void addState(String name, double plotScale, RealVector xMeanVector, RealVector xStdDevVector) {
 		super.addState(xMeanVector, xStdDevVector);
 		plotData.addState(name, plotScale);
@@ -113,6 +108,15 @@ public class TrajectoryDistributionPlotData extends TrajectoryDistributionData i
 	@Override
 	public boolean isDiscrete() {
 		return false;
+	}
+
+	@Override
+	public String getTitle() {
+		return plotData.getTitle();
+	}
+
+	public void setTitle(String title) {
+		plotData.setTitle(title);
 	}
 
 }

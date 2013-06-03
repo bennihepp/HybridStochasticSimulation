@@ -82,11 +82,6 @@ public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 		plotData.setPlotScales(plotScales);
 	}
 
-	@Override
-	public void addState(RealVector xVector) {
-		addState(plotData.DEFAULT_NAME, 1.0, xVector);
-	}
-
 	public void addState(String name, double plotScale, RealVector xVector) {
 		super.addState(xVector);
 		plotData.addState(name, plotScale);
@@ -135,6 +130,15 @@ public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 	@Override
 	public boolean isDiscrete() {
 		return isDiscrete;
+	}
+
+	@Override
+	public String getTitle() {
+		return plotData.getTitle();
+	}
+
+	public void setTitle(String title) {
+		plotData.setTitle(title);
 	}
 
 }

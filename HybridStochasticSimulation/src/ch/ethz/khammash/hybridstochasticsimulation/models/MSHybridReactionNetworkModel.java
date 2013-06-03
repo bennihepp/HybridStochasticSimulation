@@ -4,12 +4,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionTermType;
 
 // TODO: Group computation of choices for each reaction
 
 public class MSHybridReactionNetworkModel implements HybridModel {
 
-	protected MSHybridReactionNetwork hrn;
+	private MSHybridReactionNetwork hrn;
 	protected double N;
 	protected double[] alpha;
 	protected double[] beta;
@@ -59,12 +60,53 @@ public class MSHybridReactionNetworkModel implements HybridModel {
 		adaptScales();
 	}
 
+	public MSHybridReactionNetworkModel(MSHybridReactionNetworkModel hrnModel) {
+		this.hrn = hrnModel.getNetwork();
+		N = hrnModel.N;
+		alpha = hrnModel.alpha.clone();
+		beta = hrnModel.beta.clone();
+		gamma = hrnModel.gamma;
+		deltaR = hrnModel.deltaR;
+		deltaS = hrnModel.deltaS;
+		epsilon = hrnModel.epsilon;
+		speciesScales = hrnModel.speciesScales.clone();
+		inverseSpeciesScales = hrnModel.inverseSpeciesScales.clone();
+		rateScales = hrnModel.rateScales.clone();
+		timeScale = hrnModel.timeScale;
+		choiceIndicesList = hrnModel.choiceIndicesList;
+		dimension = hrnModel.dimension;
+		rateParameters = hrnModel.rateParameters.clone();
+		reactionChoiceIndices1 = hrnModel.reactionChoiceIndices1.clone();
+		reactionChoiceIndices2 = hrnModel.reactionChoiceIndices2.clone();
+		reactionStochiometries = hrnModel.reactionStochiometries.clone();
+
+		adaptScales();
+	}
+
+	public MSHybridReactionNetwork getNetwork() {
+		return hrn;
+	}
+
 	public boolean hasDeterministicPart() {
 		return deterministicReactionIndices.length > 0;
 	}
 
+	// TODO: This is kind of a duplication of MSHybridReactionNetwork
+	public ReactionTermType computeReactionTermType(int s, int r) {
+		return MSHybridReactionNetwork.computeReactionTermType(getNetwork(), alpha, beta, gamma, deltaR, deltaS, s, r);
+	}
+
+	// TODO: This is kind of a duplication of MSHybridReactionNetwork
+	public double computeInsideScalingExponent(int reaction) {
+		double rho = gamma + beta[reaction];
+		for (int s = 0; s < alpha.length; s++)
+			if (hrn.getConsumptionStochiometry(s, reaction) > 0)
+				rho += hrn.getConsumptionStochiometry(s, reaction) * alpha[s];
+		return rho;
+	}
+
 	public void adaptScales() {
-		for (int s=0; s < hrn.getNumberOfSpecies(); s++) {
+		for (int s=0; s < getNetwork().getNumberOfSpecies(); s++) {
 			speciesScales[s] = Math.pow(N, alpha[s]);
 			inverseSpeciesScales[s] = Math.pow(N, -alpha[s]);
 		}
@@ -72,9 +114,19 @@ public class MSHybridReactionNetworkModel implements HybridModel {
 		LinkedList<Integer> stochasticReactionIndicesList = new LinkedList<Integer>();
 		LinkedList<Integer> deterministicReactionIndicesList = new LinkedList<Integer>();
 
-		for (int r = 0; r < hrn.getNumberOfReactions(); r++) {
-			MSHybridReactionNetwork.ReactionType rt = MSHybridReactionNetwork
-					.computeReactionType(hrn, alpha, beta, gamma, deltaR, deltaS, r);
+		for (int r = 0; r < getNetwork().getNumberOfReactions(); r++) {
+			MSHybridReactionNetwork.ReactionTermType rt = MSHybridReactionNetwork.ReactionTermType.NONE;
+			for (int s=0; s < getNetwork().getNumberOfSpecies(); s++) {
+				MSHybridReactionNetwork.ReactionTermType rt2 = MSHybridReactionNetwork
+						.computeReactionTermType(getNetwork(), alpha, beta, gamma, deltaR, deltaS, s, r);
+				if (rt2 == ReactionTermType.EXPLODING) {
+					rt = rt2;
+					break;
+				} else if (rt2 == ReactionTermType.STOCHASTIC)
+					rt = rt2;
+				else if (rt == ReactionTermType.NONE && rt2 == ReactionTermType.DETERMINISTIC)
+					rt = rt2;
+			}
 			int[] choiceIndices = choiceIndicesList.get(r);
 			double insideScale = timeScale * rateScales[r];
 			for (int s : choiceIndices)
@@ -93,17 +145,22 @@ public class MSHybridReactionNetworkModel implements HybridModel {
 				reactionChoiceIndices2[r] = choiceIndices[1];
 				break;
 			}
-			rateParameters[r] = insideScale * hrn.getRateParameter(r);
-			for (int s = 0; s < hrn.getNumberOfSpecies(); s++) {
+			rateParameters[r] = insideScale * getNetwork().getRateParameter(r);
+			for (int s = 0; s < getNetwork().getNumberOfSpecies(); s++) {
 				double outsideScale = inverseSpeciesScales[s];
-				reactionStochiometries[r][s] = outsideScale * hrn.getStochiometry(s, r);
+				reactionStochiometries[r][s] = outsideScale * getNetwork().getStochiometry(s, r);
 			}
 			switch (rt) {
+			case EXPLODING:
+//				throw new UnsupportedOperationException("Exploding reaction term encountered!");
+//				break
 			case DETERMINISTIC:
 				deterministicReactionIndicesList.add(Integer.valueOf(r));
 				break;
 			case STOCHASTIC:
 				stochasticReactionIndicesList.add(Integer.valueOf(r));
+				break;
+			case NONE:
 				break;
 			}
 		}
@@ -185,7 +242,7 @@ public class MSHybridReactionNetworkModel implements HybridModel {
 	}
 
 	@Override
-	public int getNumberOfSpecies() {
+	public int getNumberOfStates() {
 		return getDimension();
 	}
 

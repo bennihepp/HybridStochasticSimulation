@@ -2,6 +2,8 @@ package ch.ethz.khammash.hybridstochasticsimulation.plotting;
 
 public interface PlotData {
 
+	public String getTitle();
+
 	public int getNumberOfStates();
 
 	public String getName(int s);

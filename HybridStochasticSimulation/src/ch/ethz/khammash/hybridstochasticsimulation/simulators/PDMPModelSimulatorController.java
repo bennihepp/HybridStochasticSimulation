@@ -52,22 +52,27 @@ public class PDMPModelSimulatorController {
 		private double maxStep;
         private double scalAbsoluteTolerance;
         private double scalRelativeTolerance;
+        private int maxEvaluations;
 
 		public DefaultIntegratorFactory() {
-			this(1.0e-8, 100.0, 1.0e-10, 1.0e-10);
+			this(1.0e-5, 100.0, 1.0e-10, 1.0e-10, Integer.MAX_VALUE);
 		}
 
 		public DefaultIntegratorFactory(double minStep, double maxStep,
-                double scalAbsoluteTolerance, double scalRelativeTolerance) {
+                double scalAbsoluteTolerance, double scalRelativeTolerance,
+                int maxEvaluations) {
 			this.setMinStep(minStep);
 			this.setMaxStep(maxStep);
 			this.setScalAbsoluteTolerance(scalAbsoluteTolerance);
 			this.setScalRelativeTolerance(scalRelativeTolerance);
+			this.setMaxEvaluations(maxEvaluations);
 		}
 
 		@Override
 		public FirstOrderIntegrator createIntegrator() {
-			return new DormandPrince853Integrator(getMinStep(), getMaxStep(), getScalAbsoluteTolerance(), getScalRelativeTolerance());
+			DormandPrince853Integrator integrator = new DormandPrince853Integrator(getMinStep(), getMaxStep(), getScalAbsoluteTolerance(), getScalRelativeTolerance());
+			integrator.setMaxEvaluations(maxEvaluations);
+			return integrator;
 		}
 
 		public double getMinStep() {
@@ -100,6 +105,14 @@ public class PDMPModelSimulatorController {
 
 		public void setScalRelativeTolerance(double scalRelativeTolerance) {
 			this.scalRelativeTolerance = scalRelativeTolerance;
+		}
+
+		public int getMaxEvaluations() {
+			return maxEvaluations;
+		}
+
+		public void setMaxEvaluations(int maxEvaluations) {
+			this.maxEvaluations = maxEvaluations;
 		}
 	}
 
@@ -325,7 +338,8 @@ public class PDMPModelSimulatorController {
 	}
 
 	public StatisticalSummary[][] simulateFixedTrajectoryDistribution(int runs,
-			PDMPModelAndFixedTrajectoryFactory factory, double t0, double[] x0,
+			PDMPModelFactory modelFactory,
+			PDMPFixedModelTrajectoryFactory mtFactory, double t0, double[] x0,
 			double t1) throws InterruptedException, CancellationException,
 			ExecutionException {
 		SynchronizedSummaryStatistics[][] xSeriesStatistics = null;
@@ -335,11 +349,10 @@ public class PDMPModelSimulatorController {
 			FirstOrderIntegrator integrator = createIntegrator();
 			RandomDataGenerator rdg = createRandomDataGenerator();
 			// PDMPModel has an internal state so we create a copy for each run
-			factory.createNextModelAndTrajectory();
-			PDMPModel model = factory.getModel();
-			PDMPFixedModelTrajectory mt = factory.getModelTrajectory();
+			PDMPModel model = modelFactory.createModel();
+			PDMPFixedModelTrajectory mt = mtFactory.createModelTrajectory();
 			if (xSeriesStatistics == null) {
-				xSeriesStatistics = new SynchronizedSummaryStatistics[x0.length*2][mt.gettSeries().length];
+				xSeriesStatistics = new SynchronizedSummaryStatistics[x0.length][mt.gettSeries().length];
 				for (int s = 0; s < xSeriesStatistics.length; s++)
 					for (int i = 0; i < xSeriesStatistics[s].length; i++)
 						xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();

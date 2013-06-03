@@ -30,6 +30,10 @@ public class PDMPModelTrajectory extends StochasticModelTrajectory implements
 		return reducedX;
 	}
 
+	@Override
+	public void setPDMPModel(PDMPModel model) {
+	}
+
 	public void reset() {
 		initialized = false;
 	}

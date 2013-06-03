@@ -78,6 +78,7 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 		double[] propVec = new double[rnm.getPropensityDimension()];
 		for (PDMPStepHandler handler : stepHandlers) {
 			handler.reset();
+			handler.setPDMPModel(model);
 			handler.init(t0, x, t1);
 			integrator.addStepHandler(handler);
 		}

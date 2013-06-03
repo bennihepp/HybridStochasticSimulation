@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Paint;
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.math3.linear.RealVector;
@@ -21,6 +22,8 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import com.google.common.collect.Iterators;
+
 public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 
 	private static final long serialVersionUID = -8825961199562105387L;
@@ -29,7 +32,18 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 	final XYSeriesCollection seriesCollection;
 	final BasicStroke stroke;
 	final BasicStroke dottedStroke;
-	final Color[] colorList = { Color.blue, Color.red, Color.green, Color.cyan, Color.magenta, Color.orange };
+	final Color[] colorList = {
+			Color.blue,
+			Color.red,
+			Color.green,
+			Color.cyan,
+			Color.magenta,
+			Color.orange,
+			Color.pink,
+			Color.black,
+			Color.darkGray,
+			Color.lightGray,
+	};
 	List<String> speciesNames;
 
 	public TrajectoryDistributionPlotChartPanel() {
@@ -54,8 +68,9 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 		LegendItemSource[] sources = {new LegendItemSource() {
 			public LegendItemCollection getLegendItems() {
 				LegendItemCollection lic = new LegendItemCollection();
+				Iterator<Color> it = Iterators.cycle(colorList);
 				for (int i = 0; i < speciesNames.size(); i++) {
-					LegendItem li = new LegendItem(speciesNames.get(i), colorList[i]);
+					LegendItem li = new LegendItem(speciesNames.get(i), it.next());
 					li.setShape(new Rectangle(5, 5));
 					lic.add(li);
 				}
@@ -123,13 +138,14 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 		addSpecies(name, meanSeries, stdDevPlusSeries, stdDevMinusSeries);
 	}
 
-	public void addSpecies(TrajectoryDistributionPlotData tdd) {
+	public void addDistributionPlotData(TrajectoryDistributionPlotData tdd) {
 		for (int s=0; s < tdd.getNumberOfStates(); ++s) {
 			RealVector tVector = tdd.gettVector();
 			RealVector xMeanVector = tdd.getxMeanVector(s);
 			RealVector xStdDevVector = tdd.getxStdDevVector(s);
 			addSpecies(tdd.getName(s), tVector, xMeanVector, xStdDevVector, tdd.getPlotScale(s));
 		}
+		setTitle(tdd.getTitle());
 	}
 
 }

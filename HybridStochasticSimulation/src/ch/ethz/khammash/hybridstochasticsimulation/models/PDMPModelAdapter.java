@@ -18,10 +18,25 @@ public class PDMPModelAdapter implements PDMPModel,
 	}
 
 	public PDMPModelAdapter(FirstOrderDifferentialEquations baseODE, ReactionNetworkModel reactionModel) {
-		this(new HybridModelAdapter(baseODE, reactionModel));
+		setModel(baseODE, reactionModel);
 	}
 
 	public PDMPModelAdapter(HybridModel hybridModel) {
+		setHybridModel(hybridModel);
+	}
+
+	protected PDMPModelAdapter() {
+	}
+
+	public void setModel(FirstOrderDifferentialEquations baseODE, ReactionNetworkModel reactionModel) {
+		setHybridModel(new HybridModelAdapter(baseODE, reactionModel));
+	}
+
+	public HybridModel getHybridModel() {
+		return hybridModel;
+	}
+
+	public void setHybridModel(HybridModel hybridModel) {
 		this.hybridModel = hybridModel;
 		baseODEDimension = hybridModel.getDimension();
 		propVector = new double[hybridModel.getPropensityDimension()];
@@ -65,6 +80,8 @@ public class PDMPModelAdapter implements PDMPModel,
 
 	@Override
 	public void computeDerivatives(double t, double[] x, double[] xDot) {
+		if (t >= 6.50E-9)
+			t = t + 0;
 		hybridModel.computeDerivatives(t, x, xDot);
 		xDot[xDot.length - 2] = 0;
 		computePropensities(t, x, propVector);
@@ -92,8 +109,8 @@ public class PDMPModelAdapter implements PDMPModel,
 	}
 
 	@Override
-	public int getNumberOfSpecies() {
-		return getDimension();
+	public int getNumberOfStates() {
+		return getBaseODEDimension();
 	}
 
 	@Override

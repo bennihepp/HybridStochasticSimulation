@@ -26,8 +26,8 @@ public class HybridModelAdapter implements HybridModel {
 	}
 
 	@Override
-	public int getNumberOfSpecies() {
-		return reactionModel.getNumberOfSpecies();
+	public int getNumberOfStates() {
+		return reactionModel.getNumberOfStates();
 	}
 
 	@Override

@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Paint;
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.math3.linear.RealMatrix;
@@ -23,6 +24,8 @@ import org.jfree.chart.renderer.xy.XYStepRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import com.google.common.collect.Iterators;
+
 public class TrajectoryPlotChartPanel extends ChartPanel {
 
 	private static final long serialVersionUID = -8825961199562105387L;
@@ -31,7 +34,18 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 	AbstractXYItemRenderer continuousRenderer;
 	final XYSeriesCollection seriesCollection;
 	final BasicStroke stroke;
-	final Color[] colorList = { Color.blue, Color.red, Color.green, Color.cyan, Color.magenta, Color.orange };
+	final Color[] colorList = {
+			Color.blue,
+			Color.red,
+			Color.green,
+			Color.cyan,
+			Color.magenta,
+			Color.orange,
+			Color.pink,
+			Color.black,
+			Color.darkGray,
+			Color.lightGray,
+	};
 	List<String> speciesNames;
 
 	public TrajectoryPlotChartPanel() {
@@ -55,8 +69,9 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 		LegendItemSource[] sources = {new LegendItemSource() {
 			public LegendItemCollection getLegendItems() {
 				LegendItemCollection lic = new LegendItemCollection();
+				Iterator<Color> it = Iterators.cycle(colorList);
 				for (int i = 0; i < speciesNames.size(); i++) {
-					LegendItem li = new LegendItem(speciesNames.get(i), colorList[i]);
+					LegendItem li = new LegendItem(speciesNames.get(i), it.next());
 					li.setShape(new Rectangle(5, 5));
 					lic.add(li);
 				}
@@ -108,10 +123,11 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 		}
 	}
 
-	public void addSpecies(TrajectoryPlotData td) {
+	public void addPlotData(TrajectoryPlotData td) {
 		for (int s=0; s < td.getNumberOfStates(); ++s) {
 			addSpecies(td.getName(s), td.gettVector(), td.getxVector(s), td.getPlotScale(s), td.isDiscrete());
 		}
+		setTitle(td.getTitle());
 	}
 
 }

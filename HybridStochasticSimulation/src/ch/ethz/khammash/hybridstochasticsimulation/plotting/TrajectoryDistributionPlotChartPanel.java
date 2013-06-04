@@ -28,23 +28,33 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 
 	private static final long serialVersionUID = -8825961199562105387L;
 
-	final XYLineAndShapeRenderer renderer;
-	final XYSeriesCollection seriesCollection;
-	final BasicStroke stroke;
-	final BasicStroke dottedStroke;
-	final Color[] colorList = {
-			Color.blue,
-			Color.red,
-			Color.green,
-			Color.cyan,
-			Color.magenta,
-			Color.orange,
-			Color.pink,
-			Color.black,
-			Color.darkGray,
-			Color.lightGray,
-	};
-	List<String> speciesNames;
+	final public Color[] DEFAULT_COLOR_ORDER;
+	{
+		DEFAULT_COLOR_ORDER = new Color[MatlabPlotter.DEFAULT_COLOR_ORDER.length];
+		for (int i=0; i < DEFAULT_COLOR_ORDER.length; i++) {
+			double[] color = MatlabPlotter.DEFAULT_COLOR_ORDER[i];
+			DEFAULT_COLOR_ORDER[i] = new Color((float)color[0], (float)color[1], (float)color[2]);
+		}
+	}
+//	final public Color[] DEFAULT_COLOR_ORDER = {
+//			Color.blue,
+//			Color.red,
+//			Color.green,
+//			Color.cyan,
+//			Color.magenta,
+//			Color.orange,
+//			Color.pink,
+//			Color.black,
+//			Color.darkGray,
+//			Color.lightGray,
+//	};
+
+	private final XYLineAndShapeRenderer renderer;
+	private final XYSeriesCollection seriesCollection;
+	private final BasicStroke stroke;
+	private final BasicStroke dottedStroke;
+	private List<String> speciesNames;
+	private Color[] colorList;
 
 	public TrajectoryDistributionPlotChartPanel() {
 		super(ChartFactory.createXYLineChart(
@@ -56,6 +66,7 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 				true, // tooltips
 				false // urls
 				));
+		colorList = DEFAULT_COLOR_ORDER;
 		seriesCollection = (XYSeriesCollection) getChart().getXYPlot().getDataset();
 		JFreeChart chart = getChart();
 		XYPlot plot = chart.getXYPlot();
@@ -63,7 +74,7 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 		renderer = new XYLineAndShapeRenderer(true, false);
 		plot.setRenderer(renderer);
 		stroke = new BasicStroke(1.0f);
-		dottedStroke = new BasicStroke(0.5f);
+		dottedStroke = new BasicStroke(0.25f);
 		speciesNames = new ArrayList<String>();
 		LegendItemSource[] sources = {new LegendItemSource() {
 			public LegendItemCollection getLegendItems() {
@@ -143,7 +154,7 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 			RealVector tVector = tdd.gettVector();
 			RealVector xMeanVector = tdd.getxMeanVector(s);
 			RealVector xStdDevVector = tdd.getxStdDevVector(s);
-			addSpecies(tdd.getName(s), tVector, xMeanVector, xStdDevVector, tdd.getPlotScale(s));
+			addSpecies(tdd.getStateName(s), tVector, xMeanVector, xStdDevVector, tdd.getPlotScale(s));
 		}
 		setTitle(tdd.getTitle());
 	}

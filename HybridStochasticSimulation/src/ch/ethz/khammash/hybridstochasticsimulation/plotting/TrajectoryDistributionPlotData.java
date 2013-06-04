@@ -1,122 +1,133 @@
 package ch.ethz.khammash.hybridstochasticsimulation.plotting;
 
-import static com.google.common.base.Preconditions.*;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkElementIndex;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.TrajectoryDistributionData;
 
-public class TrajectoryDistributionPlotData extends TrajectoryDistributionData implements PlotData {
+public class TrajectoryDistributionPlotData extends TrajectoryPlotData {
 
-	private DefaultPlotData plotData;
+	private List<RealVector> xStdDevVectors;
 
 	public TrajectoryDistributionPlotData(RealVector tVector) {
 		super(tVector);
-		plotData = new DefaultPlotData(0);
+		initxStdDevVectors();
 	}
 
 	public TrajectoryDistributionPlotData(RealVector tVector, RealMatrix xMeanMatrix, RealMatrix xStdDevMatrix) {
-		super(tVector, xMeanMatrix, xStdDevMatrix);
-		plotData = new DefaultPlotData(getNumberOfStates());
+		super(tVector, xMeanMatrix);
+		initxStdDevVectors(xStdDevMatrix);
+	}
+
+	public TrajectoryDistributionPlotData(String[] names, RealVector tVector, RealMatrix xMeanMatrix,
+			RealMatrix xStdDevMatrix) {
+		super(names,  tVector, xMeanMatrix);
+		initxStdDevVectors(xStdDevMatrix);
 	}
 
 	public TrajectoryDistributionPlotData(String[] names, double[] plotScales, RealVector tVector, RealMatrix xMeanMatrix,
 			RealMatrix xStdDevMatrix) {
-		super(tVector, xMeanMatrix, xStdDevMatrix);
-//		checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
-//		if (plotScales != null)
-//			checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
-		plotData = new DefaultPlotData(getNumberOfStates());
-		for (int s=0; s < getNumberOfStates(); s++) {
-			if (names != null)
-				plotData.setName(s, names[s]);
-			if (plotScales != null)
-				plotData.setPlotScale(s, Double.valueOf(plotScales[s]));
-		}
+		super(names, plotScales, tVector, xMeanMatrix);
+		initxStdDevVectors(xStdDevMatrix);
+	}
+
+	private void initxStdDevVectors() {
+		xStdDevVectors = new ArrayList<RealVector>();
+	}
+
+	private void initxStdDevVectors(RealMatrix xStdDevMatrix) {
+		checkArgument(gettVector().getDimension() == xStdDevMatrix.getColumnDimension(),
+				"Size of tVector must be equal to number of columns of xStdDevMatrix");
+		xStdDevVectors = new ArrayList<RealVector>(getNumberOfStates());
+		for (int s=0; s < xStdDevMatrix.getRowDimension(); s++)
+			xStdDevVectors.add(xStdDevMatrix.getRowVector(s));
+	}
+
+	public RealVector getxMeanVector(int s) {
+		return getxVector(s);
+	}
+
+	public void setxMeanVector(int s, RealVector xMeanVector) {
+		setxVector(s, xMeanVector);
+	}
+
+	public RealVector getxStdDevVector(int s) {
+		checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
+		return xStdDevVectors.get(s);
+	}
+
+	public void setxStdDevVector(int s, RealVector xStdDevVector) {
+		checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
+		xStdDevVectors.set(s, xStdDevVector);
+	}
+
+	public List<RealVector> getxMeanVectors() {
+		return getxVectors();
+	}
+
+	public List<RealVector> getxStdDevVectors() {
+		return Collections.unmodifiableList(xStdDevVectors);
+	}
+
+	public Iterator<RealVector> xMeanIterator() {
+		return xVectorIterator();
+	}
+
+	public Iterator<RealVector> xStdDevIterator() {
+		return Collections.unmodifiableList(xStdDevVectors).iterator();
 	}
 
 	@Override
-	public String getName(int s) {
-		return plotData.getName(s);
-	}
-
-	public void setName(int s, String name) {
-		plotData.setName(s,  name);
-	}
-
-	@Override
-	public String[] getNames() {
-		return plotData.getNames();
-	}
-
-	public void setNames(String[] names) {
-		plotData.setNames(names);
-	}
-
-	@Override
-	public double getPlotScale(int s) {
-		return plotData.getPlotScale(s);
-	}
-
-	public void setPlotScale(int s, double plotScale) {
-		plotData.setPlotScale(s, Double.valueOf(plotScale));
-	}
-
-	@Override
-	public double[] getPlotScales() {
-		return plotData.getPlotScales();
-	}
-
-	public void setPlotScales(double[] plotScales) {
-		plotData.setPlotScales(plotScales);
+	public void addState(String name, double plotScale, RealVector xMeanVector) {
+		RealVector xStdDevVector = new ArrayRealVector(xMeanVector.getDimension());
+		addState(name, plotScale, xMeanVector, xStdDevVector);
 	}
 
 	public void addState(String name, double plotScale, RealVector xMeanVector, RealVector xStdDevVector) {
-		super.addState(xMeanVector, xStdDevVector);
-		plotData.addState(name, plotScale);
+		super.addState(name, plotScale, xMeanVector);
+		xStdDevVectors.add(xStdDevVector);
 	}
 
 	@Override
 	public void removeState(int s) {
 		super.removeState(s);
-		plotData.removeState(s);
+		xStdDevVectors.remove(s);
 	}
 
+	@Override
 	public TrajectoryDistributionPlotData getSubsetData(int[] states) {
 		return getSubsetData(states, null);
 	}
 
+	@Override
 	public TrajectoryDistributionPlotData getSubsetData(int[] states, double[] plotScales) {
 		if (plotScales != null)
 			checkArgument(states.length == plotScales.length, "Expected states.length == plotScales.length");
 		TrajectoryDistributionPlotData tdd = new TrajectoryDistributionPlotData(gettVector());
+		tdd.setDiscrete(isDiscrete());
 		for (int i=0; i < states.length; i++) {
 			int s = states[i];
 			checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
 			double plotScale = (plotScales != null) ? plotScales[i] : getPlotScale(s);
-			tdd.addState(getName(s), plotScale, getxMeanVector(s), getxStdDevVector(s));
+			tdd.addState(getStateName(s), plotScale, getxMeanVector(s), getxStdDevVector(s));
 		}
 		return tdd;
 	}
 
-	@Override
-	public boolean isContinuous() {
-		return true;
+	public RealVector getLinearCombinationOfxMeanVectors(double[] coefficients) {
+		return super.getLinearCombinationOfStates(coefficients);
 	}
 
-	@Override
-	public boolean isDiscrete() {
-		return false;
-	}
-
-	@Override
-	public String getTitle() {
-		return plotData.getTitle();
-	}
-
-	public void setTitle(String title) {
-		plotData.setTitle(title);
+	public RealVector getLinearCombinationOfxStdDevVectors(double[] coefficients) {
+		return getLinearCombinationOfStates(xStdDevVectors, coefficients);
 	}
 
 }

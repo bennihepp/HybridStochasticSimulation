@@ -1,95 +1,109 @@
 package ch.ethz.khammash.hybridstochasticsimulation.plotting;
 
-import static com.google.common.base.Preconditions.*;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkElementIndex;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.TrajectoryData;
+import ch.ethz.khammash.hybridstochasticsimulation.models.DefaultTrajectoryData;
 
-public class TrajectoryPlotData extends TrajectoryData implements PlotData {
+public class TrajectoryPlotData extends DefaultTrajectoryData implements PlotData {
 
-	private DefaultPlotData plotData;
+	private final String DEFAULT_TITLE = "Trajectory";
+
+	private String title;
+	private List<Double> plotScales;
 	private boolean isDiscrete;
 
 	public TrajectoryPlotData(RealVector tVector) {
 		super(tVector);
-		init();
+		title = DEFAULT_TITLE;
+		initPlotScales();
+		isDiscrete = false;
 	}
 
 	public TrajectoryPlotData(RealVector tVector, RealMatrix xMatrix) {
 		super(tVector, xMatrix);
-		init();
+		title = DEFAULT_TITLE;
+		initPlotScales();
+		isDiscrete = false;
+	}
+
+	public TrajectoryPlotData(String[] names, RealVector tVector, RealMatrix xMatrix) {
+		super(tVector, xMatrix);
+		title = DEFAULT_TITLE;
+		initStateNames(names);
+		initPlotScales();
+		isDiscrete = false;
 	}
 
 	public TrajectoryPlotData(String[] names, double[] plotScales, RealVector tVector, RealMatrix xMatrix) {
 		super(tVector, xMatrix);
-		init(names, plotScales);
-	}
-
-	private void init() {
-		init(null, null);
-	}
-
-	private void init(String[] names, double[] plotScales) {
-		plotData = new DefaultPlotData(getNumberOfStates());
+		title = DEFAULT_TITLE;
+		initStateNames(names);
+		initPlotScales(plotScales);
 		isDiscrete = false;
-		if (names != null)
-			checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
-		if (plotScales != null)
-			checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
-		for (int s=0; s < getNumberOfStates(); s++) {
-			if (names != null)
-				plotData.setName(s, names[s]);
-			if (plotScales != null)
-				plotData.setPlotScale(s, Double.valueOf(plotScales[s]));
-		}
 	}
 
-	@Override
-	public String getName(int s) {
-		return plotData.getName(s);
+	private void initStateNames(String[] names) {
+		checkArgument(names.length == getNumberOfStates(), "Expected names.length == getNumberOfStates()");
+		for (int s=0; s < getNumberOfStates(); s++)
+			setStateName(s, names[s]);
 	}
 
-	public void setName(int s, String name) {
-		plotData.setName(s,  name);
+	private void initPlotScales() {
+		plotScales = new ArrayList<Double>(getNumberOfStates());
+		for (int s=0; s < getNumberOfStates(); s++)
+			plotScales.add(s, 1.0);
 	}
 
-	@Override
-	public String[] getNames() {
-		return plotData.getNames();
-	}
-
-	public void setNames(String[] names) {
-		plotData.setNames(names);
+	private void initPlotScales(double[] plotScales) {
+		checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
+		this.plotScales = new ArrayList<Double>(plotScales.length);
+		for (int s=0; s < getNumberOfStates(); s++)
+			this.plotScales.add(s, plotScales[s]);
 	}
 
 	@Override
 	public double getPlotScale(int s) {
-		return plotData.getPlotScale(s);
+		return plotScales.get(s);
 	}
 
 	public void setPlotScale(int s, double plotScale) {
-		plotData.setPlotScale(s, Double.valueOf(plotScale));
-	}
-
-	@Override
-	public double[] getPlotScales() {
-		return plotData.getPlotScales();
+		plotScales.set(s, plotScale);
 	}
 
 	public void setPlotScales(double[] plotScales) {
-		plotData.setPlotScales(plotScales);
+		checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
+		for (int s=0; s < getNumberOfStates(); s++)
+			setPlotScale(s, plotScales[s]);
 	}
 
 	public void addState(String name, double plotScale, RealVector xVector) {
-		super.addState(xVector);
-		plotData.addState(name, plotScale);
+		super.addState(name, xVector);
+		plotScales.add(plotScale);
 	}
 
+	@Override
+	public void addState(String name, RealVector xVector) {
+		super.addState(name, xVector);
+		plotScales.add(1.0);
+	}
+
+	@Override
+	public void addState(RealVector xVector) {
+		super.addState(xVector);
+		plotScales.add(1.0);
+	}
+
+	@Override
 	public void removeState(int s) {
 		super.removeState(s);
-		plotData.removeState(s);
+		plotScales.remove(s);
 	}
 
 	public TrajectoryPlotData getSubsetData(int[] states) {
@@ -105,7 +119,7 @@ public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 			int s = states[i];
 			checkElementIndex(s, getNumberOfStates(), "Expected 0<=s<getNumberOfStates()");
 			double plotScale = (plotScales != null) ? plotScales[i] : getPlotScale(s);
-			tdd.addState(getName(s), plotScale, getxVector(s));
+			tdd.addState(getStateName(s), plotScale, getxVector(s));
 		}
 		return tdd;
 	}
@@ -134,11 +148,11 @@ public class TrajectoryPlotData extends TrajectoryData implements PlotData {
 
 	@Override
 	public String getTitle() {
-		return plotData.getTitle();
+		return title;
 	}
 
 	public void setTitle(String title) {
-		plotData.setTitle(title);
+		this.title = title;
 	}
 
 }

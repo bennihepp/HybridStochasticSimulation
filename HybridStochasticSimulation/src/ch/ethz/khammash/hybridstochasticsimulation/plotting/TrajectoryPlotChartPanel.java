@@ -30,23 +30,33 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 
 	private static final long serialVersionUID = -8825961199562105387L;
 
-	AbstractXYItemRenderer stepRenderer;
-	AbstractXYItemRenderer continuousRenderer;
-	final XYSeriesCollection seriesCollection;
-	final BasicStroke stroke;
-	final Color[] colorList = {
-			Color.blue,
-			Color.red,
-			Color.green,
-			Color.cyan,
-			Color.magenta,
-			Color.orange,
-			Color.pink,
-			Color.black,
-			Color.darkGray,
-			Color.lightGray,
-	};
-	List<String> speciesNames;
+	final public Color[] DEFAULT_COLOR_ORDER;
+	{
+		DEFAULT_COLOR_ORDER = new Color[MatlabPlotter.DEFAULT_COLOR_ORDER.length];
+		for (int i=0; i < DEFAULT_COLOR_ORDER.length; i++) {
+			double[] color = MatlabPlotter.DEFAULT_COLOR_ORDER[i];
+			DEFAULT_COLOR_ORDER[i] = new Color((float)color[0], (float)color[1], (float)color[2]);
+		}
+	}
+//	final public Color[] DEFAULT_COLOR_ORDER = {
+//			Color.blue,
+//			Color.red,
+//			Color.green,
+//			Color.cyan,
+//			Color.magenta,
+//			Color.orange,
+//			Color.pink,
+//			Color.black,
+//			Color.darkGray,
+//			Color.lightGray,
+//	};
+
+	private AbstractXYItemRenderer stepRenderer;
+	private AbstractXYItemRenderer continuousRenderer;
+	private final XYSeriesCollection seriesCollection;
+	private final BasicStroke stroke;
+	private List<String> speciesNames;
+	private Color[] colorList;
 
 	public TrajectoryPlotChartPanel() {
 		super(ChartFactory.createXYLineChart(
@@ -58,6 +68,7 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 				true, // tooltips
 				false // urls
 				));
+		colorList = DEFAULT_COLOR_ORDER;
 		seriesCollection = (XYSeriesCollection) getChart().getXYPlot().getDataset();
 		JFreeChart chart = getChart();
 		XYPlot plot = chart.getXYPlot();
@@ -125,7 +136,7 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 
 	public void addPlotData(TrajectoryPlotData td) {
 		for (int s=0; s < td.getNumberOfStates(); ++s) {
-			addSpecies(td.getName(s), td.gettVector(), td.getxVector(s), td.getPlotScale(s), td.isDiscrete());
+			addSpecies(td.getStateName(s), td.gettVector(), td.getxVector(s), td.getPlotScale(s), td.isDiscrete());
 		}
 		setTitle(td.getTitle());
 	}

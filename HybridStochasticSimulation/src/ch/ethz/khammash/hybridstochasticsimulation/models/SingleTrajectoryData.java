@@ -2,31 +2,10 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import org.apache.commons.math3.linear.RealVector;
 
+public interface SingleTrajectoryData {
 
-public class SingleTrajectoryData {
+	public RealVector gettVector();
 
-	private RealVector tVector;
-	private RealVector xVector;
-
-	public SingleTrajectoryData(RealVector tVector, RealVector xVector) {
-		this.tVector = tVector;
-		this.xVector = xVector;
-	}
-
-	public RealVector gettVector() {
-		return tVector;
-	}
-
-	public void settVector(RealVector tVector) {
-		this.tVector = tVector;
-	}
-
-	public RealVector getxVector() {
-		return xVector;
-	}
-
-	public void setxVector(RealVector xVector) {
-		this.xVector = xVector;
-	}
+	public RealVector getxVector();
 
 }

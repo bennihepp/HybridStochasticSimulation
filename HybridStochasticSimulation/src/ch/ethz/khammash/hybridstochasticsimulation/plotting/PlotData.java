@@ -1,18 +1,12 @@
 package ch.ethz.khammash.hybridstochasticsimulation.plotting;
 
-public interface PlotData {
+import ch.ethz.khammash.hybridstochasticsimulation.models.TrajectoryData;
+
+public interface PlotData extends TrajectoryData {
 
 	public String getTitle();
 
-	public int getNumberOfStates();
-
-	public String getName(int s);
-
-	public String[] getNames();
-
 	public double getPlotScale(int s);
-
-	public double[] getPlotScales();
 
 	public boolean isContinuous();
 

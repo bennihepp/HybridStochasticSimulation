@@ -9,7 +9,7 @@ import matlabcontrol.extensions.MatlabTypeConverter;
 
 public class MatlabPlotter {
 
-	final double[][] colorOrder = {
+	final public static double[][] DEFAULT_COLOR_ORDER = {
 		      {     0,         0,    1.0000},
 		      {1.0000,         0,         0},
 		      {     0,    1.0000,         0},
@@ -46,8 +46,14 @@ public class MatlabPlotter {
 			proxy.eval("clear all");
 		}
 
-		MatlabTypeConverter processor = new MatlabTypeConverter(proxy);
-	    processor.setNumericArray("colorOrder", new MatlabNumericArray(colorOrder, null));
+		boolean distinguishableColorFunctionExists = false;
+		double[] result = (double[])proxy.returningEval("exist('distinguishable_colors')", 1)[0];
+		if (result[0] == 2.0)
+			distinguishableColorFunctionExists = true;
+		else {
+			MatlabTypeConverter processor = new MatlabTypeConverter(proxy);
+		    processor.setNumericArray("colorOrder", new MatlabNumericArray(DEFAULT_COLOR_ORDER, null));
+		}
 
 	    proxy.eval("figure");
 	    proxy.eval("clf");
@@ -58,37 +64,33 @@ public class MatlabPlotter {
 	    	PlotData plotData = plotDataList.get(i);
 		    proxy.eval("subplot(" + rows + "," + cols + "," + (i+1) + ")");
 		    proxy.eval("hold on");
+		    if (distinguishableColorFunctionExists)
+				proxy.eval("colorOrder = distinguishable_colors(" + plotData.getNumberOfStates() + ")");
 			String[] plotLabels = new String[plotData.getNumberOfStates()];
-			if (plotData instanceof TrajectoryPlotData) {
-				TrajectoryPlotData td = (TrajectoryPlotData)plotData;
-				double[] tSeries = td.gettVector().toArray();
-				proxy.setVariable("tSeries", tSeries);
-				for (int j=0; j < plotData.getNumberOfStates(); j++) {
-					double[] xSeries = td.getxVector(j).toArray();
-					proxy.setVariable("xSeries", xSeries);
-					int colorOrderIndex = (j % colorOrder.length) + 1;
-					proxy.eval("plot(tSeries, xSeries, 'Color', colorOrder("+colorOrderIndex+",:))");
-					plotLabels[j] = td.getName(j);
-				}
-			} else if (plotData instanceof TrajectoryDistributionPlotData) {
-				TrajectoryDistributionPlotData tdd = (TrajectoryDistributionPlotData)plotData;
-				double[] tSeries = tdd.gettVector().toArray();
-				proxy.setVariable("tSeries", tSeries);
-				for (int j=0; j < plotData.getNumberOfStates(); j++) {
-					double[] xSeries = tdd.getxVector(j).toArray();
-					proxy.setVariable("xSeries", xSeries);
-					int colorOrderIndex = (j % colorOrder.length) + 1;
-					proxy.eval("plot(tSeries, xSeries, 'Color', colorOrder("+colorOrderIndex+",:))");
+			double[] tSeries = plotData.gettVector().toArray();
+			proxy.setVariable("tSeries", tSeries);
+			proxy.eval("plotHandles = zeros(1," + plotData.getNumberOfStates() + ")");
+			for (int j=0; j < plotData.getNumberOfStates(); j++) {
+				double[] xSeries = plotData.getxVector(j).toArray();
+				proxy.setVariable("xSeries", xSeries);
+				String colorOrderExpression;
+				if (!distinguishableColorFunctionExists) {
+					int colorOrderIndex = (j % DEFAULT_COLOR_ORDER.length) + 1;
+					colorOrderExpression = "colorOrder(" + colorOrderIndex + ",:)";
+				} else
+					colorOrderExpression = "colorOrder(" + (j+1) + ",:)";
+				proxy.eval("plotHandles(" + (j+1) + ") = plot(tSeries, xSeries, 'Color', " + colorOrderExpression + ")");
+				if (plotData instanceof TrajectoryDistributionPlotData) {
+					TrajectoryDistributionPlotData tdd = (TrajectoryDistributionPlotData)plotData;
 					double[] xSeriesStdDev = tdd.getxStdDevVector(j).toArray();
 					proxy.setVariable("xSeriesStdDev", xSeriesStdDev);
-					proxy.eval("plot(tSeries, xSeries+xSeriesStdDev, 'Color', colorOrder("+colorOrderIndex+",:))");
-					proxy.eval("plot(tSeries, xSeries-xSeriesStdDev, 'Color', colorOrder("+colorOrderIndex+",:))");
-					plotLabels[j] = tdd.getName(j);
+					proxy.eval("plot(tSeries, xSeries+xSeriesStdDev, ':', 'Color', " + colorOrderExpression + ")");
+					proxy.eval("plot(tSeries, xSeries-xSeriesStdDev, ':', 'Color', " + colorOrderExpression + ")");
 				}
-			} else
-				throw new UnsupportedOperationException("Unsupported implementation of PlotData");
+				plotLabels[j] = plotData.getStateName(j);
+			}
 			proxy.setVariable("plotLabels", plotLabels);
-			proxy.eval("legend(plotLabels)");
+			proxy.eval("legend(plotHandles, plotLabels, 'Location', 'Best')");
 			proxy.setVariable("plotTitle", plotData.getTitle());
 			proxy.eval("title(plotTitle)");
 			proxy.setVariable("xAxisLabel", "Time in seconds");

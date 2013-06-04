@@ -1,5 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation
 
+import ch.ethz.khammash.hybridstochasticsimulation.examples.NetworkSimulation;
 import ch.ethz.khammash.hybridstochasticsimulation.plotting.GridWindow;
 
 class NetworkSimulationScript {

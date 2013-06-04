@@ -3,7 +3,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 import org.apache.commons.math3.linear.RealVector;
 
 
-public class SingleTrajectoryDistributionData extends SingleTrajectoryData {
+public class SingleTrajectoryDistributionData extends DefaultSingleTrajectoryData {
 
 	private RealVector xStdDevVector;
 

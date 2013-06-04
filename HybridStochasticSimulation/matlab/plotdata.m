@@ -18,24 +18,25 @@ for i=1:length(S.plots)
     ylabel('copy numbers');
     title(plt.title);
     colorOrder = distinguishable_colors(length(plt.trajectories));
-    labels = cell(length(plt.trajectories), 1);
+    labels = cell(1,length(plt.trajectories));
+    plotHandles = zeros(1,length(plt.trajectories));
     for j=1:length(plt.trajectories)
         traj = plt.trajectories(j);
         tSeries = plt.tSeries;
         xSeries = traj.xSeries;
         hold on;
         colorIndex = mod(j - 1, length(colorOrder)) + 1;
-        plot(tSeries, xSeries, 'Color', colorOrder(colorIndex,:));
+        plotHandles(j) = plot(tSeries, xSeries, 'Color', colorOrder(colorIndex,:));
         labels{j} = traj.name;
         if isfield(traj, 'xSeriesStdDev')
             xSeriesStdDev = traj.xSeriesStdDev;
-            plot(tSeries, xSeries + xSeriesStdDev, 'Color', colorOrder(colorIndex,:));
-            plot(tSeries, xSeries - xSeriesStdDev, 'Color', colorOrder(colorIndex,:));
+            plot(tSeries, xSeries + xSeriesStdDev, ':', 'Color', colorOrder(colorIndex,:));
+            plot(tSeries, xSeries - xSeriesStdDev, ':', 'Color', colorOrder(colorIndex,:));
         end
         hold off;
     end
     labels = char(labels);
-    legend(labels);
+    legend(plotHandles, labels, 'Location', 'Best');
 end
 
 %opts = struct('width', 7, 'height', 7, 'Resolution', 600, 'Color', 'CMYK');
@@ -44,5 +45,5 @@ end
 %exportfig(gcf, [outputfilepath, outputfilename, '.eps'], opts);
 %exportfig(gcf, [outputfilepath, outputfilename, '.pdf'], opts);
 
-print(gcf(), [outputfilepath, outputfilename, '.pdf'], '-dpdf', '-r600');
-print(gcf(), [outputfilepath, outputfilename, '.eps'], '-dpsc2', '-r600');
+print(gcf(), [outputfilepath, outputfilename, '.pdf'], '-dpdf', '-r600', '-cmyk', '-painters');
+print(gcf(), [outputfilepath, outputfilename, '.eps'], '-depsc2', '-r600', '-cmyk', '-painters');

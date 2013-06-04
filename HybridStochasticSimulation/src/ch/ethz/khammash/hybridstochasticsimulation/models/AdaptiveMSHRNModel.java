@@ -234,7 +234,7 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 //							throw new UnsupportedOperationException("Exploding reaction term encountered!");
 //					}
 //			}
-			System.out.println("adapt");
+//			System.out.println("adapt");
 			hrnModel.adaptScales();
 //			{
 			for (int s=0; s < hrnModel.getNumberOfStates(); s++) {

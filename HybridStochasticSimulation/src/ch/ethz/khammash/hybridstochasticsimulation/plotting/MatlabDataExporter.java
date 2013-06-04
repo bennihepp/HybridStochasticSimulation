@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JOptionPane;
-
 import com.jmatio.io.MatFileWriter;
 import com.jmatio.types.MLArray;
 import com.jmatio.types.MLChar;
@@ -25,35 +23,22 @@ public class MatlabDataExporter {
 			PlotData plotData = plotDataList.get(i);
 			int[] trajectoriesDim = { plotData.getNumberOfStates(), 1 };
 	        MLStructure mlTrajectories = new MLStructure("trajectories", trajectoriesDim);
-			if (plotData instanceof TrajectoryPlotData) {
-				TrajectoryPlotData td = (TrajectoryPlotData)plotData;
-				double[] tSeries = td.gettVector().toArray();
-				MLDouble mltSeries = new MLDouble("tSeries", tSeries, tSeries.length);
-				mlPlots.setField("tSeries", mltSeries, i);
-				for (int j=0; j < plotData.getNumberOfStates(); j++) {
-					double[] xSeries = td.getxVector(j).toArray();
-					MLDouble mlxSeries = new MLDouble("xSeries", xSeries, xSeries.length);
-					mlTrajectories.setField("xSeries", mlxSeries, j);
-					String name = td.getName(j);
-					mlTrajectories.setField("name", new MLChar("name", name), j);
-				}
-			} else if (plotData instanceof TrajectoryDistributionPlotData) {
-				TrajectoryDistributionPlotData tdd = (TrajectoryDistributionPlotData)plotData;
-				double[] tSeries = tdd.gettVector().toArray();
-				MLDouble mltSeries = new MLDouble("tSeries", tSeries, tSeries.length);
-				mlPlots.setField("tSeries", mltSeries, i);
-				for (int j=0; j < plotData.getNumberOfStates(); j++) {
-					double[] xSeries = tdd.getxVector(j).toArray();
-					MLDouble mlxSeries = new MLDouble("xSeries", xSeries, xSeries.length);
-					mlTrajectories.setField("xSeries", mlxSeries, j);
+			double[] tSeries = plotData.gettVector().toArray();
+			MLDouble mltSeries = new MLDouble("tSeries", tSeries, tSeries.length);
+			mlPlots.setField("tSeries", mltSeries, i);
+			for (int j=0; j < plotData.getNumberOfStates(); j++) {
+				double[] xSeries = plotData.getxVector(j).toArray();
+				MLDouble mlxSeries = new MLDouble("xSeries", xSeries, xSeries.length);
+				mlTrajectories.setField("xSeries", mlxSeries, j);
+				if (plotData instanceof TrajectoryDistributionPlotData) {
+					TrajectoryDistributionPlotData tdd = (TrajectoryDistributionPlotData)plotData;
 					double[] xSeriesStdDev = tdd.getxStdDevVector(j).toArray();
 					MLDouble mlxSeriesStdDev = new MLDouble("xSeriesStdDev", xSeriesStdDev, xSeriesStdDev.length);
 					mlTrajectories.setField("xSeriesStdDev", mlxSeriesStdDev, j);
-					String name = tdd.getName(j);
-					mlTrajectories.setField("name", new MLChar("name", name), j);
 				}
-			} else
-				throw new UnsupportedOperationException("Unsupported implementation of PlotData");
+				String name = plotData.getStateName(j);
+				mlTrajectories.setField("name", new MLChar("name", name), j);
+			}
 			mlPlots.setField("trajectories", mlTrajectories, i);
 			mlPlots.setField("title", new MLChar("title", plotData.getTitle()), i);
 		}
@@ -66,13 +51,8 @@ public class MatlabDataExporter {
 		return list;
 	}
 
-	public void writeMatlabDataToFile(File file, List<MLArray> matlabData) {
-		try {
-			new MatFileWriter(file, matlabData);
-		} catch (IOException e1) {
-			String errorMsg = "Failed to export Matlab file:\n" + e1.toString();
-			JOptionPane.showMessageDialog(null, errorMsg, "Error", JOptionPane.ERROR);
-		}
+	public void writeMatlabDataToFile(File file, List<MLArray> matlabData) throws IOException {
+		new MatFileWriter(file, matlabData);
 	}
 
 }

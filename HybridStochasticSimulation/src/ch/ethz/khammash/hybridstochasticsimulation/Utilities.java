@@ -5,6 +5,7 @@ import org.apache.commons.math3.linear.RealVector;
 
 public class Utilities {
 
+	// TODO: not necessary
 	public static double[] computeTimeSeries(int numOfTimePoints, double t0, double t1) {
 		double[] tSeries = new double[numOfTimePoints];
 		for (int i = 0; i < numOfTimePoints; i++) {
@@ -22,6 +23,7 @@ public class Utilities {
 		return tVector;
 	}
 
+	// TODO: not necessary
 	public static int[] range(int start, int end) {
 		int[] range = new int[end - start];
 		for (int i=start; i < end; i++)
@@ -29,6 +31,7 @@ public class Utilities {
 		return range;
 	}
 
+	// TODO: not necessary
 	public static RealVector rangeVector(int start, int end) {
 		RealVector range = new ArrayRealVector(end - start);
 		for (int i=start; i < end; i++)

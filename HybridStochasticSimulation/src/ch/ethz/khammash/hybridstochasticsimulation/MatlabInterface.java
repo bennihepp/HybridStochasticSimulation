@@ -2,14 +2,15 @@ package ch.ethz.khammash.hybridstochasticsimulation;
 
 import java.lang.reflect.Array;
 
+
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
+import ch.ethz.khammash.hybridstochasticsimulation.models.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.models.MSHybridReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModelAdapter;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModelTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
-import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPModelSimulator;
 
 

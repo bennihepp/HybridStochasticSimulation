@@ -3,11 +3,13 @@ package ch.ethz.khammash.hybridstochasticsimulation;
 import java.util.List;
 import java.util.Set;
 
+
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.alg.StrongConnectivityInspector;
 
-import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
+
 
 
 public class ReactionNetworkGraph extends DefaultDirectedGraph<Integer, DefaultEdge> {

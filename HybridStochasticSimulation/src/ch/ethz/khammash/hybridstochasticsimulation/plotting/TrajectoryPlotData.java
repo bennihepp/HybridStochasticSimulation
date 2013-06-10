@@ -6,10 +6,12 @@ import static com.google.common.base.Preconditions.checkElementIndex;
 import java.util.ArrayList;
 import java.util.List;
 
+
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.DefaultTrajectoryData;
+
 
 public class TrajectoryPlotData extends DefaultTrajectoryData implements PlotData {
 

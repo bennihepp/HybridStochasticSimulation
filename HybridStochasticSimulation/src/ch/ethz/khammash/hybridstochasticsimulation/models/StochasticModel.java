@@ -1,28 +1,20 @@
 package ch.ethz.khammash.hybridstochasticsimulation.models;
 
-import java.util.List;
-
-import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
-
-
-// TODO: Group computation of choices for each reaction
 
 public class StochasticModel implements ReactionNetworkModel {
 
-	final int numberOfStates;
+	final int stateDimension;
 	protected int[] reactionChoiceIndex1;
 	protected int[] reactionChoiceIndex2;
 	protected double[] rateParameters;
 	protected int[][] reactionStochiometries;
 
     public StochasticModel(ReactionNetwork net) {
-    	numberOfStates = net.getNumberOfSpecies();
+    	stateDimension = net.getNumberOfSpecies();
     	init(net);
     }
 
     protected void init(ReactionNetwork net) {
-    	List<int[]> choiceIndicesList = net.getChoiceIndices();
-
     	reactionChoiceIndex1 = new int[net.getNumberOfReactions()];
     	reactionChoiceIndex2 = new int[net.getNumberOfReactions()];
     	for (int r=0; r < net.getNumberOfReactions(); r++) {
@@ -33,7 +25,7 @@ public class StochasticModel implements ReactionNetworkModel {
     	reactionStochiometries = net.getStochiometries();
 
     	for (int r=0; r < net.getNumberOfReactions(); r++) {
-    		int[] choiceIndices = choiceIndicesList.get(r);
+    		int[] choiceIndices = net.getChoiceIndices(r);
     		switch (choiceIndices.length) {
     		case 0:
     			break;
@@ -51,8 +43,8 @@ public class StochasticModel implements ReactionNetworkModel {
     }
 
     @Override
-    public int getNumberOfStates() {
-    	return numberOfStates;
+    public int getStateDimension() {
+    	return stateDimension;
     }
 
 	@Override
@@ -69,10 +61,10 @@ public class StochasticModel implements ReactionNetworkModel {
     		int choiceIndex2 = reactionChoiceIndex2[i];
     		if (choiceIndex2 != -1) {
     			if (choiceIndex1 == choiceIndex2)
-    				// binary reaction of the same species
+    				// Binary reaction of the same species
     				p *= (1/2.0) * x[choiceIndex1] * (x[choiceIndex1] - 1);
     			else
-    				// binary reaction of two different species
+    				// Binary reaction of two different species
     				p *= x[choiceIndex1] * x[choiceIndex2];
     		} else if (choiceIndex1 != -1) {
     			// Unary reaction

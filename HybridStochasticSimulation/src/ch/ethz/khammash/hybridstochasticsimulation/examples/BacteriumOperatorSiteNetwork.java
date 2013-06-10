@@ -1,13 +1,15 @@
 package ch.ethz.khammash.hybridstochasticsimulation.examples;
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
-import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
 
 
-public class BacteriumOperatorSite extends ExampleNetwork {
 
-	public BacteriumOperatorSite() {
+public class BacteriumOperatorSiteNetwork extends ExampleNetwork {
+
+	public BacteriumOperatorSiteNetwork() {
 		int[] continuousSpecies = { 2 };
 		double N = 100;
 		double deltaR = 0.5;

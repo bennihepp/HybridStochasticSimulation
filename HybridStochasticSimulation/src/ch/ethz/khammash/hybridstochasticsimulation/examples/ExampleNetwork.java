@@ -1,9 +1,11 @@
 package ch.ethz.khammash.hybridstochasticsimulation.examples;
 
+
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 
-import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
+
 
 public class ExampleNetwork {
 	public RandomGenerator rng;

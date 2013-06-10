@@ -22,6 +22,12 @@ public class ExampleNetworkFactory {
 
 	private ExampleNetworkFactory() {
 		creatorMap = new HashMap<String, ExampleNetworkCreator>();
+		registerExampleNetwork("Trivial", new ExampleNetworkCreator() {
+			@Override
+			public ExampleNetwork create() {
+				return new TrivialNetwork();
+			}
+		});
 		registerExampleNetwork("Simple Crystallization", new ExampleNetworkCreator() {
 			@Override
 			public ExampleNetwork create() {
@@ -49,7 +55,7 @@ public class ExampleNetworkFactory {
 		registerExampleNetwork("Bacterium Operator Site", new ExampleNetworkCreator() {
 			@Override
 			public ExampleNetwork create() {
-				return new BacteriumOperatorSite();
+				return new BacteriumOperatorSiteNetwork();
 			}
 		});
 		registerExampleNetwork("Lambda Phage Toggle Switch", new ExampleNetworkCreator() {
@@ -61,7 +67,19 @@ public class ExampleNetworkFactory {
 		registerExampleNetwork("Repressed Bacterium Operon", new ExampleNetworkCreator() {
 			@Override
 			public ExampleNetwork create() {
-				return new RepressedBacteriumOperon();
+				return new RepressedBacteriumOperonNetwork();
+			}
+		});
+		registerExampleNetwork("Conversion Cycle", new ExampleNetworkCreator() {
+			@Override
+			public ExampleNetwork create() {
+				return new ConversionCycleNetwork();
+			}
+		});
+		registerExampleNetwork("Stochastic Focusing", new ExampleNetworkCreator() {
+			@Override
+			public ExampleNetwork create() {
+				return new StochasticFocusingNetwork();
 			}
 		});
 	}

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.ReactionEvent;
@@ -34,28 +35,29 @@ public class StochasticModelTrajectory implements ModelTrajectory, ReactionEvent
 		reactions.add(new ReactionEvent(reaction, t, newX.clone()));
 	}
 
-	public double[] getInterpolatedState(double t) {
+	private int getPreviousReactionEventIndex(double t) {
 		int index = Collections.binarySearch(reactions, t);
 		if (index >= 0)
-			return reactions.get(index).getNewX();
+			return index;
 		// See Java API
 		int insertionPoint = -index - 1;
 		if (insertionPoint == 0)
 			throw new InvalidTimePointException("Time must be between start and end of simulation");
-		ReactionEvent re = reactions.get(insertionPoint - 1);
-		return re.getNewX();
+		return insertionPoint - 1;
 	}
 
+	@Override
+	public double[] getInterpolatedState(double t) {
+		int index = getPreviousReactionEventIndex(t);
+		ReactionEvent re = reactions.get(index);
+		return re.getNewX().clone();
+	}
+
+	@Override
 	public RealVector getInterpolatedStateVector(double t) {
-		int index = Collections.binarySearch(reactions, t);
-		if (index >= 0)
-			return reactions.get(index).getNewXVector();
-		// See Java API
-		int insertionPoint = -index - 1;
-		if (insertionPoint == 0)
-			throw new InvalidTimePointException("Time must be between start and end of simulation");
-		ReactionEvent re = reactions.get(insertionPoint - 1);
-		return re.getNewXVector();
+		int index = getPreviousReactionEventIndex(t);
+		ReactionEvent re = reactions.get(index);
+		return new ArrayRealVector(re.getNewX());
 	}
 
 	public double getInitialtime() {
@@ -69,18 +71,6 @@ public class StochasticModelTrajectory implements ModelTrajectory, ReactionEvent
 	public int getNumberOfReactionEvents() {
 		return reactions.size();
 	}
-
-//	public int getIndexOfReaction(int i) {
-//		return reactions.get(i).getReaction();
-//	}
-//
-//	public double getTimeOfReaction(int i) {
-//		return reactions.get(i).getTime();
-//	}
-//
-//	public double[] getStateAfterReaction(int i) {
-//		return reactions.get(i).getNewX();
-//	}
 
 	public ReactionEvent getReactionEvent(int i) {
 		return reactions.get(i);

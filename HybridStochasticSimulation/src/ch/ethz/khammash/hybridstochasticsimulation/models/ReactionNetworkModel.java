@@ -2,7 +2,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 public interface ReactionNetworkModel {
 
-	public int getNumberOfStates();
+	public int getStateDimension();
 
 	public int getPropensityDimension();
 

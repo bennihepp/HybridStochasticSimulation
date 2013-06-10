@@ -1,13 +1,16 @@
 package ch.ethz.khammash.hybridstochasticsimulation.examples;
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
+import org.apache.commons.math3.util.FastMath;
 
-import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
 
 
-public class RepressedBacteriumOperon extends ExampleNetwork {
 
-	public RepressedBacteriumOperon() {
+public class RepressedBacteriumOperonNetwork extends ExampleNetwork {
+
+	public RepressedBacteriumOperonNetwork() {
 		// See Crudu et. al 2009
 		// species:
 		//  R
@@ -62,7 +65,7 @@ public class RepressedBacteriumOperon extends ExampleNetwork {
 		double km6 = 2.25;
 		double k7 =  0.5;
 		double k8 =  0.015;
-		double k9 =  Math.log(2) / 5400.0;
+		double k9 =  FastMath.log(2) / 5400.0;
 		double k10 = 1e-5;
 		double k11 = 1e-5;
 		double[] rateParameters = {

@@ -2,6 +2,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import org.apache.commons.math3.linear.RealVector;
 
+
 public interface ModelTrajectory {
 
 	public class InvalidTimePointException extends RuntimeException {

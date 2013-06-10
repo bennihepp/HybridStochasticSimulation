@@ -1,67 +1,49 @@
 package ch.ethz.khammash.hybridstochasticsimulation.examples;
 
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
 
 
+public class ConversionCycleNetwork extends ExampleNetwork {
 
-public class RegulatedTranscriptionNetwork extends ExampleNetwork {
-
-	public RegulatedTranscriptionNetwork() {
-		int[] continuousSpecies = { };
-		double N = 100;
+	public ConversionCycleNetwork() {
+		int[] continuousSpecies = { 0, 1 };
+		double N = 1e5;
 		double deltaR = 0.5;
 		double deltaS = 0.5;
 		double epsilon = 0.5;
 		double gamma = 0;
-		double[] alpha = { 1, 1, 0, 0, 0, 0 };
-		double[] beta = { -1, -2, -1, -1, -1, 0, -3, -2, -1, 0 };
+		double[] alpha = { 0, 1, 1 };
+		double[] beta = { 0, 0, 0, 0 };
 		double t0 = 0.0;
 		double t1 = 100.0;
-		double[] x0 = { 2, 6, 0, 0, 2, 0 };
-		double[] plotScales = { 1, 1, 1, 1, 1, 1 };
+		double[] x0 = { 1, 10000, 10000 };
+		double[] plotScales = { 10, 1, 1 };
 		int[][] productionStochiometries = {
-				{ 1, 0, 1, 0, 0, 0 },
-				{ 0, 0, 0, 0, 0, 0 },
-				{ 0, 0, 1, 0, 1, 0 },
-				{ 0, 0, 0, 0, 0, 0 },
-				{ 0, 0, 0, 0, 1, 0 },
-				{ 0, 1, 0, 1, 0, 0 },
-				{ 0, 0, 0, 0, 0, 1 },
-				{ 0, 1, 0, 0, 1, 0 },
-				{ 0, 1, 0, 0, 0, 0 },
-				{ 2, 0, 0, 0, 0, 0 }
+				{ 0, 1, 0 },
+				{ 0, 0, 1 },
+				{ 1, 0, 0 },
+				{ 0, 1, 0 },
 		};
 		int[][] consumptionStochiometries = {
-				{ 0, 0, 1, 0, 0, 0 },
-				{ 1, 0, 0, 0, 0, 0 },
-				{ 0, 0, 0, 0, 1, 0 },
-				{ 0, 0, 1, 0, 0, 0 },
-				{ 0, 1, 0, 1, 0, 0 },
-				{ 0, 0, 0, 0, 1, 0 },
-				{ 0, 1, 0, 0, 1, 0 },
-				{ 0, 0, 0, 0, 0, 1 },
-				{ 2, 0, 0, 0, 0, 0 },
-				{ 0, 1, 0, 0, 0, 0 }
+				{ 1, 0, 0 },
+				{ 0, 1, 0 },
+				{ 0, 0, 1 },
+				{ 0, 0, 1 },
 		};
 		double[] rateParameters = {
-				4.30e-2,
-				7.00e-4,
-				7.15e-2,
-				3.90e-3,
-				1.99e-2,
-				4.79e-1,
-				1.99e-4,
-				8.77e-12,
-				8.30e-2,
-				5.00e-1
+				10,
+				100,
+				0.1,
+				100,
 		};
 		ReactionNetwork net = new ReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
 		net.setStochiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
-		String[] speciesNames = { "M", "D", "RNA", "DNA", "DNAD", "DNA2D" };
+		String[] speciesNames = { "S1", "S2", "S3" };
 
 		this.net = net;
 		this.continuousSpecies = continuousSpecies;

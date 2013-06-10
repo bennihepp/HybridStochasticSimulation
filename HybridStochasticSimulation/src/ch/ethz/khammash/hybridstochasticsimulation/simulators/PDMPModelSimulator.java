@@ -3,11 +3,12 @@ package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.apache.commons.math3.ode.AbstractIntegrator;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
-import org.apache.commons.math3.ode.FirstOrderIntegrator;
 import org.apache.commons.math3.ode.events.EventHandler;
 import org.apache.commons.math3.ode.nonstiff.DormandPrince853Integrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
+import org.apache.commons.math3.util.FastMath;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
@@ -15,7 +16,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 
 public class PDMPModelSimulator extends StochasticModelSimulator{
 
-	protected FirstOrderIntegrator integrator;
+	protected AbstractIntegrator integrator;
 	protected Collection<PDMPStepHandler> stepHandlers;
 	private double ehMaxCheckInterval;
 	private Double ehConvergence;
@@ -26,18 +27,18 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 		this(null, null);
 	}
 
-	public PDMPModelSimulator(RandomDataGenerator rng) {
-		this(null, rng);
+	public PDMPModelSimulator(RandomDataGenerator rdg) {
+		this(null, rdg);
 	}
 
-	public PDMPModelSimulator(FirstOrderIntegrator integrator) {
+	public PDMPModelSimulator(AbstractIntegrator integrator) {
 		this(integrator, null);
 	}
 
-	public PDMPModelSimulator(FirstOrderIntegrator integrator, RandomDataGenerator rng) {
-		super(rng);
+	public PDMPModelSimulator(AbstractIntegrator integrator, RandomDataGenerator rdg) {
+		super(rdg);
 		ehMaxCheckInterval = Double.POSITIVE_INFINITY;
-		ehConvergence = Double.valueOf(1e-10);
+		ehConvergence = Double.valueOf(1e-12);
 		ehConvergenceFactor = null;
 		ehMaxIterationCount = 1000;
 		if (integrator == null)
@@ -65,16 +66,17 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 		this.ehMaxIterationCount = maxIterationCount;
 	}
 
-	public double simulate(PDMPModel model, double t0, double[] x0, double t1, double[] x1) {
-    	FirstOrderDifferentialEquations ode = model.getFirstOrderDifferentialEquations();
+	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
+//    	ExpandableStatefulODE ode = new ExpandableStatefulODE(model.getFirstOrderDifferentialEquations());
+		FirstOrderDifferentialEquations ode = model.getFirstOrderDifferentialEquations();
     	ReactionNetworkModel rnm = model.getReactionNetworkModel();
     	EventHandler pdmpEventHandler = model.getPDMPEventHandler();
-    	model.initialize(t0, x0);
 		double[] x = new double[x0.length + 2];
 		for (int i=0; i < x0.length; i++)
 			x[i] = x0[i];
 		double[] xDot = x.clone();
 		double t = t0;
+    	model.initialize(t, x);
 		double[] propVec = new double[rnm.getPropensityDimension()];
 		for (PDMPStepHandler handler : stepHandlers) {
 			handler.reset();
@@ -85,9 +87,12 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 		double conv = (ehConvergence != null) ? ehConvergence : ehConvergenceFactor * (t1 - t0);
 		integrator.addEventHandler(pdmpEventHandler, ehMaxCheckInterval, conv, ehMaxIterationCount);
     	for (ReactionEventHandler handler : reactionHandlers)
-    		handler.setInitialState(t0, x0);
+    		handler.setInitialState(t, x);
     	for (EventHandler eh : model.getOptionalEventHandlers())
     		integrator.addEventHandler(eh, ehMaxCheckInterval, conv, ehMaxIterationCount);
+//    	long evaluationCounter = 0;
+//    	long reactionCounter = 0;
+//    	double[] reactionCounterArray = new double[model.getPropensityDimension()];
 		while (t < t1) {
 			boolean hasDeterministicPart = model.hasDeterministicPart();
 			if (hasDeterministicPart && model.isTimeIndependent()) {
@@ -106,10 +111,16 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 			if (hasDeterministicPart) {
 				// Evolve ODE until next stochastic reaction fires
 		        x[x.length - 2] = 0.0;
-		        x[x.length - 1] = -Math.log(rng.nextUniform(0.0,  1.0));
+		        x[x.length - 1] = -FastMath.log(rdg.nextUniform(0.0,  1.0));
 		        do {
 		        	model.handleOptionalEvent(t, x);
 		        	t = integrator.integrate(ode, t, x, t1, x);
+//		        	ode.setTime(t);
+//		        	ode.setPrimaryState(x);
+//		        	integrator.integrate(ode, t1);
+//		        	System.arraycopy(ode.getPrimaryState(), 0, x, 0, x.length);
+//		        	t = ode.getTime();
+//		        	evaluationCounter += integrator.getEvaluations();
 		        } while (model.getOptionalEventFlag());
 			} else {
 		        rnm.computePropensities(t, x, propVec);
@@ -117,10 +128,10 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 		        	propSum += propVec[i];
 		        propensitiesComputed = true;
 		        // Find next reaction time point
-		        if (propSum == 0)
+		        if (propSum <= 0)
 		        	break;
-		        // -Math.log(rng.nextUniform(0.0,  1.0))
-		        double tau = rng.nextExponential(1 / propSum);
+		        // -FastMath.log(rng.nextUniform(0.0,  1.0))
+		        double tau = rdg.nextExponential(1 / propSum);
 		        t = t + tau;
 			}
 
@@ -134,7 +145,7 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 		        for (int i=0; i < propVec.length; i++)
 		        	propSum += propVec[i];
 	        }
-	        double u = rng.nextUniform(0.0, 1.0);
+	        double u = rdg.nextUniform(0.0, 1.0);
 	        double w = 0.0;
 	        int reaction = -1;
 	        for (int l=0; l < propVec.length; l++) {
@@ -146,11 +157,18 @@ public class PDMPModelSimulator extends StochasticModelSimulator{
 	        	}
 	        }
 	        if (reaction >= 0) {
+//	        	reactionCounter++;
+//	        	reactionCounterArray[reaction]++;
 	        	for (ReactionEventHandler handler : reactionHandlers)
 	        		handler.handleReactionEvent(reaction, t, x);
 	        	model.manualCheckOptionalEvent(t, x);
 	        }
 		}
+//		System.out.println("Total of " + evaluationCounter + " evaluations and " + reactionCounter + " reactions performed");
+//		Utilities.printArray("Total reaction counts", reactionCounterArray);
+//		for (int r=0; r < reactionCounterArray.length; r++)
+//			reactionCounterArray[r] /= reactionCounter;
+//		Utilities.printArray("Relative reaction counts", reactionCounterArray);
 		integrator.clearEventHandlers();
 		integrator.clearStepHandlers();
 		for (int i=0; i < x1.length; i++)

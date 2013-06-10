@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.networks;
+package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -21,6 +21,7 @@ public class ReactionNetwork {
 	private int[][] consumptionStochiometry;
 	private int[][] stochiometry;
 	private double[] rateParameters;
+	private List<int[]> choiceIndicesList;
 
 	public ReactionNetwork(int numOfSpecies, int numOfReactions) {
 		checkArgument(numOfSpecies > 0, "Expected numOfSpecies > 0");
@@ -33,12 +34,16 @@ public class ReactionNetwork {
 		rateParameters = new double[numOfReactions];
 	}
 
-	public int getNumberOfSpecies() {
+	final public int getNumberOfSpecies() {
 		return numOfSpecies;
 	}
 
-	public int getNumberOfReactions() {
+	final public int getNumberOfReactions() {
 		return numOfReactions;
+	}
+
+	final protected void invalidate() {
+		choiceIndicesList = null;
 	}
 
 	public void setStochiometry(int species, int reaction, int production, int consumption) {
@@ -49,6 +54,7 @@ public class ReactionNetwork {
 		productionStochiometry[reaction][species] = production;
 		consumptionStochiometry[reaction][species] = consumption;
 		stochiometry[reaction][species] = production - consumption;
+		invalidate();
 	}
 
 	public void setStochiometries(int[][] productionStoch, int[][] consumptionStoch) {
@@ -56,27 +62,28 @@ public class ReactionNetwork {
 		checkArgument(consumptionStoch.length == getNumberOfReactions());
 		checkArgument(productionStoch[0].length == getNumberOfSpecies());
 		checkArgument(consumptionStoch[0].length == getNumberOfSpecies());
-		for (int r=0; r < numOfReactions; r++)
-			for (int s=0; s < numOfSpecies; s++) {
-				productionStochiometry[r][s] = productionStoch[r][s];
-				consumptionStochiometry[r][s] = consumptionStoch[r][s];
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			System.arraycopy(productionStoch[r], 0, productionStochiometry[r], 0, numOfSpecies);
+			System.arraycopy(consumptionStoch[r], 0, consumptionStochiometry[r], 0, numOfSpecies);
+			for (int s=0; s < getNumberOfSpecies(); s++)
 				stochiometry[r][s] = productionStoch[r][s] - consumptionStoch[r][s];
-			}
+		}
+		invalidate();
 	}
 
-	public int getProductionStochiometry(int species, int reaction) {
+	final public int getProductionStochiometry(int species, int reaction) {
 		checkElementIndex(species, getNumberOfSpecies());
 		checkElementIndex(reaction, getNumberOfReactions());
 		return productionStochiometry[reaction][species];
 	}
 
-	public int getConsumptionStochiometry(int species, int reaction) {
+	final public int getConsumptionStochiometry(int species, int reaction) {
 		checkElementIndex(species, getNumberOfSpecies());
 		checkElementIndex(reaction, getNumberOfReactions());
 		return consumptionStochiometry[reaction][species];
 	}
 
-	public int getStochiometry(int species, int reaction) {
+	final public int getStochiometry(int species, int reaction) {
 		checkElementIndex(species, getNumberOfSpecies());
 		checkElementIndex(reaction, getNumberOfReactions());
 		return stochiometry[reaction][species];
@@ -115,12 +122,12 @@ public class ReactionNetwork {
 	}
 
 	public void setRateParameters(double[] rateParameters) {
-		checkArgument(rateParameters.length == getNumberOfReactions(), "Expected rateParameters.length==getNumberOfReactions()");
+		System.arraycopy(rateParameters, 0, this.rateParameters, 0, getNumberOfReactions());
 		for (int r=0; r < numOfReactions; r++)
 			this.rateParameters[r] = rateParameters[r];
 	}
 
-	public double getRateParameter(int reaction) {
+	final public double getRateParameter(int reaction) {
 		checkElementIndex(reaction, getNumberOfReactions());
 		return rateParameters[reaction];
 	}
@@ -129,53 +136,63 @@ public class ReactionNetwork {
 		return rateParameters.clone();
 	}
 
-	public List<int[]> getChoiceIndices() {
-		List<int[]> result = new ArrayList<int[]>();
-		for (int r=0; r < numOfReactions; r++)
-			result.add(getChoiceIndices(r));
-		return result;
-	}
 	public int[] getChoiceIndices(int reaction) {
 		checkElementIndex(reaction, getNumberOfReactions());
-		int s1 = -1;
-		int s2 = -1;
-		for (int s=0; s < numOfSpecies; s++)
-			switch (consumptionStochiometry[reaction][s]) {
-			case 0:
-				break;
-			case 1:
-				if (s1 == -1)
-					s1 = s;
-				else if (s2 == -1)
-					s2 = s;
-				else
-					throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
-				break;
-			case 2:
-				if (s1 == -1) {
-					s1 = s;
-					s2 = s;
-				} else
-					throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
-				break;
-			default:
-				throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
-			}
-		int[] result = null;
-		if (s1 != -1 && s2 != -1) {
-			result = new int[2];
-			result[0] = s1;
-			result[1] = s2;
-		} else if (s1 != -1) {
-			result = new int[1];
-			result[0] = s1;
-		} else if (s2 != -1) {
-			result = new int[1];
-			result[0] = s2;
-		} else {
-			result = new int[0];
+		if (choiceIndicesList == null)
+			computeChoiceIndices();
+		return choiceIndicesList.get(reaction);
+	}
+
+	public List<int[]> getChoiceIndicesList() {
+		if (choiceIndicesList == null) {
+			computeChoiceIndices();
 		}
-		return result;
+		return choiceIndicesList;
+	}
+
+	private void computeChoiceIndices() {
+		choiceIndicesList = new ArrayList<int[]>();
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			int s1 = -1;
+			int s2 = -1;
+			for (int s=0; s < getNumberOfSpecies(); s++)
+				switch (consumptionStochiometry[r][s]) {
+				case 0:
+					break;
+				case 1:
+					if (s1 == -1)
+						s1 = s;
+					else if (s2 == -1)
+						s2 = s;
+					else
+						throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
+					break;
+				case 2:
+					if (s1 == -1) {
+						s1 = s;
+						s2 = s;
+					} else
+						throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
+					break;
+				default:
+					throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
+				}
+			int[] choiceIndices = null;
+			if (s1 != -1 && s2 != -1) {
+				choiceIndices = new int[2];
+				choiceIndices[0] = s1;
+				choiceIndices[1] = s2;
+			} else if (s1 != -1) {
+				choiceIndices = new int[1];
+				choiceIndices[0] = s1;
+			} else if (s2 != -1) {
+				choiceIndices = new int[1];
+				choiceIndices[0] = s2;
+			} else {
+				choiceIndices = new int[0];
+			}
+			choiceIndicesList.add(choiceIndices);
+		}
 	}
 
 }

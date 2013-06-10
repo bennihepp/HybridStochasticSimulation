@@ -5,13 +5,23 @@ import java.util.Collection;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.events.EventHandler;
 
-public interface PDMPModel extends ReactionNetworkModel {
+public interface PDMPModel {
 
 	public FirstOrderDifferentialEquations getFirstOrderDifferentialEquations();
 
-	public EventHandler getPDMPEventHandler();
+	public ReactionNetworkModel getReactionNetworkModel();
+
+	public int getStateDimension();
+
+	public int getPropensityDimension();
+
+	public boolean hasDeterministicPart();
+
+	public boolean isTimeIndependent();
 
 	public void initialize(double t0, double[] x0);
+
+	public EventHandler getPDMPEventHandler();
 
 	public Collection<EventHandler> getOptionalEventHandlers();
 
@@ -20,11 +30,5 @@ public interface PDMPModel extends ReactionNetworkModel {
 	public void handleOptionalEvent(double t, double[] x);
 
 	public void manualCheckOptionalEvent(double t, double[] x);
-
-	public ReactionNetworkModel getReactionNetworkModel();
-
-	public boolean hasDeterministicPart();
-
-	public boolean isTimeIndependent();
 
 }

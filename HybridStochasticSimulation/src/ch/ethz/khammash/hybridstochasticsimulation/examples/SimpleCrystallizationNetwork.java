@@ -1,9 +1,11 @@
 package ch.ethz.khammash.hybridstochasticsimulation.examples;
 
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
-import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
+
 
 public class SimpleCrystallizationNetwork extends ExampleNetwork {
 
@@ -20,17 +22,21 @@ public class SimpleCrystallizationNetwork extends ExampleNetwork {
 		double t1 = 100.0;
 		double[] x0 = { 1e6, 0, 10, 0 };
 		double[] plotScales = { 1e-5, 1e-5, 1, 1 };
-		ReactionNetwork net = new ReactionNetwork(4, 2);
-		net.setStochiometry(0, 0, 0, 2);
-		net.setStochiometry(1, 0, 1, 0);
-		net.setStochiometry(2, 0, 0, 0);
-		net.setStochiometry(3, 0, 0, 0);
-		net.setStochiometry(0, 1, 0, 1);
-		net.setStochiometry(1, 1, 0, 0);
-		net.setStochiometry(2, 1, 0, 1);
-		net.setStochiometry(3, 1, 1, 0);
-		net.setRateParameter(0, 1e-7);
-		net.setRateParameter(1, 1e-7);
+		int[][] productionStochiometries = {
+				{ 0, 1, 0, 0 },
+				{ 0, 0, 0, 1 },
+		};
+		int[][] consumptionStochiometries = {
+				{ 2, 0, 0, 0 },
+				{ 1, 0, 1, 0 },
+		};
+		double[] rateParameters = {
+				1e-7,
+				1e-7,
+		};
+		ReactionNetwork net = new ReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
+		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setRateParameters(rateParameters);
 		String[] speciesNames = { "A", "B", "C", "D" };
 
 		this.net = net;

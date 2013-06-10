@@ -3,7 +3,6 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 import java.util.LinkedList;
 import java.util.List;
 
-import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwork;
 
 // TODO: Group computation of choices for each reaction
 
@@ -34,7 +33,7 @@ public class HybridReactionNetworkModel implements HybridModel {
 	private double[][] reactionStochiometries;
 
 	public HybridReactionNetworkModel(HybridReactionNetwork hrn) {
-		choiceIndicesList = hrn.getChoiceIndices();
+		choiceIndicesList = hrn.getChoiceIndicesList();
 		dimension = hrn.getNumberOfSpecies();
 		rateParameters = new double[hrn.getNumberOfReactions()];
 		reactionChoiceIndices1 = new int[hrn.getNumberOfReactions()];
@@ -314,7 +313,7 @@ public class HybridReactionNetworkModel implements HybridModel {
 //	}
 
 	@Override
-	public int getNumberOfStates() {
+	public int getStateDimension() {
 		return getDimension();
 	}
 

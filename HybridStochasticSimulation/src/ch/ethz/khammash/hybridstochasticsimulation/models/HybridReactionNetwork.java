@@ -1,8 +1,6 @@
-package ch.ethz.khammash.hybridstochasticsimulation.networks;
+package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import static com.google.common.base.Preconditions.checkElementIndex;
-
-import java.util.List;
 
 public class HybridReactionNetwork extends ReactionNetwork {
 
@@ -16,13 +14,16 @@ public class HybridReactionNetwork extends ReactionNetwork {
 
 	private SpeciesType[] speciesTypes;
 
+	public HybridReactionNetwork(int numOfSpecies, int numOfReactions, int[] continuousSpecies) {
+		super(numOfSpecies, numOfReactions);
+		this.setDiscreteSpecies(continuousSpecies);
+	}
+
 	public HybridReactionNetwork(ReactionNetwork net, int[] continuousSpecies) {
 		super(net.getNumberOfSpecies(), net.getNumberOfReactions());
 		this.setDiscreteSpecies(continuousSpecies);
 		setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
-		List<int[]> choiceIndicesList = net.getChoiceIndices();
-		for (int r = 0; r < choiceIndicesList.size(); r++)
-			setRateParameter(r, net.getRateParameter(r));
+		setRateParameters(net.getRateParameters());
 	}
 
 	private void setDiscreteSpecies(int[] continuousSpecies) {

@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.math3.ode.FirstOrderIntegrator;
+import org.apache.commons.math3.ode.AbstractIntegrator;
 import org.apache.commons.math3.ode.nonstiff.DormandPrince853Integrator;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
@@ -15,16 +15,10 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPFixedModelTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.models.FinitePDMPModelTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModelTrajectory;
 
-/**
- * Created by
- * User: bhepp
- * Date: 5/13/13
- * Time: 10:51 AM
- */
 
 public class PDMPModelSimulatorController {
 
@@ -32,18 +26,18 @@ public class PDMPModelSimulatorController {
 		public PDMPModel createModel();
 	}
 
-	public static interface PDMPFixedModelTrajectoryFactory {
-		public PDMPFixedModelTrajectory createModelTrajectory();
+	public static interface FinitePDMPModelTrajectoryFactory {
+		public FinitePDMPModelTrajectory createModelTrajectory();
 	}
 
-	public static interface PDMPModelAndFixedTrajectoryFactory {
+	public static interface PDMPModelAndFiniteTrajectoryFactory {
 		public void createNextModelAndTrajectory();
 		public PDMPModel getModel();
-		public PDMPFixedModelTrajectory getModelTrajectory();
+		public FinitePDMPModelTrajectory getModelTrajectory();
 	}
 
 	public static interface IntegratorFactory {
-		public FirstOrderIntegrator createIntegrator();
+		public AbstractIntegrator createIntegrator();
 	}
 
 	public static class DefaultIntegratorFactory implements IntegratorFactory {
@@ -55,7 +49,7 @@ public class PDMPModelSimulatorController {
         private int maxEvaluations;
 
 		public DefaultIntegratorFactory() {
-			this(1.0e-5, 100.0, 1.0e-10, 1.0e-10, Integer.MAX_VALUE);
+			this(1.0e-10, 100.0, 1.0e-10, 1.0e-10, Integer.MAX_VALUE);
 		}
 
 		public DefaultIntegratorFactory(double minStep, double maxStep,
@@ -69,7 +63,7 @@ public class PDMPModelSimulatorController {
 		}
 
 		@Override
-		public FirstOrderIntegrator createIntegrator() {
+		public AbstractIntegrator createIntegrator() {
 			DormandPrince853Integrator integrator = new DormandPrince853Integrator(getMinStep(), getMaxStep(), getScalAbsoluteTolerance(), getScalRelativeTolerance());
 			integrator.setMaxEvaluations(maxEvaluations);
 			return integrator;
@@ -124,7 +118,7 @@ public class PDMPModelSimulatorController {
 		private double t1;
 		private PDMPModelSimulator simulator;
 
-		public SimulationWorker(FirstOrderIntegrator integrator,
+		public SimulationWorker(AbstractIntegrator integrator,
 				RandomDataGenerator rng, PDMPModel model, double t0,
 				double[] x0, double t1) {
 			this.model = model;
@@ -151,17 +145,17 @@ public class PDMPModelSimulatorController {
 		}
 	}
 
-	private class FixedSimulationWorker implements Callable<PDMPFixedModelTrajectory> {
+	private class FiniteSimulationWorker implements Callable<FinitePDMPModelTrajectory> {
 
-		private PDMPFixedModelTrajectory mt;
+		private FinitePDMPModelTrajectory mt;
 		private PDMPModel model;
 		private double t0;
 		private double[] x0;
 		private double t1;
 		private PDMPModelSimulator simulator;
 
-		public FixedSimulationWorker(PDMPFixedModelTrajectory mt,
-				FirstOrderIntegrator integrator, RandomDataGenerator rdg,
+		public FiniteSimulationWorker(FinitePDMPModelTrajectory mt,
+				AbstractIntegrator integrator, RandomDataGenerator rdg,
 				PDMPModel model, double t0, double[] x0, double t1) {
 			this.mt = mt;
 			this.model = model;
@@ -171,7 +165,7 @@ public class PDMPModelSimulatorController {
 			simulator = new PDMPModelSimulator(integrator, rdg);
 		}
 
-		public PDMPFixedModelTrajectory simulate() {
+		public FinitePDMPModelTrajectory simulate() {
 			double[] x1 = new double[x0.length];
 			simulator.addStepHandler(mt);
 			simulator.addReactionHandler(mt);
@@ -182,7 +176,7 @@ public class PDMPModelSimulatorController {
 		}
 
 		@Override
-		public PDMPFixedModelTrajectory call() {
+		public FinitePDMPModelTrajectory call() {
 			return simulate();
 		}
 	}
@@ -191,7 +185,7 @@ public class PDMPModelSimulatorController {
 		private double[] tSeries;
 		private SynchronizedSummaryStatistics[][] xStatistics;
 
-		public TrajectoryDistributionSimulator(FirstOrderIntegrator integrator,
+		public TrajectoryDistributionSimulator(AbstractIntegrator integrator,
 				RandomDataGenerator rng, PDMPModel model,
 				SynchronizedSummaryStatistics[][] xStatistics,
 				double[] tSeries, double[] x0) {
@@ -213,11 +207,11 @@ public class PDMPModelSimulatorController {
 		}
 	}
 
-	private class FixedTrajectoryDistributionSimulator extends FixedSimulationWorker implements Runnable {
+	private class FiniteTrajectoryDistributionSimulator extends FiniteSimulationWorker implements Runnable {
 		private SynchronizedSummaryStatistics[][] xStatistics;
 
-		public FixedTrajectoryDistributionSimulator(PDMPFixedModelTrajectory mt,
-				FirstOrderIntegrator integrator, RandomDataGenerator rdg,
+		public FiniteTrajectoryDistributionSimulator(FinitePDMPModelTrajectory mt,
+				AbstractIntegrator integrator, RandomDataGenerator rdg,
 				PDMPModel model, SynchronizedSummaryStatistics[][] xStatistics,
 				double t0, double[] x0, double t1) {
 			super(mt, integrator, rdg, model, t0, x0, t1);
@@ -226,7 +220,7 @@ public class PDMPModelSimulatorController {
 
 		@Override
 		public void run() {
-			PDMPFixedModelTrajectory mt = simulate();
+			FinitePDMPModelTrajectory mt = simulate();
 			double[][] xSeries = mt.getxSeries();
 			for (int s = 0; s < xStatistics.length; s++)
 				for (int i = 0; i < xStatistics[s].length; i++)
@@ -261,13 +255,13 @@ public class PDMPModelSimulatorController {
 		this.rng = rng;
 	}
 
-	private FirstOrderIntegrator createIntegrator() {
+	private AbstractIntegrator createIntegrator() {
 		return integratorFactory.createIntegrator();
 	}
 
 // TODO
-//	private FirstOrderIntegrator[] createIntegrators(int numOfGenerators) {
-//		FirstOrderIntegrator[] result = new FirstOrderIntegrator[numOfGenerators];
+//	private AbstractIntegrator[] createIntegrators(int numOfGenerators) {
+//		AbstractIntegrator[] result = new AbstractIntegrator[numOfGenerators];
 //		for (int i = 0; i < result.length; i++)
 //			result[i] = createIntegrator();
 //		return result;
@@ -291,21 +285,21 @@ public class PDMPModelSimulatorController {
 
 	public PDMPModelTrajectory simulateTrajectory(PDMPModel model, double t0, double[] x0, double t1) {
 		RandomDataGenerator rdg = createRandomDataGenerator();
-		FirstOrderIntegrator integrator = createIntegrator();
+		AbstractIntegrator integrator = createIntegrator();
 		SimulationWorker sw = new SimulationWorker(integrator, rdg, model, t0, x0, t1);
 		return sw.simulate();
 	}
 
 	public double[][] simulateTrajectory(PDMPModel model, double[] tSeries, double[] x0) {
-		PDMPFixedModelTrajectory mt = new PDMPFixedModelTrajectory(tSeries);
+		FinitePDMPModelTrajectory mt = new FinitePDMPModelTrajectory(tSeries);
 		simulateTrajectory(model, mt, tSeries[0], x0, tSeries[tSeries.length - 1]);
 		return mt.getxSeries();
 	}
 
-	public void simulateTrajectory(PDMPModel model, PDMPFixedModelTrajectory mt, double t0, double[] x0, double t1) {
+	public void simulateTrajectory(PDMPModel model, FinitePDMPModelTrajectory mt, double t0, double[] x0, double t1) {
 		RandomDataGenerator rdg = createRandomDataGenerator();
-		FirstOrderIntegrator integrator = createIntegrator();
-		FixedSimulationWorker sw = new FixedSimulationWorker(mt, integrator, rdg, model, t0, x0, t1);
+		AbstractIntegrator integrator = createIntegrator();
+		FiniteSimulationWorker sw = new FiniteSimulationWorker(mt, integrator, rdg, model, t0, x0, t1);
 		sw.simulate();
 	}
 
@@ -316,9 +310,8 @@ public class PDMPModelSimulatorController {
 		for (int i = 0; i < tSeries.length; i++)
 			for (int s = 0; s < x0.length; s++)
 				xSeriesStatistics[i][s] = new SynchronizedSummaryStatistics();
-		final long startTime = System.currentTimeMillis();
 		for (int k = 0; k < runs; k++) {
-			FirstOrderIntegrator integrator = createIntegrator();
+			AbstractIntegrator integrator = createIntegrator();
 			RandomDataGenerator rdg = createRandomDataGenerator();
 			// PDMPModel has an internal state so we create a copy for each run
 			PDMPModel model = modelFactory.createModel();
@@ -332,33 +325,30 @@ public class PDMPModelSimulatorController {
 			executor.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
-		final long endTime = System.currentTimeMillis();
-		System.out.println("Execution time: " + (endTime - startTime));
 		return xSeriesStatistics;
 	}
 
-	public StatisticalSummary[][] simulateFixedTrajectoryDistribution(int runs,
+	public StatisticalSummary[][] simulateFiniteTrajectoryDistribution(int runs,
 			PDMPModelFactory modelFactory,
-			PDMPFixedModelTrajectoryFactory mtFactory, double t0, double[] x0,
+			FinitePDMPModelTrajectoryFactory mtFactory, double t0, double[] x0,
 			double t1) throws InterruptedException, CancellationException,
 			ExecutionException {
 		SynchronizedSummaryStatistics[][] xSeriesStatistics = null;
 		// We also want to have different random number sequences for each run
-		final long startTime = System.currentTimeMillis();
 		for (int k = 0; k < runs; k++) {
-			FirstOrderIntegrator integrator = createIntegrator();
+			AbstractIntegrator integrator = createIntegrator();
 			RandomDataGenerator rdg = createRandomDataGenerator();
 			// PDMPModel has an internal state so we create a copy for each run
 			PDMPModel model = modelFactory.createModel();
-			PDMPFixedModelTrajectory mt = mtFactory.createModelTrajectory();
+			FinitePDMPModelTrajectory mt = mtFactory.createModelTrajectory();
 			if (xSeriesStatistics == null) {
 				xSeriesStatistics = new SynchronizedSummaryStatistics[x0.length][mt.gettSeries().length];
 				for (int s = 0; s < xSeriesStatistics.length; s++)
 					for (int i = 0; i < xSeriesStatistics[s].length; i++)
 						xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
 			}
-			Runnable r = new FixedTrajectoryDistributionSimulator(mt,
-					integrator, rdg, model, xSeriesStatistics, t0, x0, t1);
+			Runnable r = new FiniteTrajectoryDistributionSimulator(mt,
+					integrator, rdg, model, xSeriesStatistics, t0, x0.clone(), t1);
 			executor.execute(r);
 		}
 		executor.shutdown();
@@ -368,8 +358,6 @@ public class PDMPModelSimulatorController {
 			executor.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
-		final long endTime = System.currentTimeMillis();
-		System.out.println("Execution time: " + (endTime - startTime));
 		return xSeriesStatistics;
 	}
 

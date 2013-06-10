@@ -6,8 +6,7 @@ import java.util.Collections;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.events.EventHandler;
 
-public class PDMPModelAdapter implements PDMPModel,
-		FirstOrderDifferentialEquations, ReactionNetworkModel, EventHandler {
+public class PDMPModelAdapter implements FirstOrderDifferentialEquations, PDMPModel, EventHandler {
 
 	private int baseODEDimension;
 	private HybridModel hybridModel;
@@ -18,14 +17,13 @@ public class PDMPModelAdapter implements PDMPModel,
 	}
 
 	public PDMPModelAdapter(FirstOrderDifferentialEquations baseODE, ReactionNetworkModel reactionModel) {
+		if (reactionModel.getStateDimension() != baseODE.getDimension())
+			throw new UnsupportedOperationException("Expected reactionModel.getNumberOfStates() == baseODE.getDimension()");
 		setModel(baseODE, reactionModel);
 	}
 
 	public PDMPModelAdapter(HybridModel hybridModel) {
 		setHybridModel(hybridModel);
-	}
-
-	protected PDMPModelAdapter() {
 	}
 
 	public void setModel(FirstOrderDifferentialEquations baseODE, ReactionNetworkModel reactionModel) {
@@ -37,6 +35,8 @@ public class PDMPModelAdapter implements PDMPModel,
 	}
 
 	public void setHybridModel(HybridModel hybridModel) {
+		if (hybridModel.getStateDimension() != hybridModel.getDimension())
+			throw new UnsupportedOperationException("Invalid hybrid model. Expected getNumberOfStates() == getDimension()");
 		this.hybridModel = hybridModel;
 		baseODEDimension = hybridModel.getDimension();
 		propVector = new double[hybridModel.getPropensityDimension()];
@@ -59,35 +59,18 @@ public class PDMPModelAdapter implements PDMPModel,
 	}
 
 	@Override
-	public int getPropensityDimension() {
-		return hybridModel.getPropensityDimension();
-	}
-
-	@Override
-	public void computePropensities(double t, double[] x, double[] propensities) {
-		hybridModel.computePropensities(t, x, propensities);
-	}
-
-	@Override
-	public void updateState(int reaction, double t, double[] x) {
-		hybridModel.updateState(reaction, t, x);
-	}
-
-	@Override
 	public int getDimension() {
 		return baseODEDimension + 2;
 	}
 
 	@Override
 	public void computeDerivatives(double t, double[] x, double[] xDot) {
-		if (t >= 6.50E-9)
-			t = t + 0;
 		hybridModel.computeDerivatives(t, x, xDot);
-		xDot[xDot.length - 2] = 0;
-		computePropensities(t, x, propVector);
+		hybridModel.computePropensities(t, x, propVector);
+		xDot[xDot.length - 2] = 0.0;
+		xDot[xDot.length - 1] = 0.0;
 		for (int i = 0; i < propVector.length; i++)
 			xDot[xDot.length - 2] += propVector[i];
-		xDot[xDot.length - 1] = 0;
 	}
 
 	@Override
@@ -109,11 +92,6 @@ public class PDMPModelAdapter implements PDMPModel,
 	}
 
 	@Override
-	public int getNumberOfStates() {
-		return getBaseODEDimension();
-	}
-
-	@Override
 	public Collection<EventHandler> getOptionalEventHandlers() {
 		return Collections.<EventHandler>emptyList();
 	}
@@ -130,7 +108,7 @@ public class PDMPModelAdapter implements PDMPModel,
 
 	@Override
 	public ReactionNetworkModel getReactionNetworkModel() {
-		return this;
+		return hybridModel;
 	}
 
 	@Override
@@ -153,6 +131,16 @@ public class PDMPModelAdapter implements PDMPModel,
 
 	@Override
 	public void initialize(double t0, double[] x0) {
+	}
+
+	@Override
+	public int getStateDimension() {
+		return hybridModel.getStateDimension();
+	}
+
+	@Override
+	public int getPropensityDimension() {
+		return hybridModel.getPropensityDimension();
 	}
 
 }

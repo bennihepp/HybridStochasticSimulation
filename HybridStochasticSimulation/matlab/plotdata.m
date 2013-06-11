@@ -1,5 +1,5 @@
 inputfilepath = 'data/';
-inputfilename = 'birthDeathTunnelModel1';
+inputfilename = 'stochasticFocusingNetwork3';
 outputfilepath = 'plots/';
 outputfilename = inputfilename;
 
@@ -11,9 +11,16 @@ orient landscape;
 set(gcf, 'PaperUnits', 'centimeters');
 set(gcf, 'PaperType', 'A4');
 
+xlimMin = 0;
+ylimMin = 0;
+xlimMax = 0;
+ylimMax = 0;
 for i=1:length(S.plots)
     plt = S.plots(i);
-    subplot(S.rows, S.cols, i);
+    ax2 = subplot(S.rows, S.cols, i);
+    if i == 1
+        ax1 = ax2;
+    end
     xlabel('time in seconds');
     ylabel('copy numbers');
     title(plt.title);
@@ -36,7 +43,27 @@ for i=1:length(S.plots)
         hold off;
     end
     labels = char(labels);
-    legend(plotHandles, labels, 'Location', 'Best');
+    legend(plotHandles, labels);
+    %legend(plotHandles, labels, 'Location', 'Best');
+    xlimits = xlim(ax2);
+    ylimits = ylim(ax2);
+    if xlimits(2) > xlimMax
+        xlimMax = xlimits(2);
+    end
+    if ylimits(2) > ylimMax
+        ylimMax = ylimits(2);
+    end
+    if xlimits(1) < xlimMin
+        xlimMin = xlimits(1);
+    end
+    if ylimits(1) > ylimMin
+        ylimMin = ylimits(1);
+    end
+end
+for i=1:length(S.plots)
+    subplot(S.rows, S.cols, i);
+    xlim([xlimMin, xlimMax]);
+    ylim([ylimMin, ylimMax]);
 end
 
 %opts = struct('width', 7, 'height', 7, 'Resolution', 600, 'Color', 'CMYK');

@@ -4,7 +4,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.examples;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
 public class ConversionCycleNetwork extends ExampleNetwork {
@@ -40,7 +40,7 @@ public class ConversionCycleNetwork extends ExampleNetwork {
 				0.1,
 				100,
 		};
-		ReactionNetwork net = new ReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
+		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
 		net.setStochiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = { "S1", "S2", "S3" };

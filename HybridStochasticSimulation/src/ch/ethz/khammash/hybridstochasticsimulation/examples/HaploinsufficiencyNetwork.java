@@ -3,7 +3,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.examples;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
 
@@ -21,7 +21,6 @@ public class HaploinsufficiencyNetwork extends ExampleNetwork {
 		double t0 = 0.0;
 		double t1 = 40 * 60 * 60;
 		double[] x0 = { 1, 0, 0 };
-		double[] plotScales = { 100, 100, 1 };
 		int[][] productionStochiometries = {
 				{ 0, 1, 0 },
 				{ 1, 0, 0 },
@@ -34,13 +33,20 @@ public class HaploinsufficiencyNetwork extends ExampleNetwork {
 				{ 0, 1, 0 },
 				{ 0, 0, 1 },
 		};
+//		double[] rateParameters = {
+//				2.0e-3,
+//				2.0e-3,
+//				1,
+//				4.8e-4,
+//		};
 		double[] rateParameters = {
-				2.0e-3,
-				2.0e-3,
-				1,
+				2.0e-4,
+				2.0e-4,
+				10,
 				4.8e-4,
 		};
-		ReactionNetwork net = new ReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
+		double[] plotScales = { (rateParameters[2] / rateParameters[3]) / 5, (rateParameters[2] / rateParameters[3]) / 5, 1  };
+		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
 		net.setStochiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = { "G", "G*", "P" };

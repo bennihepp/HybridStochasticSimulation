@@ -6,126 +6,31 @@ import java.util.List;
 
 import org.apache.commons.math3.ode.events.EventHandler;
 
+import ch.ethz.khammash.hybridstochasticsimulation.models.StateBoundObserver.BoundType;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
 
 
-public class AdaptiveMSHRNModel extends PDMPModelAdapter {
+public class AdaptiveMSHRNModel extends PDMPModelAdapter implements StateBoundEventListener {
 
-	private enum BoundType {
-		LOWER, UPPER, BOTH,
-	}
-
-	@SuppressWarnings("unused")
-	private class StateBoundEventHandler implements EventHandler {
-
-		private int species;
-		private double lowerBound;
-		private double upperBound;
-		private BoundType boundType;
-
-		public StateBoundEventHandler(int species, double bound, BoundType boundType) {
-			this.species = species;
-			lowerBound = bound;
-			upperBound = bound;
-			this.boundType = boundType;
-		}
-
-		public StateBoundEventHandler(int species, double min, double max) {
-			this.species = species;
-			this.lowerBound = min;
-			this.upperBound = max;
-			this.boundType = BoundType.BOTH;
-		}
-
-		@Override
-		public Action eventOccurred(double t, double[] x, boolean increasing) {
-			fireEvent();
-			return Action.STOP;
-		}
-
-		public void fireEvent() {
-			fireOptionalEvent(species);
-		}
-
-		final public boolean isOutOfBounds(double[] x) {
-			switch (boundType) {
-			case LOWER:
-				return x[species] < lowerBound;
-			case UPPER:
-				return x[species] > upperBound;
-			case BOTH:
-			default:
-				return (x[species] < lowerBound) || (x[species] > upperBound);
-			}
-		}
-
-		@Override
-		final public double g(double t, double[] x) {
-			switch (boundType) {
-			case LOWER:
-				return x[species] - lowerBound;
-			case UPPER:
-				return x[species] - upperBound;
-			case BOTH:
-			default:
-				return (x[species] - lowerBound) * (x[species] - upperBound);
-			}
-		}
-
-		@Override
-		public void init(double t0, double[] x0, double t) {
-		}
-
-		@Override
-		public void resetState(double t, double[] x) {
-		}
-
-		public double getLowerBound() {
-			return lowerBound;
-		}
-
-		public void setLowerBound(double lowerBound) {
-			this.lowerBound = lowerBound;
-		}
-
-		public double getUpperBound() {
-			return upperBound;
-		}
-
-		public void setUpperBound(double upperBound) {
-			this.upperBound = upperBound;
-		}
-
-		public BoundType getBoundType() {
-			return boundType;
-		}
-
-		public void setBoundType(BoundType boundType) {
-			this.boundType = boundType;
-		}
-
-	}
-
-	private AdaptiveMSHybridReactionNetwork hrn;
+	private AdaptiveMSHRN hrn;
 	private MSHybridReactionNetworkModel hrnModel;
 	private List<EventHandler> optionalEventHandlers;
 	private boolean optionalEventFlag;
 //	private int optionalEventSpeciesIndex;
 
-	public AdaptiveMSHRNModel(AdaptiveMSHybridReactionNetwork hrn) {
+	public AdaptiveMSHRNModel(AdaptiveMSHRN hrn) {
 		super(new MSHybridReactionNetworkModel(hrn));
 		this.hrn = hrn;
 		this.hrnModel = (MSHybridReactionNetworkModel)getHybridModel();
-		optionalEventHandlers = new ArrayList<EventHandler>(this.hrnModel.getStateDimension());
-		for (int s=0; s < this.hrnModel.getStateDimension(); s++)
-			optionalEventHandlers.add(new StateBoundEventHandler(s, Double.MAX_VALUE, BoundType.UPPER));
+		optionalEventHandlers = new ArrayList<EventHandler>(this.hrn.getNumberOfSpecies());
+		for (int s=0; s < this.hrn.getNumberOfSpecies(); s++)
+			optionalEventHandlers.add(new StateBoundObserver(this, s, Double.MAX_VALUE, BoundType.UPPER));
 		optionalEventFlag = false;
 	}
 
 	@Override
 	public void initialize(double t0, double[] x0) {
-		hrn.reset();
-		hrnModel.update();
-		updateOptionalEventHandlers(x0);
+		adapt(t0, x0);
 	}
 
 	private void updateOptionalEventHandlers(double[] x) {
@@ -135,8 +40,8 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 
 	private void updateOptionalEventHandler(int s, double x) {
 		EventHandler eh = optionalEventHandlers.get(s);
-		StateBoundEventHandler seh = (StateBoundEventHandler)eh;
-		if (hrn.alpha[s] == 0.0) {
+		StateBoundObserver seh = (StateBoundObserver)eh;
+		if (hrn.getAlpha(s) == 0.0) {
 			double upperBound = Math.pow(hrn.getN(),  1 - hrn.getEpsilon());
 			upperBound = Math.max(upperBound, x);
 			seh.setUpperBound(upperBound);
@@ -152,11 +57,6 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 		}
 	}
 
-	final public void fireOptionalEvent(int s) {
-		optionalEventFlag = true;
-//		optionalEventSpeciesIndex = s;
-	}
-
 	@Override
 	public boolean getOptionalEventFlag() {
 		return optionalEventFlag;
@@ -165,23 +65,24 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 	@Override
 	public void handleOptionalEvent(double t, double[] x) {
 		if (optionalEventFlag) {
-			hrn.adapt(x);
-			hrnModel.update();
-			updateOptionalEventHandlers(x);
+			adapt(t, x);
 			optionalEventFlag = false;
 		}
+	}
+
+	private void adapt(double t, double[] x) {
+		hrn.adapt(x);
+		hrnModel.update();
+		updateOptionalEventHandlers(x);
 	}
 
 	@Override
 	public void manualCheckOptionalEvent(double t, double[] x) {
 		for (EventHandler eh : optionalEventHandlers) {
-			StateBoundEventHandler seh = (StateBoundEventHandler)eh;
-			if (seh.isOutOfBounds(x)) {
-				seh.fireEvent();
-				handleOptionalEvent(t, x);
-				break;
-			}
+			StateBoundObserver seh = (StateBoundObserver)eh;
+			seh.checkBounds(t, x);
 		}
+		handleOptionalEvent(t, x);
 	}
 
 	@Override
@@ -192,6 +93,12 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter {
 	@Override
 	public boolean isTimeIndependent() {
 		return true;
+	}
+
+	@Override
+	public void stateBoundEventOccured(int species, double t, double[] x) {
+		optionalEventFlag = true;
+//		optionalEventSpeciesIndex = s;
 	}
 
 }

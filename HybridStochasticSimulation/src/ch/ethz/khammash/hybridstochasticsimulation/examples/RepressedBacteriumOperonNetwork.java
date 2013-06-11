@@ -4,7 +4,7 @@ import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.util.FastMath;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
 
@@ -143,7 +143,7 @@ public class RepressedBacteriumOperonNetwork extends ExampleNetwork {
 		double[] beta = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		double t0 = 0.0;
 		double t1 = 3;
-		ReactionNetwork net = new ReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
+		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
 		net.setStochiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = {

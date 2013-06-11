@@ -3,7 +3,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.examples;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
 
@@ -88,7 +88,7 @@ public class LambdaPhageToggleSwitchNetwork extends ExampleNetwork {
 				k4,
 				km4,
 		};
-		ReactionNetwork net = new ReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
+		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
 		net.setStochiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = { "D", "DcI2", "DcI2*", "DcI2cI2", "cI", "cI2" };

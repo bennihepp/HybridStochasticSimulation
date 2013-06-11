@@ -7,13 +7,9 @@ import org.apache.commons.math3.ode.events.EventHandler;
 
 public interface PDMPModel {
 
-	public FirstOrderDifferentialEquations getFirstOrderDifferentialEquations();
+	public FirstOrderDifferentialEquations getDeterministicModel();
 
-	public ReactionNetworkModel getReactionNetworkModel();
-
-	public int getStateDimension();
-
-	public int getPropensityDimension();
+	public StochasticReactionNetworkModel getStochasticModel();
 
 	public boolean hasDeterministicPart();
 

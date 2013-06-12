@@ -417,8 +417,8 @@ public class MainGUI {
 
 		ExampleNetwork nss = ExampleNetworkFactory.getInstance().createExampleNetwork("Simple Crystallization");
 
-		int PDMPRuns = 100;
-		int stochasticRuns = 100;
+		int PDMPRuns = 10;
+		int stochasticRuns = 10;
 		int numberOfTimePoints = 1001;
 		boolean printMessages = true;
 

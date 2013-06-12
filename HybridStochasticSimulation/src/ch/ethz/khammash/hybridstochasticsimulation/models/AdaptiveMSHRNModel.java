@@ -8,24 +8,25 @@ import org.apache.commons.math3.ode.events.EventHandler;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.StateBoundObserver.BoundType;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserver;
 
 
-public class AdaptiveMSHRNModel extends PDMPModelAdapter implements StateBoundEventListener {
+public class AdaptiveMSHRNModel extends PDMPModelAdapter<MSHybridReactionNetworkModel> implements StateBoundEventListener {
 
 	private AdaptiveMSHRN hrn;
 	private MSHybridReactionNetworkModel hrnModel;
-	private List<EventHandler> optionalEventHandlers;
-	private boolean optionalEventFlag;
+	private List<PDMPEventObserver> optionalEventObservers;
+	private boolean hasOptionalEventOccured;
 //	private int optionalEventSpeciesIndex;
 
 	public AdaptiveMSHRNModel(AdaptiveMSHRN hrn) {
 		super(new MSHybridReactionNetworkModel(hrn));
 		this.hrn = hrn;
 		this.hrnModel = (MSHybridReactionNetworkModel)getHybridModel();
-		optionalEventHandlers = new ArrayList<EventHandler>(this.hrn.getNumberOfSpecies());
+		optionalEventObservers = new ArrayList<>(this.hrn.getNumberOfSpecies());
 		for (int s=0; s < this.hrn.getNumberOfSpecies(); s++)
-			optionalEventHandlers.add(new StateBoundObserver(this, s, Double.MAX_VALUE, BoundType.UPPER));
-		optionalEventFlag = false;
+			optionalEventObservers.add(new StateBoundObserver(this, s, Double.MAX_VALUE, BoundType.UPPER));
+		hasOptionalEventOccured = false;
 	}
 
 	@Override
@@ -34,12 +35,12 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter implements StateBoundEv
 	}
 
 	private void updateOptionalEventHandlers(double[] x) {
-		for (int s=0; s < optionalEventHandlers.size(); s++)
+		for (int s=0; s < optionalEventObservers.size(); s++)
 			updateOptionalEventHandler(s, x[s]);
 	}
 
 	private void updateOptionalEventHandler(int s, double x) {
-		EventHandler eh = optionalEventHandlers.get(s);
+		EventHandler eh = optionalEventObservers.get(s);
 		StateBoundObserver seh = (StateBoundObserver)eh;
 		if (hrn.getAlpha(s) == 0.0) {
 			double upperBound = Math.pow(hrn.getN(),  1 - hrn.getEpsilon());
@@ -58,15 +59,15 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter implements StateBoundEv
 	}
 
 	@Override
-	public boolean getOptionalEventFlag() {
-		return optionalEventFlag;
+	public boolean hasOptionalEventOccured() {
+		return hasOptionalEventOccured;
 	}
 
 	@Override
 	public void handleOptionalEvent(double t, double[] x) {
-		if (optionalEventFlag) {
+		if (hasOptionalEventOccured) {
 			adapt(t, x);
-			optionalEventFlag = false;
+			hasOptionalEventOccured = false;
 		}
 	}
 
@@ -77,8 +78,8 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter implements StateBoundEv
 	}
 
 	@Override
-	public void manualCheckOptionalEvent(double t, double[] x) {
-		for (EventHandler eh : optionalEventHandlers) {
+	public void checkForOptionalEvent(double t, double[] x) {
+		for (EventHandler eh : optionalEventObservers) {
 			StateBoundObserver seh = (StateBoundObserver)eh;
 			seh.checkBounds(t, x);
 		}
@@ -86,8 +87,8 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter implements StateBoundEv
 	}
 
 	@Override
-	public Collection<EventHandler> getOptionalEventHandlers() {
-		return optionalEventHandlers;
+	public Collection<PDMPEventObserver> getOptionalEventObservers() {
+		return optionalEventObservers;
 	}
 
 	@Override
@@ -97,7 +98,7 @@ public class AdaptiveMSHRNModel extends PDMPModelAdapter implements StateBoundEv
 
 	@Override
 	public void stateBoundEventOccured(int species, double t, double[] x) {
-		optionalEventFlag = true;
+		hasOptionalEventOccured = true;
 //		optionalEventSpeciesIndex = s;
 	}
 

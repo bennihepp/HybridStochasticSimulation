@@ -1,7 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.apache.commons.math3.ode.AbstractIntegrator;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
@@ -12,17 +12,20 @@ import org.apache.commons.math3.util.FastMath;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajectoryRecorder;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
 
-public class PDMPSimulator extends StochasticSimulator{
+public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, ContinuousTrajectoryRecorder<T>> {
 
 	public static final double DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL = Double.POSITIVE_INFINITY;
 	public static final double DEFAULT_EVENT_HANDLER_CONVERGENCE = 1e-12;
 	public static final double DEFAULT_EVENT_HANDLER_CONVERGENCE_FACTOR = Double.NaN;
 	public static final int DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT = 1000;
 
+	protected RandomDataGenerator rdg;
+	protected Set<ContinuousTrajectoryRecorder<T>> trajectoryRecorders;
 	protected AbstractIntegrator integrator;
-	protected Collection<PDMPStepHandler> stepHandlers;
 	private double ehMaxCheckInterval;
 	private double ehConvergence;
 	private double ehConvergenceFactor;
@@ -41,16 +44,17 @@ public class PDMPSimulator extends StochasticSimulator{
 	}
 
 	public PDMPSimulator(AbstractIntegrator integrator, RandomDataGenerator rdg) {
-		super(rdg);
 		ehMaxCheckInterval = DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL;
 		ehConvergence = DEFAULT_EVENT_HANDLER_CONVERGENCE;
 		ehConvergenceFactor = DEFAULT_EVENT_HANDLER_CONVERGENCE_FACTOR;
 		ehMaxIterationCount = DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT;
 		if (integrator == null)
 			integrator = new DormandPrince853Integrator(1.0e-8, 100.0, 1.0e-10, 1.0e-10);
-		else
-			this.integrator = integrator;
-		stepHandlers = new ArrayList<PDMPStepHandler>();
+		this.integrator = integrator;
+		if (rdg == null)
+			rdg = new RandomDataGenerator();
+		this.rdg = rdg;
+		trajectoryRecorders = new LinkedHashSet<>();
 	}
 
 	public double getEventHandlerMaxCheckInterval() {
@@ -89,13 +93,13 @@ public class PDMPSimulator extends StochasticSimulator{
 		this.ehMaxIterationCount = maxIterationCount;
 	}
 
-	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
+	public double simulate(T model, final double t0, final double[] x0, double t1, double[] x1) {
 		integrator.clearEventHandlers();
 		integrator.clearStepHandlers();
 //    	ExpandableStatefulODE ode = new ExpandableStatefulODE(model.getFirstOrderDifferentialEquations());
-		FirstOrderDifferentialEquations ode = model.getDeterministicModel();
-    	StochasticReactionNetworkModel rnm = model.getStochasticModel();
-    	EventHandler pdmpEventHandler = model.getPDMPEventHandler();
+		FirstOrderDifferentialEquations ode = model.getVectorField();
+    	StochasticReactionNetworkModel rnm = model.getTransitionMeasure();
+    	EventHandler pdmpEventHandler = model.getJumpEventObserver();
 		double[] x = new double[x0.length + 2];
 		for (int i=0; i < x0.length; i++)
 			x[i] = x0[i];
@@ -103,25 +107,23 @@ public class PDMPSimulator extends StochasticSimulator{
 		double t = t0;
     	model.initialize(t, x);
 		double[] propVec = new double[rnm.getNumberOfReactions()];
-		for (PDMPStepHandler handler : stepHandlers) {
-			handler.reset();
-			handler.setPDMPModel(model);
-			handler.init(t0, x, t1);
-			integrator.addStepHandler(handler);
+		for (ContinuousTrajectoryRecorder<T> tr : trajectoryRecorders) {
+			tr.setModel(model);
+			tr.setInitialState(t, x);
+			tr.init(t0, x, t1);
+			integrator.addStepHandler(tr);
 		}
 		double conv = Double.isNaN(ehConvergenceFactor) ? ehConvergence : ehConvergenceFactor * (t1 - t0);
 		if (Double.isNaN(conv))
 			throw new IllegalArgumentException("Either convergence or convergence factor must be a positive real number");
 		integrator.addEventHandler(pdmpEventHandler, ehMaxCheckInterval, conv, ehMaxIterationCount);
-    	for (ReactionEventHandler handler : reactionHandlers)
-    		handler.setInitialState(t, x);
-    	for (EventHandler eh : model.getOptionalEventHandlers())
+    	for (EventHandler eh : model.getOptionalEventObservers())
     		integrator.addEventHandler(eh, ehMaxCheckInterval, conv, ehMaxIterationCount);
 //    	long evaluationCounter = 0;
 //    	long reactionCounter = 0;
 //    	double[] reactionCounterArray = new double[model.getPropensityDimension()];
 		while (t < t1) {
-			boolean hasDeterministicPart = model.hasDeterministicPart();
+			boolean hasDeterministicPart = model.hasVectorField();
 			if (hasDeterministicPart && model.isTimeIndependent()) {
 				ode.computeDerivatives(t, x, xDot);
 				boolean allZero = true;
@@ -148,7 +150,7 @@ public class PDMPSimulator extends StochasticSimulator{
 //		        	System.arraycopy(ode.getPrimaryState(), 0, x, 0, x.length);
 //		        	t = ode.getTime();
 //		        	evaluationCounter += integrator.getEvaluations();
-		        } while (model.getOptionalEventFlag());
+		        } while (model.hasOptionalEventOccured());
 			} else {
 		        rnm.computePropensities(t, x, propVec);
 		        for (int i=0; i < propVec.length; i++)
@@ -186,9 +188,9 @@ public class PDMPSimulator extends StochasticSimulator{
 	        if (reaction >= 0) {
 //	        	reactionCounter++;
 //	        	reactionCounterArray[reaction]++;
-	        	for (ReactionEventHandler handler : reactionHandlers)
+	        	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
 	        		handler.handleReactionEvent(reaction, t, x);
-	        	model.manualCheckOptionalEvent(t, x);
+	        	model.checkForOptionalEvent(t, x);
 	        }
 		}
 //		System.out.println("Total of " + evaluationCounter + " evaluations and " + reactionCounter + " reactions performed");
@@ -200,24 +202,24 @@ public class PDMPSimulator extends StochasticSimulator{
 		integrator.clearStepHandlers();
 		for (int i=0; i < x1.length; i++)
 			x1[i] = x[i];
-    	for (ReactionEventHandler handler : reactionHandlers)
+    	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
     		handler.setFinalState(t1, x1);
 		return t;
 	}
 
-	public void addStepHandler(PDMPStepHandler handler) {
-		if (stepHandlers.contains(handler) == false)
-			stepHandlers.add(handler);
+	@Override
+	public void addTrajectoryRecorder(ContinuousTrajectoryRecorder<T> tr) {
+		trajectoryRecorders.add(tr);
 	}
-	public void removeStepHandler(PDMPStepHandler handler) {
-		if (stepHandlers.contains(handler))
-			stepHandlers.remove(handler);
+
+	@Override
+	public void removeTrajectoryRecorder(ContinuousTrajectoryRecorder<T> tr) {
+		trajectoryRecorders.remove(tr);
 	}
-	public Collection<PDMPStepHandler> getStepHandlers() {
-		return stepHandlers;
-	}
-	public void clearStepHandlers() {
-		stepHandlers.clear();
+
+	@Override
+	public void clearTrajectoryRecorders() {
+		trajectoryRecorders.clear();
 	}
 
 }

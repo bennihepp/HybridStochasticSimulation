@@ -15,6 +15,10 @@ public interface Trajectory {
 
 	};
 
+	public double getInitialtime();
+
+	public double getFinalTime();
+
 	public double[] getInterpolatedState(double t);
 
 	public RealVector getInterpolatedStateVector(double t);

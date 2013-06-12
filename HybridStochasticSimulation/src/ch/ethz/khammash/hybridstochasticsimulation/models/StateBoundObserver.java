@@ -1,8 +1,8 @@
 package ch.ethz.khammash.hybridstochasticsimulation.models;
 
-import org.apache.commons.math3.ode.events.EventHandler;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserver;
 
-public class StateBoundObserver implements EventHandler {
+public class StateBoundObserver implements PDMPEventObserver {
 
 	public static enum BoundType {
 		LOWER, UPPER, BOTH,

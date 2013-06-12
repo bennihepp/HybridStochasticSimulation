@@ -38,21 +38,20 @@ public class FiniteTrajectory implements Trajectory {
 			xSeries[i][index] = x[i];
 	}
 
-	private int getPreviousTimePointIndex(double t) {
-		int index = Arrays.binarySearch(tSeries, t);
-		if (index >= 0)
-			return index;
-		// See Java API
-		int insertionPoint = -index - 1;
-		if (insertionPoint == 0)
-			throw new InvalidTimePointException("Time must be between start and end of simulation");
-		return insertionPoint - 1;
+	@Override
+	public double getInitialtime() {
+		return tSeries[0];
+	}
+
+	@Override
+	public double getFinalTime() {
+		return tSeries[tSeries.length - 1];
 	}
 
 	// TODO: This is a trivial interpolation (the interpolated state is the state that was recorded before that timepoint)
 	@Override
 	public double[] getInterpolatedState(double t) {
-		int index = getPreviousTimePointIndex(t);
+		int index = findPreviousTimePointIndex(t);
 		double[] x = new double[xSeries.length];
 		for (int s=0; s < x.length; s++)
 			x[s] = xSeries[s][index];
@@ -63,6 +62,17 @@ public class FiniteTrajectory implements Trajectory {
 	@Override
 	public RealVector getInterpolatedStateVector(double t) {
 		return new ArrayRealVector(getInterpolatedState(t));
+	}
+
+	private int findPreviousTimePointIndex(double t) {
+		int index = Arrays.binarySearch(tSeries, t);
+		if (index >= 0)
+			return index;
+		// See Java API
+		int insertionPoint = -index - 1;
+		if (insertionPoint == 0)
+			throw new InvalidTimePointException("Time must be between start and end of simulation");
+		return insertionPoint - 1;
 	}
 
 }

@@ -4,36 +4,47 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
-import org.apache.commons.math3.ode.events.EventHandler;
 
-public class PDMPModelAdapter implements PDMPModel, FirstOrderDifferentialEquations, EventHandler {
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserver;
 
-	private HybridModel hybridModel;
-	private StochasticReactionNetworkModel stochasticModel;
-	private FirstOrderDifferentialEquations deterministicModel;
+public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, FirstOrderDifferentialEquations, PDMPEventObserver {
+
+	private T hybridModel;
+	private StochasticReactionNetworkModel transitionMeasure;
+	private FirstOrderDifferentialEquations vectorField;
 	private double[] propVector;
 
-	public PDMPModelAdapter(PDMPModelAdapter model) {
+	public PDMPModelAdapter(PDMPModelAdapter<T> model) {
 		this(model.hybridModel);
 	}
 
-	public PDMPModelAdapter(HybridModel hybridModel) {
+	public PDMPModelAdapter(T hybridModel) {
 		setHybridModel(hybridModel);
 	}
 
-	public HybridModel getHybridModel() {
+	public T getHybridModel() {
 		return hybridModel;
 	}
 
-	public void setHybridModel(HybridModel hybridModel) {
-		stochasticModel = hybridModel.getStochasticModel();
-		deterministicModel = hybridModel.getDeterministicModel();
+	public void setHybridModel(T hybridModel) {
+		transitionMeasure = hybridModel.getStochasticModel();
+		vectorField = hybridModel.getDeterministicModel();
 		this.hybridModel = hybridModel;
-		propVector = new double[stochasticModel.getNumberOfReactions()];
+		propVector = new double[transitionMeasure.getNumberOfReactions()];
 	}
 
 	@Override
-	public boolean hasDeterministicPart() {
+	public int getNumberOfSpecies() {
+		return hybridModel.getNumberOfSpecies();
+	}
+
+	@Override
+	public int getNumberOfReactions() {
+		return hybridModel.getNumberOfReactions();
+	}
+
+	@Override
+	public boolean hasVectorField() {
 		if (hybridModel == null)
 			return true;
 		else
@@ -46,27 +57,27 @@ public class PDMPModelAdapter implements PDMPModel, FirstOrderDifferentialEquati
 	}
 
 	@Override
-	public FirstOrderDifferentialEquations getDeterministicModel() {
+	public FirstOrderDifferentialEquations getVectorField() {
 		return this;
 	}
 
 	@Override
-	public StochasticReactionNetworkModel getStochasticModel() {
-		return stochasticModel;
+	public StochasticReactionNetworkModel getTransitionMeasure() {
+		return transitionMeasure;
 	}
 
 	@Override
-	public Collection<EventHandler> getOptionalEventHandlers() {
-		return Collections.<EventHandler>emptyList();
+	public Collection<PDMPEventObserver> getOptionalEventObservers() {
+		return Collections.<PDMPEventObserver>emptyList();
 	}
 
 	@Override
-	public EventHandler getPDMPEventHandler() {
+	public PDMPEventObserver getJumpEventObserver() {
 		return this;
 	}
 
 	@Override
-	public boolean getOptionalEventFlag() {
+	public boolean hasOptionalEventOccured() {
 		return false;
 	}
 
@@ -75,7 +86,7 @@ public class PDMPModelAdapter implements PDMPModel, FirstOrderDifferentialEquati
 	}
 
 	@Override
-	public void manualCheckOptionalEvent(double t, double[] x) {
+	public void checkForOptionalEvent(double t, double[] x) {
 	}
 
 	@Override
@@ -84,13 +95,13 @@ public class PDMPModelAdapter implements PDMPModel, FirstOrderDifferentialEquati
 
 	@Override
 	public int getDimension() {
-		return deterministicModel.getDimension() + 2;
+		return vectorField.getDimension() + 2;
 	}
 
 	@Override
 	public void computeDerivatives(double t, double[] x, double[] xDot) {
-		deterministicModel.computeDerivatives(t, x, xDot);
-		stochasticModel.computePropensities(t, x, propVector);
+		vectorField.computeDerivatives(t, x, xDot);
+		transitionMeasure.computePropensities(t, x, propVector);
 		xDot[xDot.length - 2] = 0.0;
 		xDot[xDot.length - 1] = 0.0;
 		for (int i = 0; i < propVector.length; i++)

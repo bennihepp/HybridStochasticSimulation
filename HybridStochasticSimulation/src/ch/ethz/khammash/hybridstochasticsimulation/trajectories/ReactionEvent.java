@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.simulators;
+package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;

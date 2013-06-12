@@ -3,39 +3,17 @@ package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.apache.commons.math3.ode.sampling.StepInterpolator;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPStepHandler;
+import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 
-public class FinitePDMPTrajectory extends FiniteStochasticTrajectory implements PDMPStepHandler {
-
-	protected boolean initialized;
+public class FinitePDMPTrajectory<T extends ReactionNetworkModel>
+		extends FiniteStochasticTrajectory<T> implements ContinuousTrajectoryRecorder<T> {
 
 	public FinitePDMPTrajectory(double[] tSeries) {
 		super(tSeries);
-		initialized = false;
-	}
-
-	@Override
-	public void reset() {
-		initialized = false;
-	}
-
-	@Override
-	public void setPDMPModel(PDMPModel model) {
-	}
-
-	@Override
-	protected void initialize(double[] x0, int numberOfStates) {
-		if (initialized == false) {
-			super.initialize(x0, numberOfStates);
-			initialized = true;
-		}
 	}
 
 	@Override
 	public void init(double t0, double[] x0, double t) {
-		initialize(x0, x0.length - 2);
-		setState(0, x0);
 	}
 
 	@Override

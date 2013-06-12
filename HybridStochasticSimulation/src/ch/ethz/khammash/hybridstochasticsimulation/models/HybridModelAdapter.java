@@ -16,6 +16,16 @@ public class HybridModelAdapter implements HybridModel {
 	}
 
 	@Override
+	public int getNumberOfSpecies() {
+		return stochasticModel.getNumberOfSpecies();
+	}
+
+	@Override
+	public int getNumberOfReactions() {
+		return stochasticModel.getNumberOfReactions();
+	}
+
+	@Override
 	public boolean hasDeterministicPart() {
 		return true;
 	}

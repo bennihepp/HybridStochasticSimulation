@@ -1,13 +1,15 @@
 package ch.ethz.khammash.hybridstochasticsimulation.models;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MaxCountExceededException;
+import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
-public class UnaryBinaryDeterministicModel implements DeterministicReactionNetworkModel {
+public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDifferentialEquations, StochasticReactionNetworkModel {
 
 	private int dimension;
 	private double[] rateParameters;
@@ -93,6 +95,35 @@ public class UnaryBinaryDeterministicModel implements DeterministicReactionNetwo
 	@Override
 	public boolean isTimeIndependent() {
 		return true;
+	}
+
+	@Override
+	public FirstOrderDifferentialEquations getDeterministicModel() {
+		return this;
+	}
+
+	@Override
+	public StochasticReactionNetworkModel getStochasticModel() {
+		return this;
+	}
+
+	@Override
+	public boolean hasDeterministicPart() {
+		return true;
+	}
+
+	@Override
+	public double computePropensity(int reaction, double t, double[] x) {
+		return 0;
+	}
+
+	@Override
+	public void computePropensities(double t, double[] x, double[] propensities) {
+		Arrays.fill(propensities, 0, getNumberOfReactions(), 0.0);
+	}
+
+	@Override
+	public void updateState(int reaction, double t, double[] x) {
 	}
 
 }

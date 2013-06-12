@@ -2,17 +2,9 @@ package ch.ethz.khammash.hybridstochasticsimulation.sandbox;
 
 import java.lang.reflect.Array;
 
-
-import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
-
-import ch.ethz.khammash.hybridstochasticsimulation.models.HybridModelAdapter;
 import ch.ethz.khammash.hybridstochasticsimulation.models.MSHybridReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModelAdapter;
-import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulator;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.PDMPTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 
 
 public class MatlabInterface {
@@ -32,18 +24,18 @@ public class MatlabInterface {
 		return new MSHybridReactionNetworkModel(net);
 	}
 
-	public PDMPModelAdapter createPDMPModel(FirstOrderDifferentialEquations deterministicModel,
-			StochasticReactionNetworkModel stochasticModel) {
-		return new PDMPModelAdapter(new HybridModelAdapter(deterministicModel, stochasticModel));
-	}
-
-	public PDMPSimulator createPDMPModelSimulator() {
-		return new PDMPSimulator();
-	}
-
-	public PDMPTrajectory createPDMPContinuousOutputModel() {
-		return new PDMPTrajectory();
-	}
+//	public PDMPModelAdapter createPDMPModel(FirstOrderDifferentialEquations deterministicModel,
+//			StochasticReactionNetworkModel stochasticModel) {
+//		return new PDMPModelAdapter(new HybridModelAdapter(deterministicModel, stochasticModel));
+//	}
+//
+//	public PDMPSimulator createPDMPModelSimulator() {
+//		return new PDMPSimulator();
+//	}
+//
+//	public ContinuousPDMPTrajectory createPDMPContinuousOutputModel() {
+//		return new ContinuousPDMPTrajectory();
+//	}
 
 	public Object createDoubleArray(int length) {
 		return Array.newInstance(double[].class, length);

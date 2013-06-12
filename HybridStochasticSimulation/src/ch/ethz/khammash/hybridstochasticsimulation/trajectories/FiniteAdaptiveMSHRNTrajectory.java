@@ -1,41 +1,40 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.MSHybridReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
-import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModelAdapter;
+import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
 
 
-public class FiniteAdaptiveMSHRNTrajectory extends FinitePDMPTrajectory {
+public class FiniteAdaptiveMSHRNTrajectory extends FinitePDMPTrajectory<AdaptiveMSHRNModel> {
 
-	public FinitePDMPTrajectory alphas;
-	public FinitePDMPTrajectory rhos;
-	public FinitePDMPTrajectory betas;
-	public FinitePDMPTrajectory reactionTermTypes;
+	public FinitePDMPTrajectory<AdaptiveMSHRNModel> alphas;
+	public FinitePDMPTrajectory<AdaptiveMSHRNModel> rhos;
+	public FinitePDMPTrajectory<AdaptiveMSHRNModel> betas;
+	public FinitePDMPTrajectory<AdaptiveMSHRNModel> reactionTermTypes;
 
 	protected MSHybridReactionNetwork hrn;
 
 	public FiniteAdaptiveMSHRNTrajectory(double[] tSeries) {
 		super(tSeries);
-		alphas = new FinitePDMPTrajectory(tSeries);
-		rhos = new FinitePDMPTrajectory(tSeries);
-		betas = new FinitePDMPTrajectory(tSeries);
-		reactionTermTypes = new FinitePDMPTrajectory(tSeries);
+		alphas = new FinitePDMPTrajectory<>(tSeries);
+		rhos = new FinitePDMPTrajectory<>(tSeries);
+		betas = new FinitePDMPTrajectory<>(tSeries);
+		reactionTermTypes = new FinitePDMPTrajectory<>(tSeries);
 	}
 
 	@Override
-	public void setPDMPModel(PDMPModel model) {
-		if (model instanceof PDMPModelAdapter) {
-			PDMPModelAdapter modelAdapter = (PDMPModelAdapter)model;
-			if (modelAdapter.getHybridModel() instanceof MSHybridReactionNetworkModel) {
-				MSHybridReactionNetworkModel hrnModel = (MSHybridReactionNetworkModel)modelAdapter.getHybridModel();
-				hrn = hrnModel.getNetwork();
-			} else
-				throw new IllegalArgumentException("model.getHybridModel() has to be of type MSHybridReactionNetworkModel");
-		}
-		else
-			throw new IllegalArgumentException("Parameter model has to be of type PDMPModelAdapter");
+	public void setModel(AdaptiveMSHRNModel model) {
+//		if (model instanceof PDMPModelAdapter) {
+//			PDMPModelAdapter modelAdapter = (PDMPModelAdapter)model;
+//			if (modelAdapter.getHybridModel() instanceof MSHybridReactionNetworkModel) {
+//				MSHybridReactionNetworkModel hrnModel = (MSHybridReactionNetworkModel)modelAdapter.getHybridModel();
+//				hrn = hrnModel.getNetwork();
+//			} else
+//				throw new IllegalArgumentException("model.getHybridModel() has to be of type MSHybridReactionNetworkModel");
+//		}
+//		else
+//			throw new IllegalArgumentException("Parameter model has to be of type PDMPModelAdapter");
+		hrn = model.getHybridModel().getNetwork();
 	}
 
 	@Override

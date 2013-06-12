@@ -1,11 +1,16 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.ReactionEventHandler;
+import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 
-public class FiniteStochasticTrajectory extends FiniteTrajectory implements ReactionEventHandler {
+
+public class FiniteStochasticTrajectory<T extends ReactionNetworkModel> extends FiniteTrajectory implements TrajectoryRecorder<T> {
 
 	public FiniteStochasticTrajectory(double[] tSeries) {
 		super(tSeries);
+	}
+
+	@Override
+	public void setModel(T model) {
 	}
 
 	@Override

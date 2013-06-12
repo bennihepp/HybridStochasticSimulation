@@ -3,25 +3,36 @@ package ch.ethz.khammash.hybridstochasticsimulation.controllers;
 import org.apache.commons.math3.ode.AbstractIntegrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
+import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulator;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajectoryRecorder;
 
-public class DefaultPDMPSimulatorFactory implements PDMPSimulatorFactory {
+public class DefaultPDMPSimulatorFactory<T extends PDMPModel>
+		implements SimulatorFactory<Simulator<T, ContinuousTrajectoryRecorder<T>>> {
 
+	private IntegratorFactory integratorFactory;
 	private double ehMaxCheckInterval;
 	private double ehConvergence;
 	private double ehConvergenceFactor;
 	private int ehMaxIterationCount;
 
-	public DefaultPDMPSimulatorFactory() {
+	public DefaultPDMPSimulatorFactory(IntegratorFactory integratorFactory) {
+		this.integratorFactory = integratorFactory;
 		ehMaxCheckInterval = PDMPSimulator.DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL;
 		ehConvergence = PDMPSimulator.DEFAULT_EVENT_HANDLER_CONVERGENCE;
 		ehConvergenceFactor = PDMPSimulator.DEFAULT_EVENT_HANDLER_CONVERGENCE_FACTOR;
 		ehMaxIterationCount = PDMPSimulator.DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT;
 	}
 
+	public void setIntegratorFactory(IntegratorFactory integratorFactory) {
+		this.integratorFactory = integratorFactory;
+	}
+
 	@Override
-	public PDMPSimulator createSimulator(AbstractIntegrator integrator, RandomDataGenerator rdg) {
-		PDMPSimulator sim = new PDMPSimulator(integrator, rdg);
+	public PDMPSimulator<T> createSimulator(RandomDataGenerator rdg) {
+		AbstractIntegrator integrator = integratorFactory.createIntegrator();
+		PDMPSimulator<T> sim = new PDMPSimulator<>(integrator, rdg);
 		sim.setEventHandlerConvergence(getEventHandlerConvergence());
 		sim.setEventHandlerConvergenceFactor(getEventHandlerConvergenceFactor());
 		sim.setEventHandlerMaxCheckInterval(getEventHandlerMaxCheckInterval());

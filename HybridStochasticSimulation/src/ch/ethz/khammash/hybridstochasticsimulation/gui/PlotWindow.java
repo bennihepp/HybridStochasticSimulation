@@ -1,6 +1,8 @@
 package ch.ethz.khammash.hybridstochasticsimulation.gui;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import groovy.lang.Binding;
+import groovy.ui.Console;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -8,10 +10,9 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
 import java.awt.event.InputEvent;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
@@ -46,10 +47,11 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryPlotDa
 
 import com.google.common.base.Optional;
 import com.google.common.eventbus.EventBus;
+import com.google.common.io.Files;
 import com.jmatio.types.MLArray;
 
 
-public class PlotWindow extends ApplicationFrame implements ComponentListener {
+public class PlotWindow extends ApplicationFrame {
 	private static final long serialVersionUID = 6566839328303930162L;
 
 	public static enum EventType {
@@ -93,6 +95,8 @@ public class PlotWindow extends ApplicationFrame implements ComponentListener {
 	private int savePlotHeight = 800;
 	private int saveHorizontalSpacing = 10;
 	private int saveVerticalSpacing = 10;
+
+	private Console interactiveConsole;
 
 	public PlotWindow(String title) {
 		this(title, 1, 1);
@@ -224,6 +228,50 @@ public class PlotWindow extends ApplicationFrame implements ComponentListener {
 				}
 			}
 		);
+		// Script entries
+		final LinkedList<JMenuItem> scriptEntryList = new LinkedList<>();
+		File scriptDirectory = new File("scripts");
+		if (scriptDirectory.isDirectory()) {
+			File[] scriptFiles = scriptDirectory.listFiles(new FileFilter() {
+				@Override
+				public boolean accept(File file) {
+					String extension = Files.getFileExtension(file.getName());
+					return extension.equalsIgnoreCase("groovy");
+				}
+			});
+			for (final File scriptFile : scriptFiles) {
+				JMenuItem scriptEntry = new JMenuItem("Script \"" + scriptFile.getName() + "\"");
+				scriptEntry.addActionListener(
+					new ActionListener() {
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							interactiveConsole.loadScriptFile(scriptFile);
+							interactiveConsole.runScript();
+						}
+					}
+				);
+				scriptEntry.setEnabled(false);
+				scriptEntryList.add(scriptEntry);
+			}
+		}
+		// Console entry
+		JMenuItem consoleEntry = new JMenuItem("Interactive Console");
+		consoleEntry.setAccelerator(KeyStroke.getKeyStroke('C', InputEvent.CTRL_MASK));
+		consoleEntry.addActionListener(
+			new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if (interactiveConsole == null) {
+						interactiveConsole = new Console(getClass().getClassLoader(), new Binding());
+						interactiveConsole.run();
+						for (JMenuItem item : scriptEntryList)
+							item.setEnabled(true);
+					}
+					interactiveConsole.setVariable("plotDataList", plotDataList);
+					interactiveConsole.setVariable("window", this);
+				}
+			}
+		);
 		// Add entries to menubar
 		JMenuBar menubar = new JMenuBar();
 		JMenu fileMenu = new JMenu("File");
@@ -234,8 +282,15 @@ public class PlotWindow extends ApplicationFrame implements ComponentListener {
 		JMenu simulationMenu = new JMenu("Simulation");
 		simulationMenu.add(runEntry);
 		simulationMenu.add(bechmarkEntry);
+		JMenu scriptMenu = new JMenu("Script");
+		scriptMenu.add(consoleEntry);
+		if (scriptEntryList.size() > 0)
+			scriptMenu.addSeparator();
+		for (JMenuItem item : scriptEntryList)
+			scriptMenu.add(item);
 		menubar.add(fileMenu);
 		menubar.add(simulationMenu);
+		menubar.add(scriptMenu);
 		return menubar;
 	}
 
@@ -302,27 +357,6 @@ public class PlotWindow extends ApplicationFrame implements ComponentListener {
 
 	public EventBus getActionEventBus() {
 		return actionEventBus;
-	}
-
-	@Override
-	public void componentResized(ComponentEvent e) {
-//		System.out.println("resized");
-//		Dimension scrollPaneSize = scrollPane.getViewport().getExtentSize();
-//		Dimension mainPanelSize = mainPanel.getSize();
-//		mainPanelSize.setSize(scrollPaneSize.getWidth(), mainPanelSize.getHeight());
-//		mainPanel.setPreferredSize(scrollPane.getViewport().getExtentSize());
-	}
-
-	@Override
-	public void componentMoved(ComponentEvent e) {
-	}
-
-	@Override
-	public void componentShown(ComponentEvent e) {
-	}
-
-	@Override
-	public void componentHidden(ComponentEvent e) {
 	}
 
 }

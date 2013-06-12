@@ -2,18 +2,20 @@ package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
 
-public class StochasticSimulator {
+public class StochasticSimulator<T extends StochasticReactionNetworkModel>
+		implements Simulator<T, TrajectoryRecorder<T>> {
 
 	protected RandomDataGenerator rdg;
-	protected Collection<ReactionEventHandler> reactionHandlers;
+	protected Set<TrajectoryRecorder<T>> trajectoryRecorders;
 
 	public StochasticSimulator() {
 		this(null);
@@ -23,10 +25,10 @@ public class StochasticSimulator {
 		if (rdg == null)
 			rdg = new RandomDataGenerator();
 		this.rdg = rdg;
-		reactionHandlers = new ArrayList<ReactionEventHandler>();
+		trajectoryRecorders = new LinkedHashSet<>();
 	}
 
-	public double simulate(StochasticReactionNetworkModel model, double t0, double[] x0, double t1, double[] x1) {
+	public double simulate(T model, double t0, double[] x0, double t1, double[] x1) {
 		checkArgument(x0.length == x1.length, "Expected x0.length == x1.length");
 		checkArgument(x0.length == model.getNumberOfSpecies(), "Expected x0.length == model.getNumberOfSpecies()");
 		double[] x = new double[x0.length];
@@ -34,8 +36,10 @@ public class StochasticSimulator {
 			x[i] = x0[i];
 		double t = t0;
 		double[] propVec = new double[model.getNumberOfReactions()];
-    	for (ReactionEventHandler handler : reactionHandlers)
+    	for (TrajectoryRecorder<T> handler : trajectoryRecorders) {
+    		handler.setModel(model);
     		handler.setInitialState(t0, x0);
+    	}
 //    	long reactionCounter = 0;
 //    	double[] reactionCounterArray = new double[model.getPropensityDimension()];
 		while (true) {
@@ -65,7 +69,7 @@ public class StochasticSimulator {
 	        if (reaction >= 0) {
 //	        	reactionCounter++;
 //	        	reactionCounterArray[reaction]++;
-	        	for (ReactionEventHandler handler : reactionHandlers)
+	        	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
 	        		handler.handleReactionEvent(reaction, t, x);
 	        }
 		}
@@ -76,24 +80,24 @@ public class StochasticSimulator {
 //		Utilities.printArray("Relative reaction counts", reactionCounterArray);
 		for (int i=0; i < x1.length; i++)
 			x1[i] = x[i];
-    	for (ReactionEventHandler handler : reactionHandlers)
+    	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
     		handler.setFinalState(t1, x1);
 		return t;
 	}
 
-	public void addReactionHandler(ReactionEventHandler handler) {
-		if (reactionHandlers.contains(handler) == false)
-			reactionHandlers.add(handler);
+	@Override
+	public void addTrajectoryRecorder(TrajectoryRecorder<T> tr) {
+		trajectoryRecorders.add(tr);
 	}
-	public void removeReactionHandler(ReactionEventHandler handler) {
-		if (reactionHandlers.contains(handler))
-			reactionHandlers.remove(handler);
+
+	@Override
+	public void removeTrajectoryRecorder(TrajectoryRecorder<T> tr) {
+		trajectoryRecorders.remove(tr);
 	}
-	public Collection<ReactionEventHandler> getReactionHandlers() {
-		return reactionHandlers;
-	}
-	public void clearReactionHandlers() {
-		reactionHandlers.clear();
+
+	@Override
+	public void clearTrajectoryRecorders() {
+		trajectoryRecorders.clear();
 	}
 
 }

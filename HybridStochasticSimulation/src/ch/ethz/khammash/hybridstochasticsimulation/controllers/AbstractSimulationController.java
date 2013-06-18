@@ -12,6 +12,12 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
 
+import ch.ethz.khammash.hybridstochasticsimulation.factories.DefaultRandomDataGeneratorFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.factories.TrajectoryRecorderFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.factories.RandomDataGeneratorFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
@@ -123,6 +129,21 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	public void simulateTrajectory(T model, E tr, double t0, double[] x0, double t1) {
 		SimulationWorker<T, E> sw = createSimulationWorker(model, tr, t0, x0, t1);
 		sw.simulate();
+	}
+
+	@Override
+	public StatisticalSummary[][] simulateTrajectoryDistribution(
+			int runs, ModelFactory<T> modelFactory, final TrajectoryRecorderFactory<E> trFactory,
+			double[] tSeries, double[] x0)
+			throws InterruptedException, CancellationException, ExecutionException {
+		FiniteTrajectoryRecorderFactory<E> finiteTrFactory = new FiniteTrajectoryRecorderFactory<E>() {
+			@Override
+			public E createTrajectoryRecorder(
+					double[] tSeries) {
+				return trFactory.createTrajectoryRecorder();
+			}
+		};
+		return simulateTrajectoryDistribution(runs, modelFactory, finiteTrFactory, tSeries, x0);
 	}
 
 	@Override

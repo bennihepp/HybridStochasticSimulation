@@ -7,10 +7,10 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecord
 
 public interface SimulationWorker<T extends ReactionNetworkModel, E extends TrajectoryRecorder<T>> extends Callable<E>, Runnable {
 
-	public E simulate();
+	E simulate();
 
-	public E call();
+	E call();
 
-	public void run();
+	void run();
 
 }

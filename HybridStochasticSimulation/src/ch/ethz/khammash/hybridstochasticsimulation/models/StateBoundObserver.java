@@ -2,6 +2,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserver;
 
+
 public class StateBoundObserver implements PDMPEventObserver {
 
 	public static enum BoundType {
@@ -57,12 +58,12 @@ public class StateBoundObserver implements PDMPEventObserver {
 	final public boolean isOutOfBounds(double[] x) {
 		switch (boundType) {
 		case LOWER:
-			return x[species] < lowerBound;
+			return x[species] <= lowerBound;
 		case UPPER:
-			return x[species] > upperBound;
+			return x[species] >= upperBound;
 		case BOTH:
 		default:
-			return (x[species] < lowerBound) || (x[species] > upperBound);
+			return (x[species] <= lowerBound) || (x[species] >= upperBound);
 		}
 	}
 

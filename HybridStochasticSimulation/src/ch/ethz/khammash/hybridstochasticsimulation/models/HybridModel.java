@@ -5,12 +5,12 @@ import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
 public interface HybridModel extends ReactionNetworkModel {
 
-	public FirstOrderDifferentialEquations getDeterministicModel();
+	FirstOrderDifferentialEquations getDeterministicModel();
 
-	public StochasticReactionNetworkModel getStochasticModel();
+	StochasticReactionNetworkModel getStochasticModel();
 
-	public boolean hasDeterministicPart();
+	boolean hasDeterministicPart();
 
-	public boolean isTimeIndependent();
+	boolean isTimeIndependent();
 
 }

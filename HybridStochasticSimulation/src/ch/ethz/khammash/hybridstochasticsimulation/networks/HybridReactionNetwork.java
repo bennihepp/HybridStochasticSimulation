@@ -2,66 +2,59 @@ package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
 import static com.google.common.base.Preconditions.checkElementIndex;
 
+import java.util.Arrays;
+
 public class HybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 
-	public enum SpeciesType {
-		DISCRETE, CONTINUOUS,
-	}
-
 	public enum ReactionType {
-		NONE, STOCHASTIC, DETERMINISTIC,
+		STOCHASTIC, DETERMINISTIC,
 	}
 
-	private SpeciesType[] speciesTypes;
+	private ReactionType[] reactionTypes;
 
-	public HybridReactionNetwork(int numOfSpecies, int numOfReactions, int[] continuousSpecies) {
+	public HybridReactionNetwork(int numOfSpecies, int numOfReactions) {
+		this(numOfSpecies, numOfReactions, new int[0]);
+	}
+
+	public HybridReactionNetwork(int numOfSpecies, int numOfReactions, int[] deterministicReactions) {
 		super(numOfSpecies, numOfReactions);
-		this.setDiscreteSpecies(continuousSpecies);
+		initReactionTypes();
+		this.setDeterministicReactions(deterministicReactions);
 	}
 
-	public HybridReactionNetwork(DefaultUnaryBinaryReactionNetwork net, int[] continuousSpecies) {
+	public HybridReactionNetwork(DefaultUnaryBinaryReactionNetwork net) {
+		this(net, new int[0]);
+	}
+
+	public HybridReactionNetwork(DefaultUnaryBinaryReactionNetwork net, int[] deterministicReactions) {
 		super(net.getNumberOfSpecies(), net.getNumberOfReactions());
-		this.setDiscreteSpecies(continuousSpecies);
 		setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
 		setRateParameters(net.getRateParameters());
+		initReactionTypes();
+		this.setDeterministicReactions(deterministicReactions);
 	}
 
-	private void setDiscreteSpecies(int[] continuousSpecies) {
-		speciesTypes = new SpeciesType[getNumberOfSpecies()];
-		for (int s=0; s < getNumberOfSpecies(); s++) {
-			speciesTypes[s] = SpeciesType.DISCRETE;
-		}
-		for (int i=0; i < continuousSpecies.length; i++) {
-			int s = continuousSpecies[i];
-			checkElementIndex(s, getNumberOfSpecies(), "Expected 0 <= discreteSpecies[i] < getNumberOfSpecies()");
-			speciesTypes[s] = SpeciesType.CONTINUOUS;
+	private final void initReactionTypes() {
+		reactionTypes = new ReactionType[getNumberOfReactions()];
+		Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
+	}
+
+	public void setDeterministicReactions(int[] deterministicReactions) {
+		for (int r : deterministicReactions) {
+			checkElementIndex(r, getNumberOfReactions(), "Expected 0 <= deterministicReactions[i] < getNumberOfReactions()");
+			reactionTypes[r] = ReactionType.DETERMINISTIC;
 		}
 	}
 
-	public SpeciesType getSpeciesType(int s) {
-		checkElementIndex(s, getNumberOfSpecies(), "Expected 0 <= s < getNumberOfSpecies()");
-		return speciesTypes[s];
+	public void setDeterministicReaction(int reaction, int deterministicReactions) {
+		checkElementIndex(reaction, getNumberOfReactions(), "Expected 0 <= reaction < getNumberOfReactions()");
+		reactionTypes[reaction] = ReactionType.DETERMINISTIC;
 	}
+
 
 	public ReactionType getReactionType(int r) {
-		boolean anyStochasticReaction = false;
-		boolean anyDeterministicReaction = false;
-		for (int s=0; s < getNumberOfSpecies(); s++) {
-			SpeciesType sType = getSpeciesType(s);
-			int stochiometry = getStochiometry(s, r);
-			if (stochiometry != 0) {
-				if (sType == SpeciesType.DISCRETE)
-					anyStochasticReaction = true;
-				else if (sType == SpeciesType.CONTINUOUS)
-					anyDeterministicReaction = true;
-			}
-		}
-		if (anyStochasticReaction)
-			return ReactionType.STOCHASTIC;
-		else if (anyDeterministicReaction)
-			return ReactionType.DETERMINISTIC;
-		else
-			return ReactionType.NONE;
+		checkElementIndex(r, getNumberOfReactions(), "Expected 0 <= s < getNumberOfReactions()");
+		return reactionTypes[r];
 	}
 
 }

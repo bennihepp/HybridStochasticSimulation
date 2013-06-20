@@ -4,24 +4,24 @@ import java.util.List;
 
 public interface UnaryBinaryReactionNetwork extends ReactionNetwork {
 
-	public int getProductionStochiometry(int species, int reaction);
+	int getProductionStochiometry(int species, int reaction);
 
-	public int getConsumptionStochiometry(int species, int reaction);
+	int getConsumptionStochiometry(int species, int reaction);
 
-	public int[] getProductionStochiometries(int reaction);
+	int[] getProductionStochiometries(int reaction);
 
-	public int[] getConsumptionStochiometries(int reaction);
+	int[] getConsumptionStochiometries(int reaction);
 
-	public int[][] getProductionStochiometries();
+	int[][] getProductionStochiometries();
 
-	public int[][] getConsumptionStochiometries();
+	int[][] getConsumptionStochiometries();
 
-	public double getRateParameter(int reaction);
+	double getRateParameter(int reaction);
 
-	public double[] getRateParameters();
+	double[] getRateParameters();
 
-	public int[] getChoiceIndices(int reaction);
+	int[] getChoiceIndices(int reaction);
 
-	public List<int[]> getChoiceIndicesList();
+	List<int[]> getChoiceIndicesList();
 
 }

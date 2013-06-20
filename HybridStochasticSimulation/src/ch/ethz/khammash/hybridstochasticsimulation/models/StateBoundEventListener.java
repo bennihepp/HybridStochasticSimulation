@@ -1,7 +1,12 @@
 package ch.ethz.khammash.hybridstochasticsimulation.models;
 
-public interface StateBoundEventListener {
+import java.util.EventListener;
 
-	public void stateBoundEventOccured(int species, double t, double[] x);
+
+public interface StateBoundEventListener extends EventListener {
+
+	void stateBoundEventOccured(double t, double[] x);
+
+	void stateBoundEventOccured(int species, double t, double[] x);
 
 }

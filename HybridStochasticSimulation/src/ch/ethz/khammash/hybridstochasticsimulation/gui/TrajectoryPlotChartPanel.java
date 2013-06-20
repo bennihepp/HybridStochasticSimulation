@@ -25,7 +25,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import ch.ethz.khammash.hybridstochasticsimulation.matlab.MatlabPlotter;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryPlotData;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 import com.google.common.collect.Iterators;
 
@@ -137,11 +137,11 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 		}
 	}
 
-	public void addPlotData(TrajectoryPlotData td) {
-		for (int s=0; s < td.getNumberOfStates(); ++s) {
-			addSpecies(td.getStateName(s), td.gettVector(), td.getxVector(s), td.getPlotScale(s), td.isDiscrete());
+	public void addPlotData(FinitePlotData pd) {
+		for (int s=0; s < pd.getNumberOfStates(); ++s) {
+			addSpecies(pd.getStateName(s), pd.gettVector(), pd.getxVector(s), pd.getPlotScale(s), pd.isDiscrete());
 		}
-		setTitle(td.getTitle());
+		setTitle(pd.getDescription());
 	}
 
 }

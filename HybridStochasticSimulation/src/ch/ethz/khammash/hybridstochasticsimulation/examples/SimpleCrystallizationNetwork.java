@@ -7,14 +7,11 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
-public class SimpleCrystallizationNetwork extends ExampleNetwork {
+public class SimpleCrystallizationNetwork extends ExampleConfiguration {
 
 	public SimpleCrystallizationNetwork() {
-		int[] continuousSpecies = { };
+		int[] deterministicReactions = { };
 		double N = 1e6;
-		double deltaR = 0.5;
-		double deltaS = 0.5;
-		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 1, 1, 0, 0 };
 		double[] beta = { -1, -1 };
@@ -40,11 +37,8 @@ public class SimpleCrystallizationNetwork extends ExampleNetwork {
 		String[] speciesNames = { "A", "B", "C", "D" };
 
 		this.net = net;
-		this.continuousSpecies = continuousSpecies;
+		this.deterministicReactions = deterministicReactions;
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;

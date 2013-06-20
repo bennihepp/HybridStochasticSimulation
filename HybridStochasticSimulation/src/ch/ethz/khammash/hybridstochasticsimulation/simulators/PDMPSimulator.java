@@ -1,15 +1,17 @@
 package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.LinkedList;
+import java.util.List;
 
+import org.apache.commons.math3.analysis.solvers.BracketingNthOrderBrentSolver;
+import org.apache.commons.math3.analysis.solvers.UnivariateSolver;
 import org.apache.commons.math3.ode.AbstractIntegrator;
-import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.events.EventHandler;
 import org.apache.commons.math3.ode.nonstiff.DormandPrince853Integrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.util.FastMath;
 
+import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajectoryRecorder;
@@ -23,38 +25,42 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 	public static final double DEFAULT_EVENT_HANDLER_CONVERGENCE_FACTOR = Double.NaN;
 	public static final int DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT = 1000;
 
-	protected RandomDataGenerator rdg;
-	protected Set<ContinuousTrajectoryRecorder<T>> trajectoryRecorders;
-	protected AbstractIntegrator integrator;
+	private RandomDataGenerator rdg;
+	private List<ContinuousTrajectoryRecorder<T>> trajectoryRecorders;
+	private AbstractIntegrator integrator;
 	private double ehMaxCheckInterval;
 	private double ehConvergence;
 	private double ehConvergenceFactor;
 	private int ehMaxIterationCount;
+	private UnivariateSolver univariateSolver;
 
 	public PDMPSimulator() {
-		this(null, null);
+		this(null, null, null);
 	}
 
 	public PDMPSimulator(RandomDataGenerator rdg) {
-		this(null, rdg);
+		this(null, null, rdg);
 	}
 
 	public PDMPSimulator(AbstractIntegrator integrator) {
-		this(integrator, null);
+		this(integrator, null, null);
 	}
 
-	public PDMPSimulator(AbstractIntegrator integrator, RandomDataGenerator rdg) {
+	public PDMPSimulator(AbstractIntegrator integrator, UnivariateSolver univariateSolver, RandomDataGenerator rdg) {
 		ehMaxCheckInterval = DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL;
 		ehConvergence = DEFAULT_EVENT_HANDLER_CONVERGENCE;
 		ehConvergenceFactor = DEFAULT_EVENT_HANDLER_CONVERGENCE_FACTOR;
 		ehMaxIterationCount = DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT;
 		if (integrator == null)
 			integrator = new DormandPrince853Integrator(1.0e-8, 100.0, 1.0e-10, 1.0e-10);
-		this.integrator = integrator;
+		if (univariateSolver == null)
+			univariateSolver = new BracketingNthOrderBrentSolver();
 		if (rdg == null)
 			rdg = new RandomDataGenerator();
+		this.integrator = integrator;
+		this.univariateSolver = univariateSolver;
 		this.rdg = rdg;
-		trajectoryRecorders = new LinkedHashSet<>();
+		trajectoryRecorders = new LinkedList<ContinuousTrajectoryRecorder<T>>();
 	}
 
 	public double getEventHandlerMaxCheckInterval() {
@@ -94,36 +100,52 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 	}
 
 	public double simulate(T model, final double t0, final double[] x0, double t1, double[] x1) {
+//		rdg = new RandomDataGenerator();
+//		rdg.reSeed(10L);
+		boolean showProgress = false;
 		integrator.clearEventHandlers();
 		integrator.clearStepHandlers();
-//    	ExpandableStatefulODE ode = new ExpandableStatefulODE(model.getFirstOrderDifferentialEquations());
-		FirstOrderDifferentialEquations ode = model.getVectorField();
+//		integrator = new DormandPrince853Integrator(1e-1, 100, 1e-1, 1e-1);
+//		univariateSolver = new PegasusSolver(1, 1, 1);
+//		ExpandableStatefulODE ode = new ExpandableStatefulODE(model.getVectorField());
+		PrimaryExpandableStatefulODE ode = new PrimaryExpandableStatefulODE(model.getVectorField());
+//		FirstOrderDifferentialEquations ode = model.getVectorField();
     	StochasticReactionNetworkModel rnm = model.getTransitionMeasure();
     	EventHandler pdmpEventHandler = model.getJumpEventObserver();
 		double[] x = new double[x0.length + 2];
 		for (int i=0; i < x0.length; i++)
 			x[i] = x0[i];
+    	ode.setPrimaryStateRef(x);
 		double[] xDot = x.clone();
 		double t = t0;
     	model.initialize(t, x);
 		double[] propVec = new double[rnm.getNumberOfReactions()];
 		for (ContinuousTrajectoryRecorder<T> tr : trajectoryRecorders) {
 			tr.setModel(model);
-			tr.setInitialState(t, x);
-			tr.init(t0, x, t1);
+			tr.setInitialState(t, x, x0.length);
 			integrator.addStepHandler(tr);
 		}
 		double conv = Double.isNaN(ehConvergenceFactor) ? ehConvergence : ehConvergenceFactor * (t1 - t0);
 		if (Double.isNaN(conv))
 			throw new IllegalArgumentException("Either convergence or convergence factor must be a positive real number");
-		integrator.addEventHandler(pdmpEventHandler, ehMaxCheckInterval, conv, ehMaxIterationCount);
+		integrator.addEventHandler(pdmpEventHandler, ehMaxCheckInterval, conv, ehMaxIterationCount, univariateSolver);
     	for (EventHandler eh : model.getOptionalEventObservers())
-    		integrator.addEventHandler(eh, ehMaxCheckInterval, conv, ehMaxIterationCount);
-//    	long evaluationCounter = 0;
-//    	long reactionCounter = 0;
-//    	double[] reactionCounterArray = new double[model.getPropensityDimension()];
+    		integrator.addEventHandler(eh, ehMaxCheckInterval, conv, ehMaxIterationCount, univariateSolver);
+    	long evaluationCounter = 0;
+    	long reactionCounter = 0;
+    	double[] reactionCounterArray = new double[model.getNumberOfReactions()];
+    	double msgDt = (t1 - t0) / 20.0;
+    	double nextMsgT = t0 + msgDt;
+    	int j = 0;
+		final long startTime = System.currentTimeMillis();
 		while (t < t1) {
+			if (showProgress)
+				if (t > nextMsgT) {
+					System.out.println("Progress: " + (100 * (nextMsgT - t0)/(t1 - t0)) + "%");
+					nextMsgT += msgDt;
+				}
 			boolean hasDeterministicPart = model.hasVectorField();
+			// TODO: Check whether this gives any performance gain
 			if (hasDeterministicPart && model.isTimeIndependent()) {
 				ode.computeDerivatives(t, x, xDot);
 				boolean allZero = true;
@@ -143,13 +165,18 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 		        x[x.length - 1] = -FastMath.log(rdg.nextUniform(0.0,  1.0));
 		        do {
 		        	model.handleOptionalEvent(t, x);
-		        	t = integrator.integrate(ode, t, x, t1, x);
-//		        	ode.setTime(t);
+//		        	t = integrator.integrate(ode, t, x, t1, x);
+		        	ode.setTime(t);
 //		        	ode.setPrimaryState(x);
-//		        	integrator.integrate(ode, t1);
+		        	integrator.integrate(ode, t1);
 //		        	System.arraycopy(ode.getPrimaryState(), 0, x, 0, x.length);
-//		        	t = ode.getTime();
-//		        	evaluationCounter += integrator.getEvaluations();
+		        	t = ode.getTime();
+					if (showProgress)
+						if (t > nextMsgT) {
+							System.out.println("Progress: " + (100 * (nextMsgT - t0)/(t1 - t0)) + "%");
+							nextMsgT += msgDt;
+						}
+		        	evaluationCounter += integrator.getEvaluations();
 		        } while (model.hasOptionalEventOccured());
 			} else {
 		        rnm.computePropensities(t, x, propVec);
@@ -186,18 +213,22 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 	        	}
 	        }
 	        if (reaction >= 0) {
-//	        	reactionCounter++;
-//	        	reactionCounterArray[reaction]++;
+	        	reactionCounter++;
+	        	reactionCounterArray[reaction]++;
 	        	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
-	        		handler.handleReactionEvent(reaction, t, x);
-	        	model.checkForOptionalEvent(t, x);
+	        		handler.reportState(t, x);
+	        	if (j > 1000)
+	        		model.checkAndHandleOptionalEvent(t, x);
+	        	j++;
 	        }
 		}
-//		System.out.println("Total of " + evaluationCounter + " evaluations and " + reactionCounter + " reactions performed");
-//		Utilities.printArray("Total reaction counts", reactionCounterArray);
-//		for (int r=0; r < reactionCounterArray.length; r++)
-//			reactionCounterArray[r] /= reactionCounter;
-//		Utilities.printArray("Relative reaction counts", reactionCounterArray);
+		final long endTime = System.currentTimeMillis();
+		System.out.println("Execution time: " + (endTime - startTime));
+		System.out.println("Total of " + evaluationCounter + " evaluations and " + reactionCounter + " reactions performed");
+		Utilities.printArray("Total reaction counts", reactionCounterArray);
+		for (int r=0; r < reactionCounterArray.length; r++)
+			reactionCounterArray[r] /= reactionCounter;
+		Utilities.printArray("Relative reaction counts", reactionCounterArray);
 		integrator.clearEventHandlers();
 		integrator.clearStepHandlers();
 		for (int i=0; i < x1.length; i++)

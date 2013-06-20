@@ -1,8 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation.gui;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import groovy.lang.Binding;
-import groovy.ui.Console;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -12,7 +10,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
@@ -38,55 +35,29 @@ import matlabcontrol.MatlabInvocationException;
 import org.jfree.chart.ChartPanel;
 import org.jfree.ui.ApplicationFrame;
 
+import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent.EventType;
 import ch.ethz.khammash.hybridstochasticsimulation.matlab.MatlabDataExporter;
 import ch.ethz.khammash.hybridstochasticsimulation.matlab.MatlabPlotter;
 import ch.ethz.khammash.hybridstochasticsimulation.matlab.MatlabSession;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteDistributionPlotData;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.PlotData;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryDistributionPlotData;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryPlotData;
 
 import com.google.common.base.Optional;
 import com.google.common.eventbus.EventBus;
-import com.google.common.io.Files;
 import com.jmatio.types.MLArray;
 
 
 public class PlotWindow extends ApplicationFrame {
+
 	private static final long serialVersionUID = 6566839328303930162L;
-
-	public static enum EventType {
-		SIMULATION, BENCHMARK,
-	}
-
-	public static class Event {
-
-		private EventType type;
-		private ActionEvent event;
-
-		public Event(EventType type) {
-			this(type, null);
-		}
-
-		public Event(EventType type, ActionEvent event) {
-			this.type = type;
-			this.event = event;
-		}
-
-		public EventType getDescription() {
-			return type;
-		}
-
-		public ActionEvent getEvent() {
-			return event;
-		}
-
-	}
 
 	private EventBus actionEventBus;
 
+	private StatusBar statusBar;
 	private JScrollPane scrollPane;
 	private JPanel mainPanel;
-	private List<PlotData> plotDataList;
+	private List<FinitePlotData> plotDataList;
 	private Map<PlotData, Optional<ChartPanel>> plotDataMap;
 	private int rows;
 	private int cols;
@@ -96,7 +67,7 @@ public class PlotWindow extends ApplicationFrame {
 	private int saveHorizontalSpacing = 10;
 	private int saveVerticalSpacing = 10;
 
-	private Console interactiveConsole;
+//	private Console interactiveConsole;
 
 	public PlotWindow(String title) {
 		this(title, 1, 1);
@@ -104,10 +75,10 @@ public class PlotWindow extends ApplicationFrame {
 
 	public PlotWindow(String title, int rows, int cols) {
 		super(title);
-		actionEventBus = new EventBus("Action Event Bus");
 		checkArgument(rows > 0);
 		checkArgument(cols > 0);
-		plotDataList = new LinkedList<PlotData>();
+		actionEventBus = new EventBus("Action Event Bus");
+		plotDataList = new LinkedList<FinitePlotData>();
 		plotDataMap = new LinkedHashMap<PlotData, Optional<ChartPanel>>();
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setJMenuBar(createMenuBar());
@@ -119,6 +90,8 @@ public class PlotWindow extends ApplicationFrame {
 		scrollPane.getViewport().setBackground(Color.WHITE);
 		setLayout(new BorderLayout());
 		add(scrollPane, BorderLayout.CENTER);
+		statusBar = new StatusBar();
+		add(statusBar, BorderLayout.SOUTH);
 		updateLayout(rows, cols);
 	}
 
@@ -129,8 +102,12 @@ public class PlotWindow extends ApplicationFrame {
 		mainPanel.setLayout(new GridLayout(rows, cols));
 	}
 
+	public StatusBar getStatusBar() {
+		return statusBar;
+	}
+
 	public void clearPlotData() {
-		Iterator<PlotData> it = plotDataList.iterator();
+		Iterator<FinitePlotData> it = plotDataList.iterator();
 		while (it.hasNext()) {
 			PlotData plotData = it.next();
 			it.remove();
@@ -140,27 +117,27 @@ public class PlotWindow extends ApplicationFrame {
 		}
 	}
 
-	public void addPlotData(Collection<PlotData> plotDataCollection) {
-		Iterator<PlotData> it = plotDataCollection.iterator();
+	public void addPlotData(Collection<FinitePlotData> plotDataCollection) {
+		Iterator<FinitePlotData> it = plotDataCollection.iterator();
 		while (it.hasNext())
 			addPlotData(it.next());
 	}
 
-	public void setPlotData(Collection<PlotData> plotDataCollection, int rows, int cols) {
+	public void setPlotData(Collection<FinitePlotData> plotDataCollection, int rows, int cols) {
 		updateLayout(rows, cols);
 		addPlotData(plotDataCollection);
 	}
 
-	public void addPlotData(PlotData plotData) {
+	public void addPlotData(FinitePlotData plotData) {
 		Optional<ChartPanel> optionalPanel = Optional.<ChartPanel>absent();
-		if (plotData instanceof TrajectoryDistributionPlotData) {
+		if (plotData instanceof FiniteDistributionPlotData) {
 			TrajectoryDistributionPlotChartPanel panel = new TrajectoryDistributionPlotChartPanel();
-			panel.addDistributionPlotData((TrajectoryDistributionPlotData)plotData);
+			panel.addDistributionPlotData((FiniteDistributionPlotData)plotData);
 			mainPanel.add(panel);
 			optionalPanel = Optional.<ChartPanel>of(panel);
-		} else if (plotData instanceof TrajectoryPlotData) {
+		} else if (plotData instanceof FinitePlotData) {
 			TrajectoryPlotChartPanel panel = new TrajectoryPlotChartPanel();
-			panel.addPlotData((TrajectoryPlotData)plotData);
+			panel.addPlotData((FinitePlotData)plotData);
 			mainPanel.add(panel);
 			optionalPanel = Optional.<ChartPanel>of(panel);
 		} else
@@ -213,7 +190,7 @@ public class PlotWindow extends ApplicationFrame {
 			new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					getActionEventBus().post(new Event(EventType.SIMULATION, e));
+					getActionEventBus().post(new GUIEvent(EventType.SIMULATION, e));
 				}
 			}
 		);
@@ -224,54 +201,54 @@ public class PlotWindow extends ApplicationFrame {
 			new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					getActionEventBus().post(new Event(EventType.BENCHMARK, e));
+					getActionEventBus().post(new GUIEvent(EventType.BENCHMARK, e));
 				}
 			}
 		);
-		// Script entries
-		final LinkedList<JMenuItem> scriptEntryList = new LinkedList<>();
-		File scriptDirectory = new File("scripts");
-		if (scriptDirectory.isDirectory()) {
-			File[] scriptFiles = scriptDirectory.listFiles(new FileFilter() {
-				@Override
-				public boolean accept(File file) {
-					String extension = Files.getFileExtension(file.getName());
-					return extension.equalsIgnoreCase("groovy");
-				}
-			});
-			for (final File scriptFile : scriptFiles) {
-				JMenuItem scriptEntry = new JMenuItem("Script \"" + scriptFile.getName() + "\"");
-				scriptEntry.addActionListener(
-					new ActionListener() {
-						@Override
-						public void actionPerformed(ActionEvent e) {
-							interactiveConsole.loadScriptFile(scriptFile);
-							interactiveConsole.runScript();
-						}
-					}
-				);
-				scriptEntry.setEnabled(false);
-				scriptEntryList.add(scriptEntry);
-			}
-		}
-		// Console entry
-		JMenuItem consoleEntry = new JMenuItem("Interactive Console");
-		consoleEntry.setAccelerator(KeyStroke.getKeyStroke('C', InputEvent.CTRL_MASK));
-		consoleEntry.addActionListener(
-			new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					if (interactiveConsole == null) {
-						interactiveConsole = new Console(getClass().getClassLoader(), new Binding());
-						interactiveConsole.run();
-						for (JMenuItem item : scriptEntryList)
-							item.setEnabled(true);
-					}
-					interactiveConsole.setVariable("plotDataList", plotDataList);
-					interactiveConsole.setVariable("window", this);
-				}
-			}
-		);
+//		// Script entries
+//		final LinkedList<JMenuItem> scriptEntryList = new LinkedList<JMenuItem>();
+//		File scriptDirectory = new File("scripts");
+//		if (scriptDirectory.isDirectory()) {
+//			File[] scriptFiles = scriptDirectory.listFiles(new FileFilter() {
+//				@Override
+//				public boolean accept(File file) {
+//					String extension = Files.getFileExtension(file.getName());
+//					return extension.equalsIgnoreCase("groovy");
+//				}
+//			});
+//			for (final File scriptFile : scriptFiles) {
+//				JMenuItem scriptEntry = new JMenuItem("Script \"" + scriptFile.getName() + "\"");
+//				scriptEntry.addActionListener(
+//					new ActionListener() {
+//						@Override
+//						public void actionPerformed(ActionEvent e) {
+//							interactiveConsole.loadScriptFile(scriptFile);
+//							interactiveConsole.runScript();
+//						}
+//					}
+//				);
+//				scriptEntry.setEnabled(false);
+//				scriptEntryList.add(scriptEntry);
+//			}
+//		}
+//		// Console entry
+//		JMenuItem consoleEntry = new JMenuItem("Interactive Console");
+//		consoleEntry.setAccelerator(KeyStroke.getKeyStroke('C', InputEvent.CTRL_MASK));
+//		consoleEntry.addActionListener(
+//			new ActionListener() {
+//				@Override
+//				public void actionPerformed(ActionEvent e) {
+//					if (interactiveConsole == null) {
+//						interactiveConsole = new Console(getClass().getClassLoader(), new Binding());
+//						interactiveConsole.run();
+//						for (JMenuItem item : scriptEntryList)
+//							item.setEnabled(true);
+//					}
+//					interactiveConsole.setVariable("plotDataList", plotDataList);
+//					interactiveConsole.setVariable("window", this);
+//				}
+//			}
+//		);
 		// Add entries to menubar
 		JMenuBar menubar = new JMenuBar();
 		JMenu fileMenu = new JMenu("File");
@@ -282,15 +259,15 @@ public class PlotWindow extends ApplicationFrame {
 		JMenu simulationMenu = new JMenu("Simulation");
 		simulationMenu.add(runEntry);
 		simulationMenu.add(bechmarkEntry);
-		JMenu scriptMenu = new JMenu("Script");
-		scriptMenu.add(consoleEntry);
-		if (scriptEntryList.size() > 0)
-			scriptMenu.addSeparator();
-		for (JMenuItem item : scriptEntryList)
-			scriptMenu.add(item);
+//		JMenu scriptMenu = new JMenu("Script");
+//		scriptMenu.add(consoleEntry);
+//		if (scriptEntryList.size() > 0)
+//			scriptMenu.addSeparator();
+//		for (JMenuItem item : scriptEntryList)
+//			scriptMenu.add(item);
 		menubar.add(fileMenu);
 		menubar.add(simulationMenu);
-		menubar.add(scriptMenu);
+//		menubar.add(scriptMenu);
 		return menubar;
 	}
 

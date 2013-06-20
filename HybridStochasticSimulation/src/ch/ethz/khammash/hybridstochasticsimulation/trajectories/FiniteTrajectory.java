@@ -1,78 +1,35 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
-import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
-import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
 
-public class FiniteTrajectory implements Trajectory {
+public interface FiniteTrajectory extends Trajectory {
 
-	protected double[] tSeries;
-	protected double[][] xSeries;
-	protected int index;
+	int getNumberOfStates();
 
-	public FiniteTrajectory(double[] tSeries) {
-		this.tSeries = tSeries;
-	}
+	int getNumberOfTimePoints();
 
-	public double[] gettSeries() {
-		return tSeries;
-	}
+	double[] gettSeries();
 
-	public double[][] getxSeries() {
-		return xSeries;
-	}
+	double[] getxState(int timePoint);
 
-	protected void initialize(double[] x0) {
-		initialize(x0, x0.length);
-	}
+	double[][] getxSeries();
 
-	protected void initialize(double[] x0, int numberOfStates) {
-		xSeries = new double[numberOfStates][tSeries.length];
-		index = 0;
-	}
+	double[] getxSeries(int state);
 
-	protected void setState(int index, double[] x) {
-		for (int i=0; i < xSeries.length; i++)
-			xSeries[i][index] = x[i];
-	}
+	RealVector gettVector();
 
-	@Override
-	public double getInitialtime() {
-		return tSeries[0];
-	}
+	RealVector getxVector(int state);
 
-	@Override
-	public double getFinalTime() {
-		return tSeries[tSeries.length - 1];
-	}
+	List<RealVector> getxVectors();
 
-	// TODO: This is a trivial interpolation (the interpolated state is the state that was recorded before that timepoint)
-	@Override
-	public double[] getInterpolatedState(double t) {
-		int index = findPreviousTimePointIndex(t);
-		double[] x = new double[xSeries.length];
-		for (int s=0; s < x.length; s++)
-			x[s] = xSeries[s][index];
-		return x;
-	}
+	Iterator<RealVector> xVectorIterator();
 
-	// TODO: This is a trivial interpolation (the interpolated state is the state that was recorded before that timepoint)
-	@Override
-	public RealVector getInterpolatedStateVector(double t) {
-		return new ArrayRealVector(getInterpolatedState(t));
-	}
+	double[] getLinearCombination(double[] stateCoefficients);
 
-	private int findPreviousTimePointIndex(double t) {
-		int index = Arrays.binarySearch(tSeries, t);
-		if (index >= 0)
-			return index;
-		// See Java API
-		int insertionPoint = -index - 1;
-		if (insertionPoint == 0)
-			throw new InvalidTimePointException("Time must be between start and end of simulation");
-		return insertionPoint - 1;
-	}
+	RealVector getLinearCombination(RealVector stateCoefficients);
 
 }

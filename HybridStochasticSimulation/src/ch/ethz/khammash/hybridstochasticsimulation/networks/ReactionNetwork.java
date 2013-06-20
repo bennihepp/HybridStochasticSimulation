@@ -3,14 +3,14 @@ package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
 public interface ReactionNetwork {
 
-	public int getNumberOfSpecies();
+	int getNumberOfSpecies();
 
-	public int getNumberOfReactions();
+	int getNumberOfReactions();
 
-	public int getStochiometry(int species, int reaction);
+	int getStochiometry(int species, int reaction);
 
-	public int[] getStochiometries(int reaction);
+	int[] getStochiometries(int reaction);
 
-	public int[][] getStochiometries();
+	int[][] getStochiometries();
 
 }

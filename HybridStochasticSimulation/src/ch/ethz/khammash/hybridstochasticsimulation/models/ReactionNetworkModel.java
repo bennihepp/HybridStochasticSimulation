@@ -3,8 +3,8 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 public interface ReactionNetworkModel {
 
-	public int getNumberOfSpecies();
+	int getNumberOfSpecies();
 
-	public int getNumberOfReactions();
+	int getNumberOfReactions();
 
 }

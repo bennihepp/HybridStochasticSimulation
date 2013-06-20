@@ -1,6 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation.sandbox
 
-import ch.ethz.khammash.hybridstochasticsimulation.MainGUI;
+import ch.ethz.khammash.hybridstochasticsimulation.GUI;
 import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.PlotWindow
 
@@ -18,7 +18,7 @@ class NetworkSimulationScript {
 
 	static regulatedTranscriptionNetwork() {
 		//def nss = NetworkSimulation.loadSimpleCrystallizationNetwork()
-		def nss = MainGUI.loadRegulatedTranscriptionNetwork()
+		def nss = GUI.loadRegulatedTranscriptionNetwork()
 		
 //		nss.rng = new MersenneTwister(100)
 //		nss.rdg = new RandomDataGenerator(nss.rng)
@@ -31,24 +31,24 @@ class NetworkSimulationScript {
 		def tVector = Utilities.computeTimeVector(numberOfTimePoints,
 			nss.t0, nss.t1)
 
-		def std = MainGUI.simulateStochasticDistribution(
+		def std = GUI.simulateStochasticDistribution(
 			runs, nss, tVector)
-		def plot = MainGUI.plotTrajectoryDistribution(nss, std,)
+		def plot = GUI.plotTrajectoryDistribution(nss, std,)
 		plot.setTitle("Stochastic")
 		plots.add(plot)
 
-		def st = MainGUI.simulateStochastic(nss)
-		plot = MainGUI.plotTrajectory(nss, st)
+		def st = GUI.simulateStochastic(nss)
+		plot = GUI.plotTrajectory(nss, st)
 		plot.setTitle("Stochastic single trajectory")
 		plots.add(plot)
 
-		std = MainGUI.simulateMSPDMPDistribution(runs, nss, tVector)
-		plot = MainGUI.plotTrajectoryDistribution(nss, std)
+		std = GUI.simulateMSPDMPDistribution(runs, nss, tVector)
+		plot = GUI.plotTrajectoryDistribution(nss, std)
 		plot.setTitle("PDMP")
 		plots.add(plot)
 
-		st = MainGUI.simulateMSPDMP(nss, tVector)
-		plot = MainGUI.plotTrajectory(nss, st)
+		st = GUI.simulateMSPDMP(nss, tVector)
+		plot = GUI.plotTrajectory(nss, st)
 		plot.setTitle("PDMP single trajectory")
 		plots.add(plot)
 
@@ -58,14 +58,14 @@ class NetworkSimulationScript {
 		tVector = Utilities.computeTimeVector(numberOfTimePoints,
 			nss.t0, nss.t1)
 
-		std = MainGUI.simulateStochasticDistribution(
+		std = GUI.simulateStochasticDistribution(
 			runs, nss, tVector)
-		plot = MainGUI.plotTrajectoryDistribution(nss, std)
+		plot = GUI.plotTrajectoryDistribution(nss, std)
 		plot.setTitle("Stochatic, gamma=1")
 		plots.add(plot)
 
-		std = MainGUI.simulateMSPDMPDistribution(runs, nss, tVector)
-		plot = MainGUI.plotTrajectoryDistribution(nss, std)
+		std = GUI.simulateMSPDMPDistribution(runs, nss, tVector)
+		plot = GUI.plotTrajectoryDistribution(nss, std)
 		plot.setTitle("PDMP, gamma=1")
 		plots.add(plot)
 

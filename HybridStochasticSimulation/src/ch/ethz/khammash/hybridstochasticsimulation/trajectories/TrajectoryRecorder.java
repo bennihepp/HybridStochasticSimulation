@@ -4,12 +4,16 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 
 public interface TrajectoryRecorder<T extends ReactionNetworkModel> extends Trajectory {
 
-	public void setModel(T model);
+	void setModel(T model);
 
-	public void setInitialState(double t0, double[] x0);
+	void setInitialState(double t0, double[] x0);
 
-	public void setFinalState(double t1, double[] x1);
+	void setInitialState(double t0, double[] x0, int numOfStates);
 
-	public void handleReactionEvent(int reaction, double t, double[] newX);
+	void setFinalState(double t1, double[] x1);
+
+	void reportState(double t, double[] x);
+
+//	void handleReactionEvent(int reaction, double t, double[] newX);
 
 }

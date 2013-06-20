@@ -1,7 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.models;
 
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
@@ -67,7 +67,7 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 	}
 
 	@Override
-	public Collection<PDMPEventObserver> getOptionalEventObservers() {
+	public List<PDMPEventObserver> getOptionalEventObservers() {
 		return Collections.<PDMPEventObserver>emptyList();
 	}
 
@@ -86,7 +86,7 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 	}
 
 	@Override
-	public void checkForOptionalEvent(double t, double[] x) {
+	public void checkAndHandleOptionalEvent(double t, double[] x) {
 	}
 
 	@Override
@@ -109,6 +109,10 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 	}
 
 	@Override
+	public void init(double t0, double[] x0, double t) {
+	}
+
+	@Override
 	public double g(double t, double[] x) {
 		return x[x.length - 1] - x[x.length - 2];
 	}
@@ -116,10 +120,6 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 	@Override
 	public Action eventOccurred(double t, double[] x, boolean increasing) {
 		return Action.STOP;
-	}
-
-	@Override
-	public void init(double t0, double[] x0, double t) {
 	}
 
 	@Override

@@ -7,15 +7,12 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class BirthDeathTunnelNetwork extends ExampleNetwork {
+public class BirthDeathTunnelNetwork extends ExampleConfiguration {
 
 	public BirthDeathTunnelNetwork() {
 		// See Kang & Kurtz 2011 (3.2 Collective species balance)
-		int[] continuousSpecies = { };
+		int[] deterministicReactions = { };
 		double N = 1e6;
-		double deltaR = 0.5;
-		double deltaS = 0.5;
-		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 0, 0 };
 		double[] beta = { 0, 0, 0, 0 };
@@ -53,11 +50,8 @@ public class BirthDeathTunnelNetwork extends ExampleNetwork {
 		String[] speciesNames = { "S1", "S2" };
 
 		this.net = net;
-		this.continuousSpecies = continuousSpecies;
+		this.deterministicReactions = deterministicReactions;
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;

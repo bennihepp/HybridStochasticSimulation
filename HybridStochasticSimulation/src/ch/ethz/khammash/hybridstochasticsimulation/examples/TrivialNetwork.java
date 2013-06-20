@@ -5,14 +5,11 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
-public class TrivialNetwork extends ExampleNetwork {
+public class TrivialNetwork extends ExampleConfiguration {
 
 	public TrivialNetwork() {
-		int[] continuousSpecies = { };
+		int[] deterministicReactions = { };
 		double N = 1e6;
-		double deltaR = 0.5;
-		double deltaS = 0.5;
-		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 0 };
 		double[] beta = { 0, 0 };
@@ -38,11 +35,8 @@ public class TrivialNetwork extends ExampleNetwork {
 		String[] speciesNames = { "S" };
 
 		this.net = net;
-		this.continuousSpecies = continuousSpecies;
+		this.deterministicReactions = deterministicReactions;
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;

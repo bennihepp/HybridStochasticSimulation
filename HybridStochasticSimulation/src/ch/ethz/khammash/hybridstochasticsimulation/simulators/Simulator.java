@@ -5,12 +5,12 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecord
 
 public interface Simulator<T extends ReactionNetworkModel, E extends TrajectoryRecorder<T>> {
 
-	public double simulate(T model, final double t0, final double[] x0, double t1, double[] x1);
+	double simulate(T model, final double t0, final double[] x0, double t1, double[] x1);
 
-	public void addTrajectoryRecorder(E tr);
+	void addTrajectoryRecorder(E tr);
 
-	public void removeTrajectoryRecorder(E tr);
+	void removeTrajectoryRecorder(E tr);
 
-	public void clearTrajectoryRecorders();
+	void clearTrajectoryRecorders();
 
 }

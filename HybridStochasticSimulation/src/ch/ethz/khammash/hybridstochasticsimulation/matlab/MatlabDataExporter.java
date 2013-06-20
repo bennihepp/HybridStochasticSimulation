@@ -8,8 +8,8 @@ import java.util.List;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.util.FastMath;
 
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.PlotData;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryDistributionPlotData;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 import com.jmatio.io.MatFileWriter;
 import com.jmatio.types.MLArray;
@@ -19,15 +19,15 @@ import com.jmatio.types.MLStructure;
 
 public class MatlabDataExporter {
 
-	public List<MLArray> buildMatlabData(List<PlotData> plotDataList) {
+	public List<MLArray> buildMatlabData(List<FinitePlotData> plotDataList) {
 		return buildMatlabData(plotDataList, 2, FastMath.round(plotDataList.size() / 2));
 	}
 
-	public List<MLArray> buildMatlabData(List<PlotData> plotDataList, int rows, int cols) {
+	public List<MLArray> buildMatlabData(List<FinitePlotData> plotDataList, int rows, int cols) {
 		int[] plotDim = { plotDataList.size(), 1 };
 		MLStructure mlPlots = new MLStructure("plots", plotDim);
 		for (int i=0; i < plotDataList.size(); i++ ) {
-			PlotData plotData = plotDataList.get(i);
+			FinitePlotData plotData = plotDataList.get(i);
 			int[] trajectoriesDim = { plotData.getNumberOfStates(), 1 };
 	        MLStructure mlTrajectories = new MLStructure("trajectories", trajectoriesDim);
 			double[] tSeries = plotData.gettVector().toArray();
@@ -40,8 +40,8 @@ public class MatlabDataExporter {
 				double[] xSeries = plotData.getxVector(j).toArray();
 				MLDouble mlxSeries = new MLDouble("xSeries", xSeries, xSeries.length);
 				mlTrajectories.setField("xSeries", mlxSeries, j);
-				if (plotData instanceof TrajectoryDistributionPlotData) {
-					TrajectoryDistributionPlotData tdd = (TrajectoryDistributionPlotData)plotData;
+				if (plotData instanceof VectorFiniteDistributionPlotData) {
+					VectorFiniteDistributionPlotData tdd = (VectorFiniteDistributionPlotData)plotData;
 					double[] xSeriesStdDev = tdd.getxStdDevVector(j).toArray();
 					MLDouble mlxSeriesStdDev = new MLDouble("xSeriesStdDev", xSeriesStdDev, xSeriesStdDev.length);
 					mlTrajectories.setField("xSeriesStdDev", mlxSeriesStdDev, j);
@@ -50,7 +50,7 @@ public class MatlabDataExporter {
 				mlTrajectories.setField("name", new MLChar("name", name), j);
 			}
 			mlPlots.setField("trajectories", mlTrajectories, i);
-			mlPlots.setField("title", new MLChar("title", plotData.getTitle()), i);
+			mlPlots.setField("title", new MLChar("title", plotData.getDescription()), i);
 		}
 		ArrayList<MLArray> list = new ArrayList<MLArray>(1);
 		list.add(mlPlots);

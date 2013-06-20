@@ -2,13 +2,12 @@ package ch.ethz.khammash.hybridstochasticsimulation.matlab;
 
 import java.util.List;
 
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.PlotData;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryDistributionPlotData;
-
 import matlabcontrol.MatlabInvocationException;
 import matlabcontrol.MatlabProxy;
 import matlabcontrol.extensions.MatlabNumericArray;
 import matlabcontrol.extensions.MatlabTypeConverter;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 public class MatlabPlotter {
 
@@ -41,7 +40,7 @@ public class MatlabPlotter {
 		this.session = session;
 	}
 
-	public void plot(List<PlotData> plotDataList, int rows, int cols) throws MatlabInvocationException {
+	public void plot(List<FinitePlotData> plotDataList, int rows, int cols) throws MatlabInvocationException {
 		MatlabProxy proxy = session.getProxy();
 
 		if (session.isExistingSession()) {
@@ -64,7 +63,7 @@ public class MatlabPlotter {
 	    proxy.eval("set(gcf, 'PaperUnits', 'centimeters')");
 	    proxy.eval("set(gcf, 'PaperType', 'A4')");
 	    for (int i=0; i < plotDataList.size(); i++) {
-	    	PlotData plotData = plotDataList.get(i);
+	    	FinitePlotData plotData = plotDataList.get(i);
 		    proxy.eval("subplot(" + rows + "," + cols + "," + (i+1) + ")");
 		    proxy.eval("hold on");
 		    if (distinguishableColorFunctionExists)
@@ -83,8 +82,8 @@ public class MatlabPlotter {
 				} else
 					colorOrderExpression = "colorOrder(" + (j+1) + ",:)";
 				proxy.eval("plotHandles(" + (j+1) + ") = plot(tSeries, xSeries, 'Color', " + colorOrderExpression + ")");
-				if (plotData instanceof TrajectoryDistributionPlotData) {
-					TrajectoryDistributionPlotData tdd = (TrajectoryDistributionPlotData)plotData;
+				if (plotData instanceof VectorFiniteDistributionPlotData) {
+					VectorFiniteDistributionPlotData tdd = (VectorFiniteDistributionPlotData)plotData;
 					double[] xSeriesStdDev = tdd.getxStdDevVector(j).toArray();
 					proxy.setVariable("xSeriesStdDev", xSeriesStdDev);
 					proxy.eval("plot(tSeries, xSeries+xSeriesStdDev, ':', 'Color', " + colorOrderExpression + ")");
@@ -94,7 +93,7 @@ public class MatlabPlotter {
 			}
 			proxy.setVariable("plotLabels", plotLabels);
 			proxy.eval("legend(plotHandles, plotLabels, 'Location', 'Best')");
-			proxy.setVariable("plotTitle", plotData.getTitle());
+			proxy.setVariable("plotTitle", plotData.getDescription());
 			proxy.eval("title(plotTitle)");
 			proxy.setVariable("xAxisLabel", "Time in seconds");
 			proxy.setVariable("yAxisLabel", "Copy number");

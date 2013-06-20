@@ -7,7 +7,7 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
-public class StochasticFocusingNetwork extends ExampleNetwork {
+public class StochasticFocusingNetwork extends ExampleConfiguration {
 
 	public StochasticFocusingNetwork() {
 		// See Paulsson et al. PNAS 2000
@@ -22,11 +22,8 @@ public class StochasticFocusingNetwork extends ExampleNetwork {
 		//  P -> - (1)
 		//  - -> S (ks)
 		//  S -> - (kd)
-		int[] continuousSpecies = { };
+		int[] deterministicReactions = { };
 		double N = 1e4;
-		double deltaR = 0.5;
-		double deltaS = 0.5;
-		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 0, 0, 0 };
 		double[] beta = { 0, 0, 0, 0, 0, 0 };
@@ -78,11 +75,8 @@ public class StochasticFocusingNetwork extends ExampleNetwork {
 		String[] speciesNames = { "I", "P", "S" };
 
 		this.net = net;
-		this.continuousSpecies = continuousSpecies;
+		this.deterministicReactions = deterministicReactions;
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;

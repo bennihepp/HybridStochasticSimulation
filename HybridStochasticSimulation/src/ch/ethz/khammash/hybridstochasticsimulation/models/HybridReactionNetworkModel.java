@@ -3,12 +3,11 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 import java.util.Arrays;
 import java.util.LinkedList;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
 import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwork;
 
-
-// TODO: Group computation of choices for each reaction
 
 public class HybridReactionNetworkModel implements HybridModel,
 		FirstOrderDifferentialEquations, StochasticReactionNetworkModel {
@@ -18,14 +17,14 @@ public class HybridReactionNetworkModel implements HybridModel,
 	private int[] stochasticReactionIndices;
 	private int[] deterministicReactionIndices;
 
-	private double[] rateParameters;
+	private double[] modelRateParameters;
 	private int[] reactionChoiceIndices1;
 	private int[] reactionChoiceIndices2;
 	private double[][] reactionStochiometries;
 
 	public HybridReactionNetworkModel(HybridReactionNetwork hrn) {
 		dimension = hrn.getNumberOfSpecies();
-		rateParameters = new double[hrn.getNumberOfReactions()];
+		modelRateParameters = new double[hrn.getNumberOfReactions()];
 		reactionChoiceIndices1 = new int[hrn.getNumberOfReactions()];
 		reactionChoiceIndices2 = new int[hrn.getNumberOfReactions()];
 		reactionStochiometries = new double[hrn.getNumberOfReactions()][hrn.getNumberOfSpecies()];
@@ -39,6 +38,10 @@ public class HybridReactionNetworkModel implements HybridModel,
 		LinkedList<Integer> deterministicReactionIndicesList = new LinkedList<Integer>();
 
 		for (int r = 0; r < hrn.getNumberOfReactions(); r++) {
+			for (int s = 0; s < hrn.getNumberOfSpecies(); s++) {
+				reactionStochiometries[r][s] = hrn.getStochiometry(s, r);
+			}
+			modelRateParameters[r] = hrn.getRateParameter(r);
 			int[] choiceIndices = hrn.getChoiceIndices(r);
 			switch (choiceIndices.length) {
 			case 0:
@@ -52,12 +55,12 @@ public class HybridReactionNetworkModel implements HybridModel,
 			case 2:
 				reactionChoiceIndices1[r] = choiceIndices[0];
 				reactionChoiceIndices2[r] = choiceIndices[1];
+				if (choiceIndices[0] == choiceIndices[1])
+					modelRateParameters[r] *= 1 / 2.0;
 				break;
 			}
-			rateParameters[r] = hrn.getRateParameter(r);
-			for (int s = 0; s < hrn.getNumberOfSpecies(); s++) {
-				reactionStochiometries[r][s] = hrn.getStochiometry(s, r);
-			}
+			if (choiceIndices.length == 2 && choiceIndices[0] == choiceIndices[1])
+				modelRateParameters[r] /= 2.0;
 			HybridReactionNetwork.ReactionType rt = hrn.getReactionType(r);
 			switch (rt) {
 			case STOCHASTIC:
@@ -66,18 +69,11 @@ public class HybridReactionNetworkModel implements HybridModel,
 			case DETERMINISTIC:
 				deterministicReactionIndicesList.add(Integer.valueOf(r));
 				break;
-			case NONE:
-				break;
 			}
 		}
 
-		stochasticReactionIndices = new int[stochasticReactionIndicesList.size()];
-		deterministicReactionIndices = new int[deterministicReactionIndicesList.size()];
-		for (int i=0; i < stochasticReactionIndicesList.size(); i++)
-			stochasticReactionIndices[i] = stochasticReactionIndicesList.get(i).intValue();
-		for (int i=0; i < deterministicReactionIndicesList.size(); i++)
-			deterministicReactionIndices[i] = deterministicReactionIndicesList.get(i).intValue();
-
+		stochasticReactionIndices = ArrayUtils.toPrimitive(stochasticReactionIndicesList.toArray(new Integer[0]));
+		deterministicReactionIndices = ArrayUtils.toPrimitive(deterministicReactionIndicesList.toArray(new Integer[0]));
 	}
 
 	@Override
@@ -110,17 +106,17 @@ public class HybridReactionNetworkModel implements HybridModel,
 		// We don't check the length of x and propensities for performance reasons
 		Arrays.fill(xDot, 0, getNumberOfSpecies(), 0.0);
 		for (int r : deterministicReactionIndices) {
-			double v = rateParameters[r];
+			double v = modelRateParameters[r];
 			int choiceIndex1 = reactionChoiceIndices1[r];
 			int choiceIndex2 = reactionChoiceIndices2[r];
 			if (choiceIndex1 != -1) {
+				v *= x[choiceIndex1];
 				if (choiceIndex2 != -1) {
+					double q = x[choiceIndex2];
 					if (choiceIndex1 == choiceIndex2)
-						v *= (1 / 2.0) * x[choiceIndex1] * x[choiceIndex1];
-					else
-						v *= x[choiceIndex1] * x[choiceIndex2];
-				} else
-					v *= x[choiceIndex1];
+						q -= 1;
+					v *= q;
+				}
 			}
 			for (int s = 0; s < reactionStochiometries[r].length; s++) {
 				double stochiometry = reactionStochiometries[r][s];
@@ -137,22 +133,22 @@ public class HybridReactionNetworkModel implements HybridModel,
 
 	@Override
 	public int getNumberOfReactions() {
-		return rateParameters.length;
+		return modelRateParameters.length;
 	}
 
 	@Override
 	final public double computePropensity(int reaction, double t, double[] x) {
-		double p = rateParameters[reaction];
+		double p = modelRateParameters[reaction];
 		int choiceIndex1 = reactionChoiceIndices1[reaction];
 		int choiceIndex2 = reactionChoiceIndices2[reaction];
 		if (choiceIndex1 != -1) {
+			p *= x[choiceIndex1];
 			if (choiceIndex2 != -1) {
+				double q = x[choiceIndex2];
 				if (choiceIndex1 == choiceIndex2)
-					p *= (1 / 2.0) * x[choiceIndex1] * (x[choiceIndex1] - 1);
-				else
-					p *= x[choiceIndex1] * x[choiceIndex2];
-			} else
-				p *= x[choiceIndex1];
+					q -= 1;
+				p *= q;
+			}
 		}
 		return p;
 	}

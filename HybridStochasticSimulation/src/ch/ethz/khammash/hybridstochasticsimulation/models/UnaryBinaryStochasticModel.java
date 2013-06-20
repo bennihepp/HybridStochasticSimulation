@@ -7,11 +7,11 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionN
 
 public class UnaryBinaryStochasticModel implements StochasticReactionNetworkModel {
 
-	final int numberOfSpecies;
-	protected int[] reactionChoiceIndex1;
-	protected int[] reactionChoiceIndex2;
-	protected double[] rateParameters;
-	protected int[][] reactionStochiometries;
+	final private int numberOfSpecies;
+	private int[] reactionChoiceIndices1;
+	private int[] reactionChoiceIndices2;
+	private double[] modelRateParameters;
+	private int[][] reactionStochiometries;
 
     public UnaryBinaryStochasticModel(UnaryBinaryReactionNetwork net) {
     	numberOfSpecies = net.getNumberOfSpecies();
@@ -19,13 +19,13 @@ public class UnaryBinaryStochasticModel implements StochasticReactionNetworkMode
     }
 
     final private void init(UnaryBinaryReactionNetwork net) {
-    	reactionChoiceIndex1 = new int[net.getNumberOfReactions()];
-    	reactionChoiceIndex2 = new int[net.getNumberOfReactions()];
+    	reactionChoiceIndices1 = new int[net.getNumberOfReactions()];
+    	reactionChoiceIndices2 = new int[net.getNumberOfReactions()];
     	for (int r=0; r < net.getNumberOfReactions(); r++) {
-    		reactionChoiceIndex1[r] = -1;
-    		reactionChoiceIndex2[r] = -1;
+    		reactionChoiceIndices1[r] = -1;
+    		reactionChoiceIndices2[r] = -1;
     	}
-    	rateParameters = net.getRateParameters();
+		modelRateParameters = net.getRateParameters();
     	reactionStochiometries = net.getStochiometries();
 
     	for (int r=0; r < net.getNumberOfReactions(); r++) {
@@ -34,11 +34,13 @@ public class UnaryBinaryStochasticModel implements StochasticReactionNetworkMode
     		case 0:
     			break;
     		case 1:
-    			reactionChoiceIndex1[r] = choiceIndices[0];
+    			reactionChoiceIndices1[r] = choiceIndices[0];
     			break;
     		case 2:
-    			reactionChoiceIndex1[r] = choiceIndices[0];
-    			reactionChoiceIndex2[r] = choiceIndices[1];
+    			reactionChoiceIndices1[r] = choiceIndices[0];
+    			reactionChoiceIndices2[r] = choiceIndices[1];
+    			if (choiceIndices[0] == choiceIndices[1])
+    				modelRateParameters[r] *= 1 / 2.0;
     			break;
 			default:
 				throw new RuntimeException("Only constitutive, unary and binary reactions are allowed");
@@ -53,25 +55,22 @@ public class UnaryBinaryStochasticModel implements StochasticReactionNetworkMode
 
 	@Override
 	public int getNumberOfReactions() {
-		return rateParameters.length;
+		return modelRateParameters.length;
 	}
 
 	@Override
 	final public double computePropensity(int reaction, double t, double[] x) {
-		// We don't check the length of x and propensities for performance reasons
-		double p = rateParameters[reaction];
-		int choiceIndex1 = reactionChoiceIndex1[reaction];
-		int choiceIndex2 = reactionChoiceIndex2[reaction];
-		if (choiceIndex2 != -1) {
-			if (choiceIndex1 == choiceIndex2)
-				// Binary reaction of the same species
-				p *= (1/2.0) * x[choiceIndex1] * (x[choiceIndex1] - 1);
-			else
-				// Binary reaction of two different species
-				p *= x[choiceIndex1] * x[choiceIndex2];
-		} else if (choiceIndex1 != -1) {
-			// Unary reaction
+		double p = modelRateParameters[reaction];
+		int choiceIndex1 = reactionChoiceIndices1[reaction];
+		int choiceIndex2 = reactionChoiceIndices2[reaction];
+		if (choiceIndex1 != -1) {
 			p *= x[choiceIndex1];
+			if (choiceIndex2 != -1) {
+				double q = x[choiceIndex2];
+				if (choiceIndex1 == choiceIndex2)
+					q -= 1;
+				p *= q;
+			}
 		}
 		return p;
 	}
@@ -88,8 +87,8 @@ public class UnaryBinaryStochasticModel implements StochasticReactionNetworkMode
 	public void updateState(int reaction, double t, double[] x) {
 		// We don't check the length of x and propensities for performance reasons
 		int[] stochiometry = reactionStochiometries[reaction];
-    	for (int i=0; i < stochiometry.length; i++) {
-    		x[i] += stochiometry[i];
+    	for (int s=0; s < stochiometry.length; s++) {
+    		x[s] += stochiometry[s];
     	}
 	}
 

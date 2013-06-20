@@ -7,14 +7,11 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class RegulatedTranscriptionNetwork extends ExampleNetwork {
+public class RegulatedTranscriptionNetwork extends ExampleConfiguration {
 
 	public RegulatedTranscriptionNetwork() {
-		int[] continuousSpecies = { };
+		int[] deterministicReactions = { };
 		double N = 100;
-		double deltaR = 0.5;
-		double deltaS = 0.5;
-		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 1, 1, 0, 0, 0, 0 };
 		double[] beta = { -1, -2, -1, -1, -1, 0, -3, -2, -1, 0 };
@@ -64,11 +61,8 @@ public class RegulatedTranscriptionNetwork extends ExampleNetwork {
 		String[] speciesNames = { "M", "D", "RNA", "DNA", "DNAD", "DNA2D" };
 
 		this.net = net;
-		this.continuousSpecies = continuousSpecies;
+		this.deterministicReactions = deterministicReactions;
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;

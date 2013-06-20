@@ -8,7 +8,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class RepressedBacteriumOperonNetwork extends ExampleNetwork {
+public class RepressedBacteriumOperonNetwork extends ExampleConfiguration {
 
 	public RepressedBacteriumOperonNetwork() {
 		// See Crudu et. al 2009
@@ -133,11 +133,8 @@ public class RepressedBacteriumOperonNetwork extends ExampleNetwork {
 				{ 0,  0,   0,  0,    0,     0,   0,  0,    0,     0,     1,        0 }, // Protein -> - (k10)
 				{ 0,  0,   0,  0,    0,     0,   0,  0,    0,     0,     0,        1 }, // FoldedProtein -> - (k11)
 		};
-		int[] continuousSpecies = {};
+		int[] deterministicReactions = {};
 		double N = 100;
-		double deltaR = 0.5;
-		double deltaS = 0.5;
-		double epsilon = 0.1;
 		double gamma = 0;
 		double[] alpha = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		double[] beta = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -162,11 +159,8 @@ public class RepressedBacteriumOperonNetwork extends ExampleNetwork {
 		};
 
 		this.net = net;
-		this.continuousSpecies = continuousSpecies;
+		this.deterministicReactions = deterministicReactions;
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;

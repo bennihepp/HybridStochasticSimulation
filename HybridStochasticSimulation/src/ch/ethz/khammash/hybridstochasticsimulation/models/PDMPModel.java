@@ -1,6 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation.models;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
@@ -8,24 +8,24 @@ import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserver;
 
 public interface PDMPModel extends ReactionNetworkModel {
 
-	public FirstOrderDifferentialEquations getVectorField();
+	FirstOrderDifferentialEquations getVectorField();
 
-	public StochasticReactionNetworkModel getTransitionMeasure();
+	StochasticReactionNetworkModel getTransitionMeasure();
 
-	public boolean hasVectorField();
+	boolean hasVectorField();
 
-	public boolean isTimeIndependent();
+	boolean isTimeIndependent();
 
-	public void initialize(double t0, double[] x0);
+	void initialize(double t0, double[] x0);
 
-	public PDMPEventObserver getJumpEventObserver();
+	PDMPEventObserver getJumpEventObserver();
 
-	public Collection<PDMPEventObserver> getOptionalEventObservers();
+	List<PDMPEventObserver> getOptionalEventObservers();
 
-	public void checkForOptionalEvent(double t, double[] x);
+	void checkAndHandleOptionalEvent(double t, double[] x);
 
-	public boolean hasOptionalEventOccured();
+	boolean hasOptionalEventOccured();
 
-	public void handleOptionalEvent(double t, double[] x);
+	void handleOptionalEvent(double t, double[] x);
 
 }

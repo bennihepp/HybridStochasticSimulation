@@ -7,14 +7,11 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class BacteriumOperatorSiteNetwork extends ExampleNetwork {
+public class BacteriumOperatorSiteNetwork extends ExampleConfiguration {
 
 	public BacteriumOperatorSiteNetwork() {
-		int[] continuousSpecies = { 2 };
+		int[] deterministicReactions = { 2 };
 		double N = 100;
-		double deltaR = 0.5;
-		double deltaS = 0.5;
-		double epsilon = 0.1;
 		double gamma = 0;
 		double[] alpha = { 0, 0, 1 };
 		double[] beta = { 0, 0, 1, 0 };
@@ -46,11 +43,8 @@ public class BacteriumOperatorSiteNetwork extends ExampleNetwork {
 		String[] speciesNames = { "G", "G*", "P" };
 
 		this.net = net;
-		this.continuousSpecies = continuousSpecies;
+		this.deterministicReactions = deterministicReactions;
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;

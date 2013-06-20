@@ -7,7 +7,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class LambdaPhageToggleSwitchNetwork extends ExampleNetwork {
+public class LambdaPhageToggleSwitchNetwork extends ExampleConfiguration {
 
 	public LambdaPhageToggleSwitchNetwork() {
 		// See Crudu et. al 2009
@@ -30,11 +30,8 @@ public class LambdaPhageToggleSwitchNetwork extends ExampleNetwork {
 		//  DcI2 + cI2 -> DcI2cI2 (k4)
 		//  DcI2cI2 -> DcI2 + cI2 (km4)
 		int n = 10;
-		int[] continuousSpecies = {};
+		int[] deterministicReactions = {};
 		double N = 100;
-		double deltaR = 0.5;
-		double deltaS = 0.5;
-		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 0, 0, 0 };
 		double[] beta = { 0, 0, 0, 0 };
@@ -94,11 +91,8 @@ public class LambdaPhageToggleSwitchNetwork extends ExampleNetwork {
 		String[] speciesNames = { "D", "DcI2", "DcI2*", "DcI2cI2", "cI", "cI2" };
 
 		this.net = net;
-		this.continuousSpecies = continuousSpecies;
+		this.deterministicReactions = deterministicReactions;
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;

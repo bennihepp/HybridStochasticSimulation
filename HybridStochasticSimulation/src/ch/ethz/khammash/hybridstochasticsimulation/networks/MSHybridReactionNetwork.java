@@ -19,19 +19,15 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		NONE, STOCHASTIC, DETERMINISTIC, EXPLODING,
 	}
 
-	// TODO: Make this available as a parameter
-	private static final double tolerance = 1e-6;
-
+	private double delta = 0.5;
+	private double tolerance = 1e-6;
 	private double N;
-	private double deltaR;
-	private double deltaS;
-	private double epsilon;
-	protected double[] alpha;
-	protected double[] beta;
+	private double[] alpha;
+	private double[] beta;
 	private double gamma;
 	private double[] speciesScaleFactors;
 	private double[] inverseSpeciesScaleFactors;
-//	protected double[] rateScaleFactors;
+//	private double[] rateScaleFactors;
 	private double timeScaleFactor;
 	private ReactionTermType[][] reactionTermTypes;
 	private SpeciesType[] speciesTypes;
@@ -110,17 +106,13 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 //		return result;
 //	}
 
-	public MSHybridReactionNetwork(int numOfSpecies, int numOfReactions, double N,
-			double deltaR, double deltaS, double epsilon, double gamma,
-			double[] alpha, double[] beta) {
+	public MSHybridReactionNetwork(
+			int numOfSpecies, int numOfReactions, double N, double gamma, double[] alpha, double[] beta) {
 		super(numOfSpecies, numOfReactions);
 		checkArgument(N > 0, "Expected N > 0");
 		checkArgument(alpha.length == getNumberOfSpecies(), "Expected alpha.length == getNumberOfSpecies()");
 		checkArgument(beta.length == getNumberOfReactions(), "Expected beta.length == getNumberOfReactions()");
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha.clone();
 		this.beta = beta.clone();
@@ -134,17 +126,16 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		updateScaleFactors();
 	}
 
-	public MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N,
-			double deltaR, double deltaS, double epsilon, double gamma,
-			double[] alpha, double[] beta) {
-		this(net.getNumberOfSpecies(), net.getNumberOfReactions(), N, deltaR, deltaS, epsilon, gamma, alpha, beta);
+	public MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
+		this(net.getNumberOfSpecies(), net.getNumberOfReactions(), N, gamma, alpha, beta);
 		setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
 		setRateParameters(net.getRateParameters());
 	}
 
 	public MSHybridReactionNetwork(MSHybridReactionNetwork hrn) {
-		this(hrn, hrn.getN(), hrn.getDeltaR(), hrn.getDeltaS(), hrn
-				.getEpsilon(), hrn.getGamma(), hrn.getAlpha(), hrn.getBeta());
+		this(hrn, hrn.getN(), hrn.getGamma(), hrn.getAlpha(), hrn.getBeta());
+		setDelta(hrn.getDelta());
+		setTolerance(hrn.getTolerance());
 	}
 
 	final protected void invalidateReactionTermTypes() {
@@ -180,6 +171,24 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		updateTimeScaleFactor();
 	}
 
+	final public double getDelta() {
+		return delta;
+	}
+
+	public void setDelta(double delta) {
+		checkArgument(delta > 0);
+		this.delta = delta;
+	}
+
+	final public double getTolerance() {
+		return tolerance;
+	}
+
+	public void setTolerance(double tolerance) {
+		checkArgument(tolerance > 0);
+		this.tolerance = tolerance;
+	}
+
 	final public double getTimeScaleFactor() {
 		return timeScaleFactor;
 	}
@@ -198,12 +207,12 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		return t;
 	}
 
-	public double getInverseSpeciesScaleFactor(int state) {
+	final public double getInverseSpeciesScaleFactor(int state) {
 		checkElementIndex(state, getNumberOfSpecies());
 		return inverseSpeciesScaleFactors[state];
 	}
 
-	public double getSpeciesScaleFactor(int state) {
+	final public double getSpeciesScaleFactor(int state) {
 		checkElementIndex(state, getNumberOfSpecies());
 		return speciesScaleFactors[state];
 	}
@@ -250,27 +259,22 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		return gamma;
 	}
 
-	final public double getDeltaR() {
-		return deltaR;
-	}
-
-	final public double getDeltaS() {
-		return deltaS;
-	}
-
-	final public double getEpsilon() {
-		return epsilon;
-	}
-
-	final public void setAlpha(int species, double alpha) {
+	public void setAlpha(int species, double alpha) {
+		checkArgument(alpha >= 0);
 		this.alpha[species] = alpha;
 		invalidateReactionTermTypes();
 		updateSpeciesScaleFactor(species);
 	}
 
+	final protected void setAlphaUnchecked(int species, double alpha) {
+		this.alpha[species] = alpha;
+	}
+
 	public void setAlpha(double[] alpha) {
 		if (alpha.length != getNumberOfSpecies())
 			throw new IndexOutOfBoundsException();
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			checkArgument(alpha[s] >= 0);
 		for (int s=0; s < getNumberOfSpecies(); s++)
 			this.alpha[s] = alpha[s];
 		invalidateReactionTermTypes();
@@ -284,6 +288,10 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 	final public double getAlpha(int species) {
 //		checkElementIndex(species, getNumberOfSpecies());
 		return alpha[species];
+	}
+
+	final protected void setBetaUnchecked(int reaction, double beta) {
+		this.beta[reaction] = beta;
 	}
 
 	final public void setBeta(int reaction, double beta) {
@@ -328,7 +336,15 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		return reactionTermTypes[r][s];
 	}
 
+	protected void overrideReactionTypes(ReactionType[] reactionTypes) {
+		for (int r=0; r < getNumberOfReactions(); r++)
+			this.reactionTypes[r] = reactionTypes[r];
+		reactionTermTypesInvalid = false;
+	}
+
 	private void computeReactionTermTypes() {
+		// TODO
+//		int[] counter = { 0, 0, 0 };
 		for (int s=0; s < getNumberOfSpecies(); s++)
 			speciesTypes[s] = SpeciesType.CONTINUOUS;
 		for (int r=0; r < getNumberOfReactions(); r++) {
@@ -347,21 +363,30 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 					reactionType = ReactionType.DETERMINISTIC;
 			}
 			reactionTypes[r] = reactionType;
+//			if (reactionType == ReactionType.STOCHASTIC)
+//				counter[0]++;
+//			else if (reactionType == ReactionType.DETERMINISTIC)
+//				counter[1]++;
+//			else if (reactionType == ReactionType.EXPLODING)
+//				counter[2]++;
 		}
+//		System.out.println("Found " + counter[0] + " stochastic reactions, " + counter[1] + " deterministic reactions and " + counter[2] + " exploding reactions");
 		reactionTermTypesInvalid = false;
 	}
 
 	private ReactionTermType computeReactionTermType(int species, int reaction) {
 		if (getStochiometry(species, reaction) == 0)
 			return ReactionTermType.NONE;
-		double rho = gamma + beta[reaction];
+		double gammaPlusRho = gamma + beta[reaction];
 		for (int s2 = 0; s2 < alpha.length; s2++)
 			if (getConsumptionStochiometry(s2, reaction) > 0)
-				rho += getConsumptionStochiometry(s2, reaction) * alpha[s2];
-		if (alpha[species] > deltaS) {
-			if (rho > alpha[species] + tolerance) {
-				System.out.println("EXPLODING: alpha[" + species + "]=" + alpha[species] + ", rho[" + reaction + "]=" + rho);
+				gammaPlusRho += getConsumptionStochiometry(s2, reaction) * alpha[s2];
+		if (alpha[species] > delta) {
+			if (gammaPlusRho > alpha[species] + tolerance) {
+				// TODO
+				System.out.println("EXPLODING: alpha[" + species + "]=" + alpha[species] + ", gamma+rho[" + reaction + "]=" + gammaPlusRho);
 				return ReactionTermType.EXPLODING;
+//				return ReactionTermType.DETERMINISTIC;
 			} else
 				return ReactionTermType.DETERMINISTIC;
 		} else
@@ -370,7 +395,7 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 
 	// TODO: This is only needed by FiniteAdaptiveMSHRNModelTrajectory
 	public double computeInsideScalingExponent(int reaction) {
-		double rho = gamma + beta[reaction];
+		double rho = beta[reaction];
 		for (int s = 0; s < alpha.length; s++)
 			if (getConsumptionStochiometry(s, reaction) > 0)
 				rho += getConsumptionStochiometry(s, reaction) * alpha[s];

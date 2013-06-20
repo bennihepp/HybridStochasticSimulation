@@ -23,7 +23,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import ch.ethz.khammash.hybridstochasticsimulation.matlab.MatlabPlotter;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryDistributionPlotData;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteDistributionPlotData;
 
 import com.google.common.collect.Iterators;
 
@@ -152,14 +152,14 @@ public class TrajectoryDistributionPlotChartPanel extends ChartPanel {
 		addSpecies(name, meanSeries, stdDevPlusSeries, stdDevMinusSeries);
 	}
 
-	public void addDistributionPlotData(TrajectoryDistributionPlotData tdd) {
+	public void addDistributionPlotData(FiniteDistributionPlotData tdd) {
 		for (int s=0; s < tdd.getNumberOfStates(); ++s) {
 			RealVector tVector = tdd.gettVector();
-			RealVector xMeanVector = tdd.getxMeanVector(s);
+			RealVector xMeanVector = tdd.getxVector(s);
 			RealVector xStdDevVector = tdd.getxStdDevVector(s);
 			addSpecies(tdd.getStateName(s), tVector, xMeanVector, xStdDevVector, tdd.getPlotScale(s));
 		}
-		setTitle(tdd.getTitle());
+		setTitle(tdd.getDescription());
 	}
 
 }

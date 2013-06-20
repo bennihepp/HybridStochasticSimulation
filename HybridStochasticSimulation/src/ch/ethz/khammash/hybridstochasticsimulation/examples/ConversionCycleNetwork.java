@@ -7,14 +7,11 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
-public class ConversionCycleNetwork extends ExampleNetwork {
+public class ConversionCycleNetwork extends ExampleConfiguration {
 
 	public ConversionCycleNetwork() {
-		int[] continuousSpecies = { 0, 1 };
+		int[] deterministicReactions = { 0, 1 };
 		double N = 1e5;
-		double deltaR = 0.5;
-		double deltaS = 0.5;
-		double epsilon = 0.5;
 		double gamma = 0;
 		double[] alpha = { 0, 1, 1 };
 		double[] beta = { 0, 0, 0, 0 };
@@ -46,11 +43,8 @@ public class ConversionCycleNetwork extends ExampleNetwork {
 		String[] speciesNames = { "S1", "S2", "S3" };
 
 		this.net = net;
-		this.continuousSpecies = continuousSpecies;
+		this.deterministicReactions = deterministicReactions;
 		this.N = N;
-		this.deltaR = deltaR;
-		this.deltaS = deltaS;
-		this.epsilon = epsilon;
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;

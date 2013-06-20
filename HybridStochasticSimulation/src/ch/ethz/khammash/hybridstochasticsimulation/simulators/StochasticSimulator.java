@@ -2,11 +2,12 @@ package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.commons.math3.random.RandomDataGenerator;
 
+import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
@@ -14,8 +15,8 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecord
 public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 		implements Simulator<T, TrajectoryRecorder<T>> {
 
-	protected RandomDataGenerator rdg;
-	protected Set<TrajectoryRecorder<T>> trajectoryRecorders;
+	private RandomDataGenerator rdg;
+	private List<TrajectoryRecorder<T>> trajectoryRecorders;
 
 	public StochasticSimulator() {
 		this(null);
@@ -25,10 +26,11 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 		if (rdg == null)
 			rdg = new RandomDataGenerator();
 		this.rdg = rdg;
-		trajectoryRecorders = new LinkedHashSet<>();
+		trajectoryRecorders = new LinkedList<TrajectoryRecorder<T>>();
 	}
 
 	public double simulate(T model, double t0, double[] x0, double t1, double[] x1) {
+		boolean showProgress = false;
 		checkArgument(x0.length == x1.length, "Expected x0.length == x1.length");
 		checkArgument(x0.length == model.getNumberOfSpecies(), "Expected x0.length == model.getNumberOfSpecies()");
 		double[] x = new double[x0.length];
@@ -40,18 +42,29 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
     		handler.setModel(model);
     		handler.setInitialState(t0, x0);
     	}
-//    	long reactionCounter = 0;
-//    	double[] reactionCounterArray = new double[model.getPropensityDimension()];
+    	long reactionCounter = 0;
+    	double[] reactionCounterArray = new double[model.getNumberOfReactions()];
+    	double msgDt = (t1 - t0) / 20.0;
+    	double nextMsgT = t0 + msgDt;
+		final long startTime = System.currentTimeMillis();
 		while (true) {
+			if (showProgress)
+				while (t > nextMsgT) {
+					System.out.println("Progress: " + (100 * (nextMsgT - t0)/(t1 - t0)) + "%");
+					nextMsgT += msgDt;
+				}
 	        model.computePropensities(t, x, propVec);
 	        double propSum = 0.0;
 	        for (int i=0; i < propVec.length; i++)
 	        	propSum += propVec[i];
-	        // Find next reaction time point
-	        if (propSum == 0)
+	        // Sanity check for negative propensities or no more reactions
+	        if (propSum < 0)
+	        	throw new RuntimeException("Negative propensities are not allowed to occur!");
+	        else if (propSum == 0)
 	        	break;
 	        double tau = rdg.nextExponential(1 / propSum);
 	        t = t + tau;
+	        // Stop if we reached the end-timepoint
 	        if (t >= t1)
 	        	break;
 	        // Determine which reaction fired and update state
@@ -67,17 +80,19 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 	        	}
 	        }
 	        if (reaction >= 0) {
-//	        	reactionCounter++;
-//	        	reactionCounterArray[reaction]++;
+	        	reactionCounter++;
+	        	reactionCounterArray[reaction]++;
 	        	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
-	        		handler.handleReactionEvent(reaction, t, x);
+	        		handler.reportState(t, x);
 	        }
 		}
-//		System.out.println("Total of " + reactionCounter + " reactions performed");
-//		Utilities.printArray("Total reaction counts", reactionCounterArray);
-//		for (int r=0; r < reactionCounterArray.length; r++)
-//			reactionCounterArray[r] /= reactionCounter;
-//		Utilities.printArray("Relative reaction counts", reactionCounterArray);
+		final long endTime = System.currentTimeMillis();
+		System.out.println("Execution time: " + (endTime - startTime));
+		System.out.println("Total of " + reactionCounter + " reactions performed");
+		Utilities.printArray("Total reaction counts", reactionCounterArray);
+		for (int r=0; r < reactionCounterArray.length; r++)
+			reactionCounterArray[r] /= reactionCounter;
+		Utilities.printArray("Relative reaction counts", reactionCounterArray);
 		for (int i=0; i < x1.length; i++)
 			x1[i] = x[i];
     	for (TrajectoryRecorder<T> handler : trajectoryRecorders)

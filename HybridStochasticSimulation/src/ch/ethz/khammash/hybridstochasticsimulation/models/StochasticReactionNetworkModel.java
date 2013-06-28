@@ -6,7 +6,7 @@ public interface StochasticReactionNetworkModel extends ReactionNetworkModel {
 
 	void computePropensities(double t, double[] x, double[] propensities);
 
-	void updateState(int reaction, double t, double[] x);
+	void changeState(int reaction, double t, double[] x);
 
 	boolean isTimeIndependent();
 

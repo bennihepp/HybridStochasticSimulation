@@ -27,6 +27,7 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void setSimulator(Simulator<AdaptiveMSHRNModel, ? extends TrajectoryRecorder<AdaptiveMSHRNModel>> simulator) {
 		if (simulator instanceof PDMPSimulator<?>)
 			this.simulator = (PDMPSimulator<AdaptiveMSHRNModel>)simulator;
@@ -80,6 +81,10 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 	protected void setState(int index, double[] x) {
 		super.setState(index, x);
 
+		if (hrn.getAlpha()[2] < 1.1 || hrn.getAlpha()[2] > 1.2)
+			hrn.getAlpha();
+		if (index > 2 && alphaTrajectory.xSeries[2][index-1] < 1.1 && alphaTrajectory.xSeries[2][index-2] > 1.1)
+			hrn.getAlpha();
 		scaledTrajectory.setState(index, x);
 		alphaTrajectory.setState(index, hrn.getAlpha());
 		double[] rho = new double[hrn.getNumberOfReactions()];
@@ -93,6 +98,37 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 			q[0] = simulator.isIntegrating;
 			q[1] = -simulator.integratorCounter;
 			integratorTrajectory.setState(index, q);
+		}
+		if (x[2] * hrn.getSpeciesScaleFactor(2) < 100)
+			x[2] = x[2];
+	}
+
+	@Override
+	public void reportState(double t, double[] x) {
+		if (t <= tSeries[index]) {
+			setState(index, x);
+			if (t == tSeries[index])
+				index++;
+		} else if (t > tSeries[index]) {
+			while (t > tSeries[index + 1]) {
+				index++;
+				for (int s=0; s < xSeries.length; s++)
+					xSeries[s][index] = xSeries[s][index - 1];
+				for (int s=0; s < alphaTrajectory.xSeries.length; s++)
+					alphaTrajectory.xSeries[s][index] = alphaTrajectory.xSeries[s][index - 1];
+				for (int s=0; s < rhoTrajectory.xSeries.length; s++)
+					rhoTrajectory.xSeries[s][index] = rhoTrajectory.xSeries[s][index - 1];
+				for (int s=0; s < betaTrajectory.xSeries.length; s++)
+					betaTrajectory.xSeries[s][index] = betaTrajectory.xSeries[s][index - 1];
+				for (int s=0; s < rttTrajectory.xSeries.length; s++)
+					rttTrajectory.xSeries[s][index] = rttTrajectory.xSeries[s][index - 1];
+				for (int s=0; s < scaledTrajectory.xSeries.length; s++)
+					scaledTrajectory.xSeries[s][index] = scaledTrajectory.xSeries[s][index - 1];
+				for (int s=0; s < integratorTrajectory.xSeries.length; s++)
+					integratorTrajectory.xSeries[s][index] = integratorTrajectory.xSeries[s][index - 1];
+			}
+			setState(index + 1, x);
+			index++;
 		}
 	}
 

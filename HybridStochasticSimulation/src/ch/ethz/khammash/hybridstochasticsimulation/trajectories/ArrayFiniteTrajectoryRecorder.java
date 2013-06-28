@@ -59,14 +59,15 @@ public class ArrayFiniteTrajectoryRecorder<T extends ReactionNetworkModel>
 			setState(index, x);
 			if (t == tSeries[index])
 				index++;
-		} else if (t > tSeries[index]) {
-			while (t > tSeries[index + 1]) {
+		} else {
+			while (index + 1 < tSeries.length && t > tSeries[index + 1]) {
 				index++;
 				for (int s=0; s < xSeries.length; s++)
 					xSeries[s][index] = xSeries[s][index - 1];
 			}
-			setState(index + 1, x);
 			index++;
+			if (index < tSeries.length)
+				setState(index, x);
 		}
 	}
 

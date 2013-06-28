@@ -1,1 +1,13 @@
 /.metadata
+*.class
+*.lo
+*.o
+*.so
+*.so.*
+*.la
+*.a
+#*.jar
+*.zip
+*.tgz
+*.tar.gz
+

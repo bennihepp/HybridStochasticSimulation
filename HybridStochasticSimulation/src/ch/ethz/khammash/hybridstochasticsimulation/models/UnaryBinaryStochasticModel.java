@@ -84,7 +84,7 @@ public class UnaryBinaryStochasticModel implements StochasticReactionNetworkMode
 	}
 
 	@Override
-	public void updateState(int reaction, double t, double[] x) {
+	public void changeState(int reaction, double t, double[] x) {
 		// We don't check the length of x and propensities for performance reasons
 		int[] stochiometry = reactionStochiometries[reaction];
     	for (int s=0; s < stochiometry.length; s++) {

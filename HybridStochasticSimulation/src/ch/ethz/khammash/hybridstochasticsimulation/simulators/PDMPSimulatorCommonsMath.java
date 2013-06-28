@@ -210,7 +210,7 @@ public class PDMPSimulatorCommonsMath<T extends PDMPModel> implements Simulator<
 	        	w = w + propVec[l] / propSum;
 	        	if (u < w) {
 	        		reaction = l;
-	        		rnm.updateState(reaction, t, x);
+	        		rnm.changeState(reaction, t, x);
 	        		break;
 	        	}
 	        }

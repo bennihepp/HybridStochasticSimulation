@@ -29,6 +29,7 @@ public class GUI {
 					Thread t = new Thread("Simulation Thread") {
 						@Override
 						public void run() {
+							window.getStatusBar().setText("Running simulation");
 //							List<FinitePlotData> plotDataList = Main.trivialNetwork();
 							// Maybe example
 //							List<FinitePlotData> plotDataList = Main.conversionCycleNetwork();
@@ -44,8 +45,10 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Main.repressedBacteriumOperonNetwork();
 							// Example 3
 //							List<FinitePlotData> plotDataList = Main.heatShockResponseNetwork();
-							List<FinitePlotData> plotDataList = Main.vilarOscillatorNetwork();
+//							List<FinitePlotData> plotDataList = Main.vilarOscillatorNetwork();
 //							List<FinitePlotData> plotDataList = Main.bacteriophageT7Network();
+//							List<FinitePlotData> plotDataList = Main.fastIsomerization();
+							List<FinitePlotData> plotDataList = Main.fastDimerization();
 							int rows;
 							int cols;
 							if (plotDataList.size() >= 3) {

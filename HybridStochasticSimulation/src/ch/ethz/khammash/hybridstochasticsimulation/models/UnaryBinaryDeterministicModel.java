@@ -125,7 +125,7 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 	}
 
 	@Override
-	public void updateState(int reaction, double t, double[] x) {
+	public void changeState(int reaction, double t, double[] x) {
 	}
 
 	@Override

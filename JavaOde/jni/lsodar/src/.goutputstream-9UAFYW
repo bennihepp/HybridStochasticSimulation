@@ -1,0 +1,231 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <memory.h>
+#include <math.h>
+
+#include "LsodarOdeSolver.h"
+
+#ifndef max
+	#define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
+#endif
+
+#ifndef min
+	#define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
+#endif
+
+typedef void (*CALLBACK_F_PTR)(int neq[], double* t, double y[], double ydot[]);
+typedef void (*CALLBACK_G_PTR)(int neq[], double* t, double y[], int* ng, double gout[]);
+typedef void (*CALLBACK_JAC_PTR)(int neq[], double* t, double y[], int* ml, int* mu, double pd[], int* nrowpd);
+
+extern void dlsodar_(
+    CALLBACK_F_PTR f, int neq[], double y[], double* t, double* tout, int* itol,
+    double rtol[], double atol[], int* itask, int* istate, int* iopt,
+    double rwork[], int* lrw, double iwork[], int* liw,
+    CALLBACK_JAC_PTR jac, int* jt, CALLBACK_G_PTR g, int* ng, int jroot[]);
+
+struct lsodar_data {
+    CALLBACK_F_PTR f_ptr;
+    int neq[3];
+    double* y;
+    double t;
+    double tout;
+    int itol;
+    double rtol[1];
+    double atol[1];
+    int itask;
+    int istate;
+    int iopt;
+    double* rwork;
+    int lrw;
+    double* iwork;
+    int liw;
+    CALLBACK_JAC_PTR jac_ptr;
+    int jt;
+    CALLBACK_G_PTR g_ptr;
+    int ng;
+    int* jroot;
+    JNIEnv* env;
+    jobject ode;
+    jmethodID vectorFieldMethodID;
+    jmethodID eventValuesMethodID;
+    jmethodID reportEventMethodID;
+    jdoubleArray jy;
+    jdoubleArray jydot;
+    jdoubleArray jg;
+};
+
+void f(int neq[], double* t, double y[], double ydot[]) {
+    ydot[0] = 1.0;
+}
+
+void f_bridge(int neq[], double* t, double y[], double ydot[]) {
+    //jlong* ptr = &neq[1];
+    int* ptr = &neq[1];
+    struct lsodar_data* data = (struct lsodar_data*)ptr[0];
+    JNIEnv *env = data->env;
+    jdoubleArray jy = data->jy;
+    (*env)->SetDoubleArrayRegion(env, jy, 0, data->neq[0], y);
+    jdoubleArray jydot = data->jydot;
+    (*env)->CallVoidMethod(env, data->ode, data->vectorFieldMethodID, t, jy, jydot);
+    //jdouble *ydottmp = (*env)->GetDoubleArrayElements(env, jydot, 0);
+    jdouble *ydottmp = (*env)->GetPrimitiveArrayCritical(env, jydot, 0);
+    if (ydottmp == NULL) {
+        // TODO: handle out of memory
+    }
+    memcpy(ydot, ydottmp, neq[0] * sizeof(double));
+    (*env)->ReleasePrimitiveArrayCritical(env, jydot, ydottmp, JNI_ABORT);
+    //(*env)->ReleaseDoubleArrayElements(env, jydot, ydottmp, JNI_ABORT);
+    //(*env)->DeleteLocalRef(env, jout);
+    //(*env)->DeleteLocalRef(env, jy);
+}
+
+void g(int neq[], double* t, double y[], int* ng, double gout[]) {
+    gout[0] = 0.5 - y[0];
+}
+
+void g_bridge(int neq[], double* t, double y[], int* ng, double gout[]) {
+    //jlong* ptr = &neq[1];
+    int* ptr = &neq[1];
+    struct lsodar_data* data = (struct lsodar_data*)ptr[0];
+    JNIEnv *env = data->env;
+    jdoubleArray jy = data->jy;
+    (*env)->SetDoubleArrayRegion(env, jy, 0, data->neq[0], y);
+    jdoubleArray jg = data->jg;
+    (*env)->CallVoidMethod(env, data->ode, data->eventValuesMethodID, t, jy, jg);
+    //jdouble *gtmp = (*env)->GetDoubleArrayElements(env, jg, 0);
+    jdouble *gtmp = (*env)->GetPrimitiveArrayCritical(env, jg, 0);
+    if (gtmp == NULL) {
+        // TODO: handle out of memory
+    }
+    memcpy(gout, gtmp, ng[0] * sizeof(double));
+    (*env)->ReleasePrimitiveArrayCritical(env, jg, gtmp, JNI_ABORT);
+    //(*env)->ReleaseDoubleArrayElements(env, jg, gtmp, JNI_ABORT);
+    //(*env)->DeleteLocalRef(env, jout);
+    //(*env)->DeleteLocalRef(env, jy);
+}
+
+/*
+ * Class:     LsodarOdeSolver
+ * Method:    jni_initialize
+ * Signature: (LLsodarOde;LLsodarTimepointIterator;)V
+ */
+JNIEXPORT jint JNICALL Java_LsodarOdeSolver_jni_1initialize
+  (JNIEnv *env, jobject obj, jobject ode) {
+    // Find number of equations (neq) and number of event functions (ng)
+    jclass odeCls = (*env)->GetObjectClass(env, ode);
+    jmethodID methodID = (*env)->GetMethodID(env, odeCls, "getDimensionOfVectorField", "()I");
+    jint neq = (*env)->CallIntMethod(env, ode, methodID);
+    methodID = (*env)->GetMethodID(env, odeCls, "getNumberOfEventValues", "()I");
+    jint ng = (*env)->CallIntMethod(env, ode, methodID);
+    // Initialize lsodar_data
+    struct lsodar_data* data = calloc(1, sizeof(struct lsodar_data));
+    data->f_ptr = &f;
+    data->neq[0] = neq;
+    data->neq[1] = (int)data;
+    //jlong* ptr = &data->neq[1];
+    //ptr[0] = (jlong)data;
+    data->y = calloc(neq, sizeof(double));
+    data->t = 0;
+    data->tout = 1;
+    data->itol = 1;
+    data->rtol[1] = 1e-6;
+    data->atol[1] = 1e-3;
+    data->itask = 1;
+    data->istate = 1;
+    data->iopt = 0;
+    int lrn = 20 + 16*neq + 3*ng;
+    int lrs = 22 + 9*neq + neq*neq + 3*ng;
+    data->lrw = max(lrn, lrs);
+    data->rwork = calloc(data->lrw, sizeof(double));
+    data->liw = 20 + neq;
+    data->iwork = calloc(data->liw, sizeof(double));
+    data->jac_ptr = NULL;
+    data->jt = 2;
+    data->g_ptr = &g_bridge;
+    data->ng = ng;
+    data->jroot = calloc(ng, sizeof(double));
+    data->env = env;
+    data->ode = (*env)->NewGlobalRef(env, ode);
+    data->vectorFieldMethodID = (*env)->GetMethodID(env, odeCls, "computeVectorField", "(D[D[D)V");
+    data->eventValuesMethodID = (*env)->GetMethodID(env, odeCls, "computeEventValues", "(D[D[D)V");
+    data->reportEventMethodID = (*env)->GetMethodID(env, obj, "reportEvent", "(ID[D)V");
+    return 0;
+    jdoubleArray jy = (*env)->NewDoubleArray(env, neq);
+    data->jy = (*env)->NewGlobalRef(env, jy);
+    jdoubleArray jydot = (*env)->NewDoubleArray(env, neq);
+    data->jydot = (*env)->NewGlobalRef(env, jydot);
+    jdoubleArray jg = (*env)->NewDoubleArray(env, ng);
+    data->jg = (*env)->NewGlobalRef(env, jg);
+    // Pass pointer back to Java
+    jint jni_pointer = (jint)data;
+    return jni_pointer;
+}
+
+/*
+ * Class:     LsodarOdeSolver
+ * Method:    jni_cleanup
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_LsodarOdeSolver_jni_1cleanup
+  (JNIEnv *env, jobject obj, jint jni_pointer) {
+    return;
+    struct lsodar_data* data = (struct lsodar_data*)jni_pointer;
+    (*env)->DeleteGlobalRef(env, data->ode);
+    (*env)->DeleteGlobalRef(env, data->jy);
+    (*env)->DeleteGlobalRef(env, data->jydot);
+    (*env)->DeleteGlobalRef(env, data->jg);
+    free(data);
+}
+
+/*
+ * Class:     LsodarOdeSolver
+ * Method:    jni_integrate
+ * Signature: (D[DD)D
+ */
+JNIEXPORT jdouble JNICALL Java_LsodarOdeSolver_jni_1integrate
+  (JNIEnv *env, jobject obj, jint jni_pointer, jdouble t0, jdoubleArray jy0, jdouble t1) {
+    return t1;
+    struct lsodar_data* data = (struct lsodar_data*)jni_pointer;
+    // Copy state vector and times
+    //jdouble *y0 = (*env)->GetDoubleArrayElements(env, jy0, 0);
+    jdouble *y0 = (*env)->GetPrimitiveArrayCritical(env, jy0, 0);
+    if (y0 == NULL) {
+        // TODO: handle out of memory
+    }
+    memcpy(data->y, y0, data->neq[0] * sizeof(double));
+    (*env)->ReleasePrimitiveArrayCritical(env, jy0, y0, JNI_ABORT);
+    //(*env)->ReleaseDoubleArrayElements(env, jy0, y0, JNI_ABORT);
+    data->t = t0;
+    data->tout = t1;
+    // Call lsodar solver
+    dlsodar_(
+        data->f_ptr, data->neq, data->y, &data->t, &data->tout,
+        &data->itol, data->rtol, data->atol, &data->itask,
+        &data->istate, &data->iopt, data->rwork, &data->lrw,
+        data->iwork, &data->liw, data->jac_ptr, &data->jt,
+        data->g_ptr, &data->ng, data->jroot
+    );
+    if (data->istate < 0) {
+        // Call error-handler
+        data->istate = 2;
+        return NAN;
+    }
+    //jdouble *y = (*env)->GetDoubleArrayElements(env, data->jy, 0);
+    jdouble *y = (*env)->GetPrimitiveArrayCritical(env, data->jy, 0);
+    if (y == NULL) {
+        // TODO: handle out of memory
+    }
+    memcpy(y, data->y, data->neq[0] * sizeof(double));
+    (*env)->ReleasePrimitiveArrayCritical(env, data->jy, y, 0);
+    //(*env)->ReleaseDoubleArrayElements(env, data->jy, y, 0);
+    if (data->istate == 3) {
+        // Report event
+        int i;
+        for (i=0; i < data->ng; i++)
+            if (data->jroot[i] == 1)
+                (*env)->CallVoidMethod(env, obj, data->reportEventMethodID, i, data->t, data->jy);
+        // Reset istate for next integration
+        data->istate = 2;
+    }
+    return t1;
+}

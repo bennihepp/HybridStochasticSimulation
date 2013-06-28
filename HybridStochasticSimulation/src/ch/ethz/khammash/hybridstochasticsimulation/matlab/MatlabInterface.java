@@ -48,7 +48,7 @@ public class MatlabInterface {
 	}
 
 	public double[] updateState(int reaction, double t, double[] x) {
-		hybridModel.getTransitionMeasure().updateState(reaction, t, x);
+		hybridModel.getTransitionMeasure().changeState(reaction, t, x);
 		return x;
 	}
 

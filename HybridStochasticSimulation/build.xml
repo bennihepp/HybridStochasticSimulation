@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. --><project basedir="." default="build" name="HybridStochasticSimulation">
+    <property environment="env"/>
+    <property name="JavaOde.location" value="../JavaOde"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <path id="Groovy DSL Support.libraryclasspath">
+        <pathelement location="../../../.groovy/greclipse/global_dsld_support"/>
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/plugin_dsld_support/"/>
+    </path>
+    <path id="Groovy Libraries.libraryclasspath">
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/lib/groovy-all-2.0.6.jar"/>
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/lib/asm-tree-4.0.jar"/>
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/lib/antlr-2.7.7.jar"/>
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/lib/ivy-2.2.0.jar"/>
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/lib/bsf-2.4.0.jar"/>
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/lib/servlet-api-2.4.jar"/>
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/lib/asm-4.0.jar"/>
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/lib/jline-1.0.jar"/>
+        <pathelement location="../../../../../usr/local/eclipse/plugins/org.codehaus.groovy_2.0.6.xx-RELEASE-20121219-0800-e42/lib/commons-cli-1.2.jar"/>
+    </path>
+    <path id="HybridStochasticSimulation.classpath">
+        <pathelement location="bin"/>
+        <path refid="Groovy DSL Support.libraryclasspath"/>
+        <path refid="Groovy Libraries.libraryclasspath"/>
+        <pathelement location="lib/commons-math3-3.2.jar"/>
+        <pathelement location="lib/guava-14.0.1.jar"/>
+        <pathelement location="lib/JaCoP-3.2.jar"/>
+        <pathelement location="lib/jamtio.jar"/>
+        <pathelement location="lib/jcommon-1.0.17.jar"/>
+        <pathelement location="lib/jfreechart-1.0.14.jar"/>
+        <pathelement location="lib/jgrapht-jdk1.6.jar"/>
+        <pathelement location="lib/matlabcontrol-4.1.0.jar"/>
+        <pathelement location="lib/commons-lang3-3.1.jar"/>
+        <pathelement location="lib/Jama-1.0.1.jar"/>
+        <pathelement location="${JavaOde.location}/bin"/>
+        <pathelement location="${JavaOde.location}/lib/ejml-0.23.jar"/>
+        <pathelement location="lib/jgraph.jar"/>
+    </path>
+    <path id="run.GUI 32bit.classpath">
+        <path refid="HybridStochasticSimulation.classpath"/>
+    </path>
+    <path id="run.GUI 32bit.bootclasspath"/>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" includeantruntime="false" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+    <target name="SWTGui">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.SWTGui" failonerror="true" fork="yes">
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </java>
+    </target>
+    <target name="GUI 32bit">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.GUI" failonerror="true" fork="yes">
+            <classpath refid="run.GUI 32bit.classpath"/>
+            <bootclasspath>
+                <path refid="run.GUI 32bit.bootclasspath"/>
+            </bootclasspath>
+        </java>
+    </target>
+    <target name="IntegratorTest">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.simulators.IntegratorTest" failonerror="true" fork="yes">
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </java>
+    </target>
+    <target name="GUI">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.GUI" failonerror="true" fork="yes">
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </java>
+    </target>
+    <target name="ImexSDTest">
+        <java classname="ImexSDTest" failonerror="true" fork="yes">
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </java>
+    </target>
+    <target name="GraphWindow">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.sandbox.GraphWindow" failonerror="true" fork="yes">
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </java>
+    </target>
+    <target name="JOptimizerTest">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.JOptimizerTest" failonerror="true" fork="yes">
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </java>
+    </target>
+    <target name="ImexTest">
+        <java classname="ImexTest" failonerror="true" fork="yes">
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </java>
+    </target>
+    <target name="Console">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.Console" failonerror="true" fork="yes">
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </java>
+    </target>
+</project>

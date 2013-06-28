@@ -93,11 +93,11 @@ public class SimulationUtilities {
 				@Override
 				public Simulator<PDMPModel, ContinuousTrajectoryRecorder<PDMPModel>> createSimulator(
 						RandomDataGenerator rdg) {
-//					CVodeSolver solver = new CVodeSolver(1e-3, 1e-3);
+					CVodeSolver solver = new CVodeSolver(1e-3, 1e-3);
 //					solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);
 //					solver.setIterationType(CVodeSolver.ITERATIONTYPE_FUNCTIONAL);
 //					solver.setMaxNumOfSteps(5000);
-					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
+//					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
 //					solver.setAbsoluteTolerance(1e-1);
 //					solver.setRelativeTolerance(1e-1);
 //					ImplicitEulerSolver solver = new ImplicitEulerSolver(1e-4, 1e-4, 1e-4, 1e-4);
@@ -337,13 +337,13 @@ public class SimulationUtilities {
 				@Override
 				public Simulator<AdaptiveMSHRNModel, ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>> createSimulator(
 						RandomDataGenerator rdg) {
-//					CVodeSolver solver = new CVodeSolver(1e-3, 1e-3);
+					CVodeSolver solver = new CVodeSolver(1e-3, 1e-3);
 //					solver.setMinStep(1e-3);
 //					solver.setMaxStep(1e-3);
 //					solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);
 //					solver.setIterationType(CVodeSolver.ITERATIONTYPE_FUNCTIONAL);
 //					solver.setMaxNumOfSteps(5000);
-					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
+//					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
 //					solver.setAbsoluteTolerance(1e-1);
 //					solver.setRelativeTolerance(1e-1);
 //					ImplicitEulerSolver solver = new ImplicitEulerSolver(1e-4, 1e-4, 1e-4, 1e-4);

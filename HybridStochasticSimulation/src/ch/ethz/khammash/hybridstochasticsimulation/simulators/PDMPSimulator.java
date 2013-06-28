@@ -17,7 +17,6 @@ import ch.ethz.khammash.hybridstochasticsimulation.simulators.ode.OdeAdapter;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.ode.StateObserverAdapter;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 import ch.ethz.khammash.ode.Solver;
 import ch.ethz.khammash.ode.lsodar.LsodarDirectSolver;
 
@@ -123,6 +122,7 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 					// Evolve ODE until next stochastic reaction fires
 			        x[x.length - 2] = 0.0;
 			        x[x.length - 1] = -FastMath.log(rdg.nextUniform(0.0,  1.0));
+			        model.checkAndHandleOptionalEvent(t, x);
 		        	timepointProvider.setCurrentTime(t);
 		        	solver.prepare(timepointProvider, x);
 		        	while (true) {
@@ -171,17 +171,15 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 		        	w = w + propVec[l] / propSum;
 		        	if (u < w) {
 		        		reaction = l;
-		        		rnm.updateState(reaction, t, x);
+		        		rnm.changeState(reaction, t, x);
 		        		break;
 		        	}
 		        }
 		        if (reaction >= 0) {
 		        	reactionCounter++;
 		        	reactionCounterArray[reaction]++;
-//		        	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
-//		        		handler.reportState(t, x);
 		        	stateObserver.report(t, x);
-		        	// TODO
+		        	// TODO: Should this also be coupled to N?
 		        	if (j > 100)
 		        		model.checkAndHandleOptionalEvent(t, x);
 		        	j++;
@@ -199,8 +197,9 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 			Utilities.printArray("Relative reaction counts", reactionCounterArray);
 			for (int i=0; i < x1.length; i++)
 				x1[i] = x[i];
-	    	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
-	    		handler.setFinalState(t1, x1);
+//	    	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
+//	    		handler.setFinalState(t1, x1);
+        	stateObserver.report(t, x1);
 	    	solver.dispose();
 		}
 		return t;

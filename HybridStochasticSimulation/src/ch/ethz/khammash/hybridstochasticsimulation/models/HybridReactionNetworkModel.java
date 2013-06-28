@@ -199,7 +199,7 @@ public class HybridReactionNetworkModel implements HybridModel,
 	}
 
 	@Override
-	public void updateState(int reaction, double t, double[] x) {
+	public void changeState(int reaction, double t, double[] x) {
 		// We don't check the length of x and the value of reaction for performance reasons
 		double[] stochiometry = reactionStochiometries[reaction];
 		for (int i = 0; i < stochiometry.length; i++) {

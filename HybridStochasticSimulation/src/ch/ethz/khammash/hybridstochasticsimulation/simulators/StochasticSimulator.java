@@ -75,7 +75,7 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 	        	w = w + propVec[l] / propSum;
 	        	if (u < w) {
 	        		reaction = l;
-	        		model.updateState(reaction, t, x);
+	        		model.changeState(reaction, t, x);
 	        		break;
 	        	}
 	        }

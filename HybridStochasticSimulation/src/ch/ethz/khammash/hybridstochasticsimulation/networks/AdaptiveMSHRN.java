@@ -228,11 +228,11 @@ edgeLoop:
 
 //		checkForAveraging(2, x, xDot, propensities);
 
-		getReactionType(0);
-		if (getAlpha(0) > getDelta()) {
-			for (int r=0; r < getNumberOfReactions(); r++)
-				overrideReactionType(r, ReactionType.DETERMINISTIC);
-		}
+//		getReactionType(0);
+//		if (getAlpha(0) > getDelta()) {
+//			for (int r=0; r < getNumberOfReactions(); r++)
+//				overrideReactionType(r, ReactionType.DETERMINISTIC);
+//		}
 //		else {
 //			for (int r=0; r < getNumberOfReactions(); r++)
 //				overrideReactionType(r, ReactionType.STOCHASTIC);
@@ -346,7 +346,7 @@ edgeLoop:
 				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
 				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
 				overrideReactionTypes(reactionTypes);
-//				System.out.println("Overriding reaction types");
+				System.out.println("Overriding reaction types");
 			}
 //			else
 //				System.out.println("Keeping reaction types");

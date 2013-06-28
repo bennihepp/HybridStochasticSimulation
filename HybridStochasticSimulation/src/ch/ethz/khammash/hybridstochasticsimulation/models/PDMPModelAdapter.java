@@ -12,7 +12,7 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 	private T hybridModel;
 	private StochasticReactionNetworkModel transitionMeasure;
 	private FirstOrderDifferentialEquations vectorField;
-	private double[] propVector;
+//	private double[] propVector;
 
 	public PDMPModelAdapter(PDMPModelAdapter<T> model) {
 		this(model.hybridModel);
@@ -27,10 +27,10 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 	}
 
 	public void setHybridModel(T hybridModel) {
-		transitionMeasure = hybridModel.getStochasticModel();
-		vectorField = hybridModel.getDeterministicModel();
+		transitionMeasure = hybridModel.getTransitionMeasure();
+		vectorField = hybridModel.getVectorField();
 		this.hybridModel = hybridModel;
-		propVector = new double[transitionMeasure.getNumberOfReactions()];
+//		propVector = new double[transitionMeasure.getNumberOfReactions()];
 	}
 
 	@Override
@@ -100,12 +100,20 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 
 	@Override
 	public void computeDerivatives(double t, double[] x, double[] xDot) {
-		vectorField.computeDerivatives(t, x, xDot);
-		transitionMeasure.computePropensities(t, x, propVector);
-		xDot[xDot.length - 2] = 0.0;
+//		vectorField.computeDerivatives(t, x, xDot);
+//		transitionMeasure.computePropensities(t, x, propVector);
+//		xDot[xDot.length - 2] = 0.0;
+//		xDot[xDot.length - 1] = 0.0;
+//		for (int i = 0; i < propVector.length; i++)
+//			xDot[xDot.length - 2] += propVector[i];
+//		hybridModel.computeDerivativesAndPropensities(t, x, xDot, propVector);
+//		xDot[xDot.length - 2] = 0.0;
+//		xDot[xDot.length - 1] = 0.0;
+//		for (int i = 0; i < propVector.length; i++)
+//			xDot[xDot.length - 2] += propVector[i];
+		double propSum = hybridModel.computeDerivativesAndPropensitiesSum(t, x, xDot);
+		xDot[xDot.length - 2] = propSum;
 		xDot[xDot.length - 1] = 0.0;
-		for (int i = 0; i < propVector.length; i++)
-			xDot[xDot.length - 2] += propVector[i];
 	}
 
 	@Override

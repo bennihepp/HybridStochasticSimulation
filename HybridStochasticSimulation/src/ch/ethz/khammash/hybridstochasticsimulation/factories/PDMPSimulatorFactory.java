@@ -5,7 +5,7 @@ import org.apache.commons.math3.ode.AbstractIntegrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulator;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulatorCommonsMath;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajectoryRecorder;
 
@@ -25,10 +25,10 @@ public class PDMPSimulatorFactory<T extends PDMPModel>
 
 	public PDMPSimulatorFactory(IntegratorFactory integratorFactory, UnivariateSolverFactory univariateSolverFactory) {
 		this.integratorFactory = integratorFactory;
-		ehMaxCheckInterval = PDMPSimulator.DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL;
-		ehConvergence = PDMPSimulator.DEFAULT_EVENT_HANDLER_CONVERGENCE;
-		ehConvergenceFactor = PDMPSimulator.DEFAULT_EVENT_HANDLER_CONVERGENCE_FACTOR;
-		ehMaxIterationCount = PDMPSimulator.DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT;
+		ehMaxCheckInterval = PDMPSimulatorCommonsMath.DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL;
+		ehConvergence = PDMPSimulatorCommonsMath.DEFAULT_EVENT_HANDLER_CONVERGENCE;
+		ehConvergenceFactor = PDMPSimulatorCommonsMath.DEFAULT_EVENT_HANDLER_CONVERGENCE_FACTOR;
+		ehMaxIterationCount = PDMPSimulatorCommonsMath.DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT;
 		this.univariateSolverFactory = univariateSolverFactory;
 	}
 
@@ -41,10 +41,10 @@ public class PDMPSimulatorFactory<T extends PDMPModel>
 	}
 
 	@Override
-	public PDMPSimulator<T> createSimulator(RandomDataGenerator rdg) {
+	public PDMPSimulatorCommonsMath<T> createSimulator(RandomDataGenerator rdg) {
 		AbstractIntegrator integrator = integratorFactory.createIntegrator();
 		UnivariateSolver univariateSolver = univariateSolverFactory.createUnivariateSolver();
-		PDMPSimulator<T> sim = new PDMPSimulator<T>(integrator, univariateSolver, rdg);
+		PDMPSimulatorCommonsMath<T> sim = new PDMPSimulatorCommonsMath<T>(integrator, univariateSolver, rdg);
 		sim.setEventHandlerConvergence(getEventHandlerConvergence());
 		sim.setEventHandlerConvergenceFactor(getEventHandlerConvergenceFactor());
 		sim.setEventHandlerMaxCheckInterval(getEventHandlerMaxCheckInterval());

@@ -149,6 +149,7 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 		return rateParameters.clone();
 	}
 
+	// Returns an array of int, where each entry is a consumed species of the reaction
 	@Override
 	public int[] getChoiceIndices(int reaction) {
 		checkElementIndex(reaction, getNumberOfReactions());

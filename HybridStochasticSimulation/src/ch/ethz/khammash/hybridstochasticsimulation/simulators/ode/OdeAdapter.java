@@ -1,16 +1,16 @@
-package ch.ethz.khammash.hybridstochasticsimulation.simulators.lsodar;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators.ode;
 
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
-import ch.ethz.khammash.nativeode.Ode;
+import ch.ethz.khammash.ode.Ode;
 
-public class LsodarOdeAdapter<T extends PDMPModel> implements Ode {
+public class OdeAdapter<T extends PDMPModel> implements Ode {
 
 	private FirstOrderDifferentialEquations vectorField;
 	private long evaluations;
 
-	public LsodarOdeAdapter(T model) {
+	public OdeAdapter(T model) {
 		this.vectorField = model.getVectorField();
 		resetEvaluations();
 	}

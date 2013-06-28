@@ -5,24 +5,26 @@ import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
 public class HybridModelAdapter implements HybridModel {
 
-	private FirstOrderDifferentialEquations deterministicModel;
-	private StochasticReactionNetworkModel stochasticModel;
+	private FirstOrderDifferentialEquations vectorField;
+	private StochasticReactionNetworkModel transitionMeasure;
+	private double[] propTmpVector;
 
 	public HybridModelAdapter(FirstOrderDifferentialEquations deterministicModel, StochasticReactionNetworkModel stochasticModel) {
 		if (stochasticModel.getNumberOfSpecies() != deterministicModel.getDimension())
 			throw new UnsupportedOperationException("Expected stochasticModel.getNumberOfSpecies() == deterministicModel.getDimension()");
-		this.deterministicModel = deterministicModel;
-		this.stochasticModel = stochasticModel;
+		this.vectorField = deterministicModel;
+		this.transitionMeasure = stochasticModel;
+		propTmpVector = new double[stochasticModel.getNumberOfReactions()];
 	}
 
 	@Override
 	public int getNumberOfSpecies() {
-		return stochasticModel.getNumberOfSpecies();
+		return transitionMeasure.getNumberOfSpecies();
 	}
 
 	@Override
 	public int getNumberOfReactions() {
-		return stochasticModel.getNumberOfReactions();
+		return transitionMeasure.getNumberOfReactions();
 	}
 
 	@Override
@@ -36,13 +38,29 @@ public class HybridModelAdapter implements HybridModel {
 	}
 
 	@Override
-	public FirstOrderDifferentialEquations getDeterministicModel() {
-		return deterministicModel;
+	public FirstOrderDifferentialEquations getVectorField() {
+		return vectorField;
 	}
 
 	@Override
-	public StochasticReactionNetworkModel getStochasticModel() {
-		return stochasticModel;
+	public StochasticReactionNetworkModel getTransitionMeasure() {
+		return transitionMeasure;
+	}
+
+	@Override
+	public void computeDerivativesAndPropensities(double t, double[] x,
+			double[] xDot, double[] propensities) {
+		getTransitionMeasure().computePropensities(t, x, propensities);
+		getVectorField().computeDerivatives(t, x, xDot);
+	}
+
+	@Override
+	public double computeDerivativesAndPropensitiesSum(double t, double[] x,  double[] xDot) {
+		computeDerivativesAndPropensities(t, x, xDot, propTmpVector);
+		double propSum = 0.0;
+		for (int r=0; r < propTmpVector.length; r++)
+			propSum += propTmpVector[r];
+		return propSum;
 	}
 
 }

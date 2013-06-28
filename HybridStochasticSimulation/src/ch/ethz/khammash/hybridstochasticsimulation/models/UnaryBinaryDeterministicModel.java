@@ -16,6 +16,7 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 	private int[] reactionChoiceIndices1;
 	private int[] reactionChoiceIndices2;
 	private double[][] reactionStochiometries;
+	private double[] propTmpVector;
 
 	public UnaryBinaryDeterministicModel(DefaultUnaryBinaryReactionNetwork net) {
 		dimension = net.getNumberOfSpecies();
@@ -23,6 +24,7 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 		reactionChoiceIndices1 = new int[net.getNumberOfReactions()];
 		reactionChoiceIndices2 = new int[net.getNumberOfReactions()];
 		reactionStochiometries = new double[net.getNumberOfReactions()][net.getNumberOfSpecies()];
+		propTmpVector = new double[net.getNumberOfReactions()];
 		init(net);
 	}
 
@@ -98,12 +100,12 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 	}
 
 	@Override
-	public FirstOrderDifferentialEquations getDeterministicModel() {
+	public FirstOrderDifferentialEquations getVectorField() {
 		return this;
 	}
 
 	@Override
-	public StochasticReactionNetworkModel getStochasticModel() {
+	public StochasticReactionNetworkModel getTransitionMeasure() {
 		return this;
 	}
 
@@ -124,6 +126,21 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 
 	@Override
 	public void updateState(int reaction, double t, double[] x) {
+	}
+
+	@Override
+	public void computeDerivativesAndPropensities(double t, double[] x, double[] xDot, double[] propensities) {
+		computePropensities(t, x, propensities);
+		computeDerivatives(t, x, xDot);
+	}
+
+	@Override
+	public double computeDerivativesAndPropensitiesSum(double t, double[] x, double[] xDot) {
+		computeDerivativesAndPropensities(t, x, xDot, propTmpVector);
+		double propSum = 0.0;
+		for (int r=0; r < propTmpVector.length; r++)
+			propSum += propTmpVector[r];
+		return propSum;
 	}
 
 }

@@ -5,9 +5,13 @@ import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
 public interface HybridModel extends ReactionNetworkModel {
 
-	FirstOrderDifferentialEquations getDeterministicModel();
+	FirstOrderDifferentialEquations getVectorField();
 
-	StochasticReactionNetworkModel getStochasticModel();
+	StochasticReactionNetworkModel getTransitionMeasure();
+
+	void computeDerivativesAndPropensities(double t, double[] x, double[] xDot, double[] propensities);
+
+	double computeDerivativesAndPropensitiesSum(double t, double[] x, double[] xDot);
 
 	boolean hasDeterministicPart();
 

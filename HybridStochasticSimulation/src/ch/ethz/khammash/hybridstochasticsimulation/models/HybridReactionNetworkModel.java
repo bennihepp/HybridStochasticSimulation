@@ -12,6 +12,8 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwor
 public class HybridReactionNetworkModel implements HybridModel,
 		FirstOrderDifferentialEquations, StochasticReactionNetworkModel {
 
+//	public static double[] globalxDot;
+
 	private int dimension;
 
 	private int[] stochasticReactionIndices;
@@ -77,12 +79,12 @@ public class HybridReactionNetworkModel implements HybridModel,
 	}
 
 	@Override
-	public FirstOrderDifferentialEquations getDeterministicModel() {
+	public FirstOrderDifferentialEquations getVectorField() {
 		return this;
 	}
 
 	@Override
-	public StochasticReactionNetworkModel getStochasticModel() {
+	public StochasticReactionNetworkModel getTransitionMeasure() {
 		return this;
 	}
 
@@ -97,13 +99,47 @@ public class HybridReactionNetworkModel implements HybridModel,
 	}
 
 	@Override
+	public void computeDerivativesAndPropensities(double t, double[] x, double[] xDot, double[] propensities) {
+		// We don't check the length of x and xDot and propensities for performance reasons
+		Arrays.fill(xDot, 0, getNumberOfSpecies(), 0.0);
+		Arrays.fill(propensities, 0, getNumberOfReactions(), 0.0);
+		for (int r=0; r < getNumberOfReactions(); r++)
+			propensities[r] = computePropensity(r, t, x);
+		for (int r : deterministicReactionIndices) {
+			double[] stochiometries = reactionStochiometries[r];
+			for (int s = 0; s < reactionStochiometries[r].length; s++)
+				xDot[s] += propensities[r] * stochiometries[s];
+			propensities[r] = 0.0;
+		}
+	}
+
+	@Override
+	public double computeDerivativesAndPropensitiesSum(double t, double[] x, double[] xDot) {
+		double propSum = 0.0;
+		int dr = 0;
+		// We don't check the length of x and xDot for performance reasons
+		Arrays.fill(xDot, 0, getNumberOfSpecies(), 0.0);
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			double propensity = computePropensity(r, t, x);
+			if (dr < deterministicReactionIndices.length && deterministicReactionIndices[dr] == r) {
+				double[] stochiometries = reactionStochiometries[r];
+				for (int s = 0; s < reactionStochiometries[r].length; s++)
+					xDot[s] += propensity * stochiometries[s];
+				dr++;
+			} else
+				propSum += propensity;
+		}
+		return propSum;
+	}
+
+	@Override
 	public int getDimension() {
 		return dimension;
 	}
 
 	@Override
 	public void computeDerivatives(double t, double[] x, double[] xDot) {
-		// We don't check the length of x and propensities for performance reasons
+		// We don't check the length of x and xDot for performance reasons
 		Arrays.fill(xDot, 0, getNumberOfSpecies(), 0.0);
 		for (int r : deterministicReactionIndices) {
 			double v = modelRateParameters[r];
@@ -124,6 +160,7 @@ public class HybridReactionNetworkModel implements HybridModel,
 					xDot[s] += v * stochiometry;
 			}
 		}
+//		globalxDot = xDot.clone();
 	}
 
 	@Override

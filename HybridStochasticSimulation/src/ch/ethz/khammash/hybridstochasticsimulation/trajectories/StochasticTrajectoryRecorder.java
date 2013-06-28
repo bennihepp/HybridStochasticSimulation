@@ -9,6 +9,7 @@ import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 
 
 public class StochasticTrajectoryRecorder<T extends ReactionNetworkModel> implements TrajectoryRecorder<T> {
@@ -29,6 +30,10 @@ public class StochasticTrajectoryRecorder<T extends ReactionNetworkModel> implem
 
 	public Iterator<ReactionEvent> iterator() {
 		return reactions.iterator();
+	}
+
+	@Override
+	public void setSimulator(Simulator<T, ? extends TrajectoryRecorder<T>> simulator) {
 	}
 
 	@Override

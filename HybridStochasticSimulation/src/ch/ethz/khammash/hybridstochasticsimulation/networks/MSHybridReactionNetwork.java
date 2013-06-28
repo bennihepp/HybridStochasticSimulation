@@ -336,6 +336,10 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		return reactionTermTypes[r][s];
 	}
 
+	protected void overrideReactionType(int reaction, ReactionType reactionType) {
+		reactionTypes[reaction] = reactionType;
+	}
+
 	protected void overrideReactionTypes(ReactionType[] reactionTypes) {
 		for (int r=0; r < getNumberOfReactions(); r++)
 			this.reactionTypes[r] = reactionTypes[r];
@@ -381,14 +385,15 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		for (int s2 = 0; s2 < alpha.length; s2++)
 			if (getConsumptionStochiometry(s2, reaction) > 0)
 				gammaPlusRho += getConsumptionStochiometry(s2, reaction) * alpha[s2];
-		if (alpha[species] > delta) {
-			if (gammaPlusRho > alpha[species] + tolerance) {
+		if (alpha[species] > delta - tolerance) {
+			if (alpha[species] >= gammaPlusRho - tolerance)
+				return ReactionTermType.DETERMINISTIC;
+			else {
 				// TODO
 				System.out.println("EXPLODING: alpha[" + species + "]=" + alpha[species] + ", gamma+rho[" + reaction + "]=" + gammaPlusRho);
 				return ReactionTermType.EXPLODING;
 //				return ReactionTermType.DETERMINISTIC;
-			} else
-				return ReactionTermType.DETERMINISTIC;
+			}
 		} else
 			return ReactionTermType.STOCHASTIC;
 	}

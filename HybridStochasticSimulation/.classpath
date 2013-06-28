@@ -18,10 +18,12 @@
 	<classpathentry kind="lib" path="lib/matlabcontrol-4.1.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons-lang3-3.1.jar"/>
 	<classpathentry kind="lib" path="lib/Jama-1.0.1.jar"/>
-	<classpathentry kind="lib" path="/JavaNativeOde/bin">
+	<classpathentry kind="lib" path="/JavaOde/bin" sourcepath="/JavaOde/src">
 		<attributes>
-			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="JavaNativeOde/jni/lib"/>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="JavaOde/jni/lib"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/JavaOde/lib/ejml-0.23.jar"/>
+	<classpathentry kind="lib" path="lib/jgraph.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

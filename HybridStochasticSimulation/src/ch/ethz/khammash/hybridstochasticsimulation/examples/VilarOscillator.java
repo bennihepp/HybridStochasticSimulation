@@ -11,32 +11,32 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 // Chemical Oscillator example.
 // Original publication: Vilar, Kueh, Barkai and Liebler, "Mechanisms of noise-resistance in genetic oscillators." PNAS, Vol 99 (2002).
 // species:
-//  S1: A
-//  S2: A_R
-//  S3: Pa
-//  S4: R
-//  S5: Pa_A
-//  S6: Pr
-//  S7: Pr_A
-//  S8: mRNA_a
-//  S9: mRNA_r
+//  S0: A
+//  S1: A_R
+//  S2: Pa
+//  S3: R
+//  S4: Pa_A
+//  S5: Pr
+//  S6: Pr_A
+//  S7: mRNA_a
+//  S8: mRNA_r
 // reactions:
-//  R1:  Pa     -> Pa     + mRNA_a
-//  R2:  Pa_A   -> Pa_A   + mRNA_a
-//  R3:  Pr     -> Pr     + mRNA_r
-//  R4:  Pr_A   -> Pr_A   + mRNA_r
-//  R5:  mRNA_a -> mRNA_a + A        *
-//  R6:  mRNA_r -> mRNA_r + R
-//  R7:  A + R  -> A_R               *
-//  R8:  A + Pa -> Pa_A
-//  R9:  Pa_A   -> A      + Pa
-//  R10: A + Pr -> Pr_A
-//  R11: Pr_A   -> A      + Pr
-//  R12: A      -> ~
-//  R13: R      -> ~
-//  R14: mRNA_a -> ~
-//  R15: mRNA_r -> ~
-//  R16: A_R    -> R                 *
+//  R0:  Pa     -> Pa     + mRNA_a     [50.0]
+//  R1:  Pa_A   -> Pa_A   + mRNA_a     [500.0]
+//  R2:  Pr     -> Pr     + mRNA_r     [0.01]
+//  R3:  Pr_A   -> Pr_A   + mRNA_r     [50.0]
+//  R4:  mRNA_a -> mRNA_a + A        * [50.0]
+//  R5:  mRNA_r -> mRNA_r + R          [5.0]
+//  R6:  A + R  -> A_R               * [20.0]
+//  R7:  A + Pa -> Pa_A                [1.0]
+//  R8:  Pa_A   -> A      + Pa         [50.0]
+//  R9:  A + Pr -> Pr_A                [1.0]
+//  R10: Pr_A   -> A      + Pr         [100.0]
+//  R11: A      -> ~                   [1.0]
+//  R12: R      -> ~                   [0.2]
+//  R13: mRNA_a -> ~                   [10.0]
+//  R14: mRNA_r -> ~                   [0.5]
+//  R15: A_R    -> R                 * [1.0]
 
 public class VilarOscillator extends ExampleConfiguration {
 
@@ -53,29 +53,29 @@ public class VilarOscillator extends ExampleConfiguration {
 //		int i_mRNA_r = 8;
 
 		int[][] productionStochiometries = {
-		//   R1  R2  R3  R4  R5  R6  R7  R8  R9 R10 R11 R12 R13 R14 R15 R16
-		    { 0,  0,  0,  0,  1,  0,  0,  0,  1,  0,  1,  0,  0,  0,  0,  0 }, // S1: A
-		    { 0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // S2: A_R
-		    { 1,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0 }, // S3: Pa
-		    { 0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1 }, // S4: R
-		    { 0,  1,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0 }, // S5: Pa_A
-		    { 0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0 }, // S6: Pr
-		    { 0,  0,  0,  1,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0 }, // S7: Pr_A
-		    { 1,  1,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // S8: mRNA_a
-		    { 0,  0,  1,  1,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // S9: mRNA_r
+		//   R0  R1  R2  R3  R4  R5  R6  R7  R8  R9 R10 R11 R12 R13 R14 R15
+		    { 0,  0,  0,  0,  1,  0,  0,  0,  1,  0,  1,  0,  0,  0,  0,  0 }, // S0: A
+		    { 0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // S1: A_R
+		    { 1,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0 }, // S2: Pa
+		    { 0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1 }, // S3: R
+		    { 0,  1,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0 }, // S4: Pa_A
+		    { 0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0 }, // S5: Pr
+		    { 0,  0,  0,  1,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0 }, // S6: Pr_A
+		    { 1,  1,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // S7: mRNA_a
+		    { 0,  0,  1,  1,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // S8: mRNA_r
 		};
 
 		int[][] consumptionStochiometries = {
-		//   R1  R2  R3  R4  R5  R6  R7  R8  R9 R10 R11 R12 R13 R14 R15 R16
-		    { 0,  0,  0,  0,  0,  0,  1,  1,  0,  1,  0,  1,  0,  0,  0,  0 }, // S1: A
-		    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1 }, // S2: A_R
-		    { 1,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0 }, // S3: Pa
-		    { 0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  1,  0,  0,  0 }, // S4: R
-		    { 0,  1,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0 }, // S5: Pa_A
-		    { 0,  0,  1,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0 }, // S6: Pr
-		    { 0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0 }, // S7: Pr_A
-		    { 0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0 }, // S8: mRNA_a
-		    { 0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0 }, // S9: mRNA_r
+		//   R0  R1  R2  R3  R4  R5  R6  R7  R8  R9 R10 R11 R12 R13 R14 R15
+		    { 0,  0,  0,  0,  0,  0,  1,  1,  0,  1,  0,  1,  0,  0,  0,  0 }, // S0: A
+		    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1 }, // S1: A_R
+		    { 1,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0 }, // S2: Pa
+		    { 0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  1,  0,  0,  0 }, // S3: R
+		    { 0,  1,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0 }, // S4: Pa_A
+		    { 0,  0,  1,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0 }, // S5: Pr
+		    { 0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0 }, // S6: Pr_A
+		    { 0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0 }, // S7: mRNA_a
+		    { 0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0 }, // S8: mRNA_r
 		};
 
 		double[] x0 = new double[productionStochiometries.length];
@@ -84,6 +84,7 @@ public class VilarOscillator extends ExampleConfiguration {
 
 		double[] rateParameters = new double[productionStochiometries[0].length];
 		double[] params = new double[16];
+		// Original parameters
 		params[0] = 50.0;
 		params[1] = 0.01;
 		params[2] = 50.0;
@@ -100,6 +101,16 @@ public class VilarOscillator extends ExampleConfiguration {
 		params[13] = 1.0;
 		params[14] = 10.0;
 		params[15] = 5000.0;
+		// Modified parameters
+//		params[0] = 2 * params[0];
+//		params[2] = 2 * params[2];
+//		params[2] = 10 * params[2];
+//		params[4] = 0.0001 * params[4];
+////		params[3] = 10 * params[3];
+////		params[7] = 0.5 * params[7];
+////		params[8] = 10 * params[8];
+////		params[9] = 0.01 * params[9];
+
 		/* Parameters */
 		double alphaA = params[0];
 		double alphaR = params[1];
@@ -118,22 +129,22 @@ public class VilarOscillator extends ExampleConfiguration {
 		double alpha_a = params[14];
 		double alpha_r = params[15];
 		/* Reaction propensities */
-		rateParameters[0] = alphaA;
-		rateParameters[1] = alpha_a*alphaA;		
-		rateParameters[2] = alphaR;
-		rateParameters[3] = alpha_r*alphaR;
-		rateParameters[4] = betaA;
-		rateParameters[5] = betaR;
-		rateParameters[6] = gammaC;
-		rateParameters[7] = gammaA;
-		rateParameters[8] = thetaA;
-		rateParameters[9] = gammaR;
-		rateParameters[10] = thetaR;
-		rateParameters[11] = deltaA;
-		rateParameters[12] = deltaR;
-		rateParameters[13] = deltaMA;
-		rateParameters[14] = deltaMR;
-		rateParameters[15] = delta_C;
+		rateParameters[0] = alphaA;            // 50.0
+		rateParameters[1] = alpha_a * alphaA;  // 500.0
+		rateParameters[2] = alphaR;            // 0.01
+		rateParameters[3] = alpha_r * alphaR;  // 50.0
+		rateParameters[4] = betaA;             // 50.0
+		rateParameters[5] = betaR;             // 5.0
+		rateParameters[6] = gammaC;            // 20.0
+		rateParameters[7] = gammaA;            // 1.0
+		rateParameters[8] = thetaA;            // 50.0
+		rateParameters[9] = gammaR;            // 1.0
+		rateParameters[10] = thetaR;           // 100.0
+		rateParameters[11] = deltaA;           // 1.0
+		rateParameters[12] = deltaR;           // 0.2
+		rateParameters[13] = deltaMA;          // 10.0
+		rateParameters[14] = deltaMR;          // 0.5
+		rateParameters[15] = delta_C;          // 1.0
 
 		double t0 = 0.0;
 		double t1 = 100.0;

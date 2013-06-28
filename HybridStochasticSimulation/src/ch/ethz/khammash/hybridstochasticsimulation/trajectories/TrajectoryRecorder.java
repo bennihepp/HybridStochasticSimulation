@@ -1,8 +1,11 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 
 public interface TrajectoryRecorder<T extends ReactionNetworkModel> extends Trajectory {
+
+	void setSimulator(Simulator<T, ? extends TrajectoryRecorder<T>> simulator);
 
 	void setModel(T model);
 

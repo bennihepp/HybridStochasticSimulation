@@ -22,6 +22,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 	private boolean hasOptionalEventOccured;
 //	private int optionalEventSpeciesIndex;
 	private double[] tmpPropensities;
+	private double[] tmpxDot;
 	private int numberOfAdapations;
 
 	public AdaptiveMSHRNModel(AdaptiveMSHRN hrn) {
@@ -37,6 +38,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		optionalEventObserverList = new LinkedList<PDMPEventObserver>();
 		optionalEventObserverList.add(observerCollector);
 		tmpPropensities = new double[getNumberOfReactions()];
+		tmpxDot = new double[getNumberOfSpecies()];
 		this.numberOfAdapations = 0;
 	}
 
@@ -99,9 +101,10 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 	}
 
 	private void adapt(double t, double[] x) {
-		for (int r=0; r < getNumberOfReactions(); r++)
-			tmpPropensities[r] = computePropensity(r, t, x);
-		hrn.adapt(x, tmpPropensities);
+//		for (int r=0; r < getNumberOfReactions(); r++)
+//		tmpPropensities[r] = computePropensity(r, t, x);
+		computeDerivativesAndPropensities(t, x, tmpxDot, tmpPropensities);
+		hrn.adapt(x, tmpxDot, tmpPropensities);
 		update();
 		updateOptionalEventHandlers(x);
 		numberOfAdapations++;

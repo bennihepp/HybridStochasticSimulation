@@ -94,6 +94,12 @@ public class ExampleConfigurationFactory {
 				return new VilarOscillator();
 			}
 		});
+		registerExampleConfiguration("BacteriophageT7", new ExampleConfigurationCreator() {
+			@Override
+			public ExampleConfiguration create() {
+				return new BacteriophageT7();
+			}
+		});
 	}
 
 	public void registerExampleConfiguration(String name, ExampleConfigurationCreator creator) {

@@ -60,6 +60,8 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 
 		for (int r = 0; r < getNetwork().getNumberOfReactions(); r++) {
 			ReactionType reactionType = hrn.getReactionType(r);
+			if (reactionType == ReactionType.NONE)
+				continue;
 			int[] choiceIndices = hrn.getChoiceIndices(r);
 //			double insideScale = hrn.getTimeScaleFactor();
 			double insideScale = 1.0;
@@ -79,10 +81,12 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 				reactionChoiceIndices2[r] = choiceIndices[1];
 				break;
 			}
-			if (reactionType == ReactionType.DETERMINISTIC)
-				modelRateParameters[r] = getNetwork().getRateParameter(r);
-			else
-				modelRateParameters[r] = insideScale * getNetwork().getRateParameter(r);
+			// TODO: necessary to separate?
+//			if (reactionType == ReactionType.DETERMINISTIC)
+//				modelRateParameters[r] = getNetwork().getRateParameter(r);
+//			else
+//				modelRateParameters[r] = insideScale * getNetwork().getRateParameter(r);
+			modelRateParameters[r] = insideScale * getNetwork().getRateParameter(r);
 			if (choiceIndices.length == 2 && choiceIndices[0] == choiceIndices[1])
 				modelRateParameters[r] /= 2.0;
 			List<Integer> speciesIndicesList = new ArrayList<Integer>(getNumberOfSpecies());
@@ -93,13 +97,18 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 //					reactionStochiometries[r][s] = insideScale * outsideScale * getNetwork().getStochiometry(s, r);
 //				else
 //					reactionStochiometries[r][s] = outsideScale * getNetwork().getStochiometry(s, r);
+				// TODO: How to seperate continuous and discrete species
+//				if (reactionType == ReactionType.STOCHASTIC && hrn.getSpeciesType(s) == SpeciesType.CONTINUOUS)
+//					continue;
 				if (getNetwork().getStochiometry(s, r) != 0) {
 					double outsideScale = hrn.getInverseSpeciesScaleFactor(s);
 					double v;
-					if (reactionType == ReactionType.DETERMINISTIC)
-						v = insideScale * outsideScale * getNetwork().getStochiometry(s, r);
-					else
-						v = outsideScale * getNetwork().getStochiometry(s, r);
+					// TODO: necessary to separate?
+//					if (reactionType == ReactionType.DETERMINISTIC)
+//						v = insideScale * outsideScale * getNetwork().getStochiometry(s, r);
+//					else
+//						v = outsideScale * getNetwork().getStochiometry(s, r);
+					v = outsideScale * getNetwork().getStochiometry(s, r);
 					speciesIndicesList.add(s);
 					indexedStochiometriesList.add(v);
 				}
@@ -130,12 +139,12 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 	}
 
 	@Override
-	public FirstOrderDifferentialEquations getDeterministicModel() {
+	public FirstOrderDifferentialEquations getVectorField() {
 		return this;
 	}
 
 	@Override
-	public StochasticReactionNetworkModel getStochasticModel() {
+	public StochasticReactionNetworkModel getTransitionMeasure() {
 		return this;
 	}
 
@@ -151,6 +160,52 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 	@Override
 	public int getDimension() {
 		return numberOfSpecies;
+	}
+
+	@Override
+	public void computeDerivativesAndPropensities(double t, double[] x, double[] xDot, double[] propensities) {
+		// We don't check the length of x and xDot and propensities for performance reasons
+		Arrays.fill(xDot, 0, getNumberOfSpecies(), 0.0);
+		Arrays.fill(propensities, 0, getNumberOfReactions(), 0.0);
+		for (int r=0; r < getNumberOfReactions(); r++)
+			propensities[r] = computePropensity(r, t, x);
+		for (int r : deterministicReactionIndices) {
+			for (int i = 0; i < reactionSpeciesIndices[r].length; i++) {
+				int s = reactionSpeciesIndices[r][i];
+				double stochiometry = reactionIndexedStochiometries[r][i];
+				xDot[s] += propensities[r] * stochiometry;
+			}
+			propensities[r] = 0.0;
+		}
+	}
+
+	@Override
+	public double computeDerivativesAndPropensitiesSum(double t, double[] x, double[] xDot) {
+		double propSum = 0.0;
+		int dr = 0;
+		// We don't check the length of x and xDot for performance reasons
+		Arrays.fill(xDot, 0, getNumberOfSpecies(), 0.0);
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			double propensity = computePropensity(r, t, x);
+			if (propensity <= 0.0) {
+				// TODO: This is duplicate. Maybe there is a better way to do this.
+				if (dr < deterministicReactionIndices.length && deterministicReactionIndices[dr] == r)
+					dr++;
+				continue;
+			}
+			if (dr < deterministicReactionIndices.length && deterministicReactionIndices[dr] == r) {
+				int[] speciesIndices = reactionSpeciesIndices[r];
+				double[] stochiometries = reactionIndexedStochiometries[r];
+				for (int i = 0; i < speciesIndices.length; i++) {
+					int s = speciesIndices[i];
+					double stochiometry = stochiometries[i];
+					xDot[s] += propensity * stochiometry;
+				}
+				dr++;
+			} else
+				propSum += propensity;
+		}
+		return propSum;
 	}
 
 	@Override

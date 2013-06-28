@@ -1,6 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 
 
 public class ArrayFiniteTrajectoryRecorder<T extends ReactionNetworkModel>
@@ -26,6 +27,10 @@ public class ArrayFiniteTrajectoryRecorder<T extends ReactionNetworkModel>
 	protected void setState(int index, double[] x) {
 		for (int s=0; s < xSeries.length; s++)
 			xSeries[s][index] = x[s];
+	}
+
+	@Override
+	public void setSimulator(Simulator<T, ? extends TrajectoryRecorder<T>> simulator) {
 	}
 
 	@Override

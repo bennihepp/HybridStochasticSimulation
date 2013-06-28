@@ -4,9 +4,15 @@ import java.util.List;
 
 import org.apache.commons.math3.util.FastMath;
 
+import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfiguration;
+import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfigurationFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent.EventType;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.PlotWindow;
+import ch.ethz.khammash.hybridstochasticsimulation.sandbox.DependencyEdge;
+import ch.ethz.khammash.hybridstochasticsimulation.sandbox.DependencyGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.sandbox.ReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.sandbox.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 import com.google.common.eventbus.Subscribe;
@@ -39,6 +45,7 @@ public class GUI {
 							// Example 3
 //							List<FinitePlotData> plotDataList = Main.heatShockResponseNetwork();
 							List<FinitePlotData> plotDataList = Main.vilarOscillatorNetwork();
+//							List<FinitePlotData> plotDataList = Main.bacteriophageT7Network();
 							int rows;
 							int cols;
 							if (plotDataList.size() >= 3) {
@@ -70,10 +77,48 @@ public class GUI {
 				}
 			}
 		};
+
+		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Vilar Oscillator");
+
+    	ReactionNetworkGraph graph = new ReactionNetworkGraph(nss.net);
+    	DependencyGraph depGraph = new DependencyGraph(graph);
+    	for (SpeciesVertex v : depGraph.vertexSet()) {
+    		System.out.println("Reachable from " + v);
+    		for (DependencyEdge e : depGraph.outgoingEdgesOf(v)) {
+    			System.out.println("  " + e.getTarget());
+    		}
+    	}
+
+//        // create a JGraphT graph
+//    	ReactionNetworkGraph graph = new ReactionNetworkGraph(nss.net);
+//    	HashMap<Integer,SpeciesVertex> vertexMap = new HashMap<Integer, SpeciesVertex>();
+//    	for (SpeciesVertex v : graph.vertexSet()) {
+//    		v.setName(nss.speciesNames[v.getSpecies()]);
+//    		vertexMap.put(v.getSpecies(), v);
+//    	}
+//
+//		GraphWindow gwindow = new GraphWindow(graph);
+//		gwindow.pack();
+////		gwindow.autoPosition();
+//		double width = gwindow.getWidth();
+//		double height = gwindow.getHeight();
+//		gwindow.positionVertexAt(vertexMap.get(0), width * 4 / 8., height * 4 / 8.);
+//		gwindow.positionVertexAt(vertexMap.get(1), width * 3 / 4., height * 7 / 8.);
+//		gwindow.positionVertexAt(vertexMap.get(2), width * 5 / 6., height * 2 / 6.);
+//		gwindow.positionVertexAt(vertexMap.get(3), width * 3 / 6., height * 7 / 8.);
+//		gwindow.positionVertexAt(vertexMap.get(4), width * 5 / 6., height * 4 / 6.);
+//		gwindow.positionVertexAt(vertexMap.get(5), width * 1 / 6., height * 2 / 6.);
+//		gwindow.positionVertexAt(vertexMap.get(6), width * 2 / 6., height * 1 / 6.);
+//		gwindow.positionVertexAt(vertexMap.get(7), width * 3 / 6., height * 1 / 6.);
+//		gwindow.positionVertexAt(vertexMap.get(8), width * 1 / 6., height * 5 / 8.);
+////		gwindow.revalidate();
+//		gwindow.setVisible(true);
+
 		window.getActionEventBus().register(actionHandler);
 		window.pack();
 		window.setVisible(true);
 		window.getActionEventBus().post(new GUIEvent(EventType.SIMULATION));
+
 	}
 
 }

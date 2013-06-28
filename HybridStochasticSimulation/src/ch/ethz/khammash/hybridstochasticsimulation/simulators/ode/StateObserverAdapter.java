@@ -1,16 +1,16 @@
-package ch.ethz.khammash.hybridstochasticsimulation.simulators.lsodar;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators.ode;
 
 import java.util.List;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
-import ch.ethz.khammash.nativeode.StateObserver;
+import ch.ethz.khammash.ode.StateObserver;
 
-public class LsodarStateObserverAdapter<T extends PDMPModel> implements StateObserver {
+public class StateObserverAdapter<T extends PDMPModel> implements StateObserver {
 
 	private List<FiniteTrajectoryRecorder<T>> trajectoryRecorders;
 
-	public LsodarStateObserverAdapter(List<FiniteTrajectoryRecorder<T>> trajectoryRecorders) {
+	public StateObserverAdapter(List<FiniteTrajectoryRecorder<T>> trajectoryRecorders) {
 		this.trajectoryRecorders = trajectoryRecorders;
 	}
 

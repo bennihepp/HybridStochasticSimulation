@@ -2,6 +2,8 @@ package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulator;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 
 
 public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFiniteAdaptiveMSHRNTrajectoryRecorder {
@@ -11,6 +13,8 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> betaTrajectory;
 	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> rttTrajectory;
 	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> scaledTrajectory;
+	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> integratorTrajectory;
+	protected PDMPSimulator<AdaptiveMSHRNModel> simulator;
 
 	public CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder(double[] tSeries) {
 		super(tSeries);
@@ -19,6 +23,13 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 		betaTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
 		rttTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
 		scaledTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
+		integratorTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
+	}
+
+	@Override
+	public void setSimulator(Simulator<AdaptiveMSHRNModel, ? extends TrajectoryRecorder<AdaptiveMSHRNModel>> simulator) {
+		if (simulator instanceof PDMPSimulator<?>)
+			this.simulator = (PDMPSimulator<AdaptiveMSHRNModel>)simulator;
 	}
 
 	public ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> getAlphaTrajectory() {
@@ -41,6 +52,10 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 		return scaledTrajectory;
 	}
 
+	public ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> getIntegratorTrajectory() {
+		return integratorTrajectory;
+	}
+
 	@Override
 	protected void initialize(double[] x0, int numberOfStates) {
 		scaledTrajectory.initialize(x0, numberOfStates);
@@ -52,6 +67,12 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 		betaTrajectory.initialize(hrn.getBeta());
 		reactionTermTypesArray = new double[hrn.getNumberOfReactions()];
 		rttTrajectory.initialize(computeReactionTermTypes());
+		if (simulator != null) {
+			double[] q = new double[2];
+			q[0] = simulator.isIntegrating;
+			q[1] = -simulator.integratorCounter;
+			integratorTrajectory.initialize(q);
+		}
 		super.initialize(x0, numberOfStates);
 	}
 
@@ -67,6 +88,12 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 		rhoTrajectory.setState(index, rho);
 		betaTrajectory.setState(index,  hrn.getBeta());
 		rttTrajectory.setState(index, computeReactionTermTypes());
+		if (simulator != null) {
+			double[] q = new double[2];
+			q[0] = simulator.isIntegrating;
+			q[1] = -simulator.integratorCounter;
+			integratorTrajectory.setState(index, q);
+		}
 	}
 
 	private double[] reactionTermTypesArray;

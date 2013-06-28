@@ -1,16 +1,16 @@
-package ch.ethz.khammash.hybridstochasticsimulation.simulators.lsodar;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators.ode;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
-import ch.ethz.khammash.nativeode.TimepointIterator;
+import ch.ethz.khammash.ode.TimepointProvider;
 
-public class LsodarTimepointIterator<T extends ReactionNetworkModel> implements TimepointIterator {
+public class FiniteTimepointProvider<T extends ReactionNetworkModel> implements TimepointProvider {
 
 	private double currentTime;
 	private double[] tSeries;
 	private int index;
 
-	public LsodarTimepointIterator(double t0, double t1) {
+	public FiniteTimepointProvider(double t0, double t1) {
 		tSeries = new double[2];
 		tSeries[0] = t0;
 		tSeries[1] = t1;
@@ -18,12 +18,12 @@ public class LsodarTimepointIterator<T extends ReactionNetworkModel> implements 
 		index = 0;
 	}
 
-	public LsodarTimepointIterator(double[] tSeries) {
+	public FiniteTimepointProvider(double[] tSeries) {
 		this.tSeries = tSeries;
 		index = 0;
 	}
 
-	public LsodarTimepointIterator(FiniteTrajectoryRecorder<T> tr) {
+	public FiniteTimepointProvider(FiniteTrajectoryRecorder<T> tr) {
 		this.tSeries = tr.gettSeries();
 	}
 

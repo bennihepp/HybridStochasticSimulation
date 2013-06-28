@@ -1,17 +1,17 @@
-package ch.ethz.khammash.hybridstochasticsimulation.simulators.lsodar;
+package ch.ethz.khammash.hybridstochasticsimulation.simulators.ode;
 
 import java.util.List;
 
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserver;
-import ch.ethz.khammash.nativeode.EventFunction;
-import ch.ethz.khammash.nativeode.EventObserver;
+import ch.ethz.khammash.ode.EventFunction;
+import ch.ethz.khammash.ode.EventObserver;
 
-public class LsodarEventObserverAdapter implements EventFunction, EventObserver {
+public class EventObserverAdapter implements EventFunction, EventObserver {
 
 	private PDMPEventObserver[] eventObservers;
 	private long eventCount;
 
-	public LsodarEventObserverAdapter(List<PDMPEventObserver> eventObservers) {
+	public EventObserverAdapter(List<PDMPEventObserver> eventObservers) {
 		this.eventObservers = eventObservers.toArray(new PDMPEventObserver[0]);
 	}
 
@@ -32,9 +32,10 @@ public class LsodarEventObserverAdapter implements EventFunction, EventObserver 
 	}
 
 	@Override
-	public void report(int eventIndex, double t, double[] x) {
+	public EventAction report(int eventIndex, double t, double[] x) {
 		eventCount++;
 		eventObservers[eventIndex].eventOccurred(t, x, false);
+		return EventAction.STOP;
 	}
 
 	public long getEventCount() {

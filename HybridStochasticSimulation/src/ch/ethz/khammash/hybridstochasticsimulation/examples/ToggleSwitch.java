@@ -8,60 +8,67 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
-// Intracellular growth of bacteriophage T7.
-// Original publication: Srivastava et al., "Stochastic vs. deterministic modeling of intracellular viral kinetics.", J. theor Biol, 218:309-321 (2002).
-//                  and  Alfonsi et al., "Adaptive simulation of hybrid stochastic and deterministic models for biochemical systems.", ESAIM: Proceedings, Vol. 14 (2005).
+// Toggle switch inspired example.
+// Original publication: Gardner, Timothy S., Charles R. Cantor, and James J. Collins. "Construction of a genetic toggle switch in Escherichia coli." Nature 403.6767 (2000): 339-342.
 // species:
-//  S0: tem
-//  S1: gen
-//  S2: struc
-//  S3: virus
+//  S0: mA
+//  S1: pA
+//  S2: mB
+//  S3: pB
 // reactions:
-//  R0:  gen         -> tem            [0.025]
-//  R1:  tem         -> -              [0.25]
-//  R2:  tem         -> tem + gen      [1.0]
-//  R3:  gen + struc -> virus          [7.5e-6]
-//  R4:  tem         -> tem + struc    [1000.0]
-//  R5:  struc       -> -              [1.99]
+//  R0:  -       -> mA
+//  R1:  -       -> mB
+//  R2:  mA      -> -
+//  R3:  mB      -> -
+//  R4:  mA      -> pA
+//  R5:  mB      -> pB
+//  R6:  pA + mB -> pA
+//  R7:  pB + mA -> pB
+//  R8:  pA      -> -
+//  R9:  pB      -> -
 
-public class BacteriophageT7 extends ExampleConfiguration {
+public class ToggleSwitch extends ExampleConfiguration {
 
-	public BacteriophageT7() {
+	public ToggleSwitch() {
 
 		int[][] productionStochiometries = {
-		//   R0  R1  R2  R3  R4  R5
-		    { 1,  0,  1,  0,  1,  0 }, // S0: tem
-		    { 0,  0,  1,  0,  0,  0 }, // S1: gen
-		    { 0,  0,  0,  0,  1,  0 }, // S2: struc
-		    { 0,  0,  0,  1,  0,  0 }, // S3: virus
+		//   R0  R1  R2  R3  R4  R5  R6  R7  R8  R9
+		    { 1,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // S0: mA
+		    { 0,  0,  0,  0,  1,  0,  1,  0,  0,  0 }, // S1: pA
+		    { 0,  1,  0,  0,  0,  0,  0,  0,  0,  0 }, // S2: mB
+		    { 0,  0,  0,  0,  0,  1,  0,  1,  0,  0 }, // S3: pB
 		};
 
 		int[][] consumptionStochiometries = {
-		//   R0  R1  R2  R3  R4  R5
-		    { 0,  1,  1,  0,  1,  0 }, // S0: tem
-		    { 1,  0,  0,  1,  0,  0 }, // S1: gen
-		    { 0,  0,  0,  1,  0,  1 }, // S2: struc
-		    { 0,  0,  0,  0,  0,  0 }, // S3: virus
+		//   R0  R1  R2  R3  R4  R5  R6  R7  R8  R9
+		    { 0,  0,  1,  0,  1,  0,  0,  1,  0,  0 }, // S0: mA
+		    { 0,  0,  0,  0,  0,  0,  1,  0,  1,  0 }, // S1: pA
+		    { 0,  0,  0,  1,  0,  1,  1,  0,  0,  0 }, // S2: mB
+		    { 0,  0,  0,  0,  0,  0,  0,  1,  0,  1 }, // S3: pB
 		};
 
-		double[] x0 = { 1, 0, 0, 0 };
+		double[] x0 = new double[productionStochiometries.length];
 
 		double[] rateParameters = new double[productionStochiometries[0].length];
-		/* Reaction propensities */
-		rateParameters[0] = 0.025;
-		rateParameters[1] = 0.25;
-		rateParameters[2] = 1.0;
-		rateParameters[3] = 7.5e-6;
-		rateParameters[4] = 1000.0;
-		rateParameters[5] = 1.99;
+		// Reaction rates
+		rateParameters[0] = 1.0;
+		rateParameters[1] = 1.0;
+		rateParameters[2] = 0.1;
+		rateParameters[3] = 0.1;
+		rateParameters[4] = 10.0;
+		rateParameters[5] = 10.0;
+		rateParameters[6] = 5.0;
+		rateParameters[7] = 5.0;
+		rateParameters[8] = 0.1;
+		rateParameters[9] = 0.1;
 
 		double t0 = 0.0;
-		double t1 = 200.0;
+		double t1 = 100.0;
 		double N = 100;
 		double gamma = 0;
 		double[] alpha = new double[x0.length];
 		double[] beta = new double[rateParameters.length];
-		int[] importantSpecies = {0};
+//		int[] importantSpecies = { 0 };
 
 		productionStochiometries = transpose(productionStochiometries);
 		consumptionStochiometries = transpose(consumptionStochiometries);
@@ -69,10 +76,10 @@ public class BacteriophageT7 extends ExampleConfiguration {
 		net.setStochiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = {
-		    "tem",
-		    "gen",
-		    "struc",
-		    "virus",
+		    "mA",
+		    "pA",
+		    "mB",
+		    "pB",
 		};
 		double[] plotScales = new double[x0.length];
 		Arrays.fill(plotScales, 1.0);
@@ -82,7 +89,7 @@ public class BacteriophageT7 extends ExampleConfiguration {
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;
-		this.importantSpecies = importantSpecies;
+//		this.importantSpecies = importantSpecies;
 		this.t0 = t0;
 		this.t1 = t1;
 		this.x0 = x0;

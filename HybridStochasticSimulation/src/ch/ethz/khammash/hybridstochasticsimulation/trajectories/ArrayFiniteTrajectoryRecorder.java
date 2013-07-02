@@ -55,6 +55,8 @@ public class ArrayFiniteTrajectoryRecorder<T extends ReactionNetworkModel>
 
 	@Override
 	public void reportState(double t, double[] x) {
+		if (index >= tSeries.length)
+			return;
 		if (t <= tSeries[index]) {
 			setState(index, x);
 			if (t == tSeries[index])

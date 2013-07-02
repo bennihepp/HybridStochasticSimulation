@@ -104,7 +104,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		for (int r=0; r < getNumberOfReactions(); r++)
 			tmpPropensities[r] = computePropensity(r, t, x);
 		computeDerivatives(t, x, tmpxDot);
-		hrn.adapt(x, tmpxDot, tmpPropensities);
+		hrn.adapt(t, x, tmpxDot, tmpPropensities);
 		update();
 		updateOptionalEventHandlers(x);
 		numberOfAdapations++;

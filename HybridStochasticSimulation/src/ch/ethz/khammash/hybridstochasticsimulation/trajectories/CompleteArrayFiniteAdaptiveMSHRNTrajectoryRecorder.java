@@ -2,6 +2,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.SpeciesType;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulator;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 
@@ -11,6 +12,7 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> alphaTrajectory;
 	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> rhoTrajectory;
 	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> betaTrajectory;
+	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> stTrajectory;
 	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> rttTrajectory;
 	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> scaledTrajectory;
 	private ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> integratorTrajectory;
@@ -21,6 +23,7 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 		alphaTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
 		rhoTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
 		betaTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
+		stTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
 		rttTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
 		scaledTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
 		integratorTrajectory = new ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel>(tSeries);
@@ -45,6 +48,10 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 		return betaTrajectory;
 	}
 
+	public ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> getStTrajectory() {
+		return stTrajectory;
+	}
+
 	public ArrayFiniteContinuousTrajectoryRecorder<AdaptiveMSHRNModel> getRttTrajectory() {
 		return rttTrajectory;
 	}
@@ -66,12 +73,15 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 			rho[r] = hrn.computeInsideScalingExponent(r);
 		rhoTrajectory.initialize(rho);
 		betaTrajectory.initialize(hrn.getBeta());
+		speciesTypesArray = new double[hrn.getNumberOfSpecies()];
+		stTrajectory.initialize(computeSpeciesTypes());
 		reactionTermTypesArray = new double[hrn.getNumberOfReactions()];
 		rttTrajectory.initialize(computeReactionTermTypes());
 		if (simulator != null) {
-			double[] q = new double[2];
+			double[] q = new double[3];
 			q[0] = simulator.isIntegrating;
 			q[1] = -simulator.integratorCounter;
+			q[2] = -simulator.reactionCounter;
 			integratorTrajectory.initialize(q);
 		}
 		super.initialize(x0, numberOfStates);
@@ -81,10 +91,6 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 	protected void setState(int index, double[] x) {
 		super.setState(index, x);
 
-		if (hrn.getAlpha()[2] < 1.1 || hrn.getAlpha()[2] > 1.2)
-			hrn.getAlpha();
-		if (index > 2 && alphaTrajectory.xSeries[2][index-1] < 1.1 && alphaTrajectory.xSeries[2][index-2] > 1.1)
-			hrn.getAlpha();
 		scaledTrajectory.setState(index, x);
 		alphaTrajectory.setState(index, hrn.getAlpha());
 		double[] rho = new double[hrn.getNumberOfReactions()];
@@ -92,25 +98,27 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 			rho[r] = hrn.computeInsideScalingExponent(r);
 		rhoTrajectory.setState(index, rho);
 		betaTrajectory.setState(index,  hrn.getBeta());
+		stTrajectory.setState(index, computeSpeciesTypes());
 		rttTrajectory.setState(index, computeReactionTermTypes());
 		if (simulator != null) {
-			double[] q = new double[2];
+			double[] q = new double[3];
 			q[0] = simulator.isIntegrating;
 			q[1] = -simulator.integratorCounter;
+			q[2] = -simulator.reactionCounter;
 			integratorTrajectory.setState(index, q);
 		}
-		if (x[2] * hrn.getSpeciesScaleFactor(2) < 100)
-			x[2] = x[2];
 	}
 
 	@Override
 	public void reportState(double t, double[] x) {
+		if (index >= tSeries.length)
+			return;
 		if (t <= tSeries[index]) {
 			setState(index, x);
 			if (t == tSeries[index])
 				index++;
-		} else if (t > tSeries[index]) {
-			while (t > tSeries[index + 1]) {
+		} else {
+			while (index + 1 < tSeries.length && t > tSeries[index + 1]) {
 				index++;
 				for (int s=0; s < xSeries.length; s++)
 					xSeries[s][index] = xSeries[s][index - 1];
@@ -120,6 +128,8 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 					rhoTrajectory.xSeries[s][index] = rhoTrajectory.xSeries[s][index - 1];
 				for (int s=0; s < betaTrajectory.xSeries.length; s++)
 					betaTrajectory.xSeries[s][index] = betaTrajectory.xSeries[s][index - 1];
+				for (int s=0; s < stTrajectory.xSeries.length; s++)
+					stTrajectory.xSeries[s][index] = stTrajectory.xSeries[s][index - 1];
 				for (int s=0; s < rttTrajectory.xSeries.length; s++)
 					rttTrajectory.xSeries[s][index] = rttTrajectory.xSeries[s][index - 1];
 				for (int s=0; s < scaledTrajectory.xSeries.length; s++)
@@ -127,8 +137,9 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 				for (int s=0; s < integratorTrajectory.xSeries.length; s++)
 					integratorTrajectory.xSeries[s][index] = integratorTrajectory.xSeries[s][index - 1];
 			}
-			setState(index + 1, x);
 			index++;
+			if (index < tSeries.length)
+				setState(index, x);
 		}
 	}
 
@@ -153,6 +164,23 @@ public class CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder extends ArrayFin
 			}
 		}
 		return reactionTermTypesArray;
+	}
+
+	private double[] speciesTypesArray;
+
+	private double[] computeSpeciesTypes() {
+		for (int s=0; s < speciesTypesArray.length; s++) {
+			SpeciesType speciesType = hrn.getSpeciesType(s);
+			switch (speciesType) {
+			case CONTINUOUS:
+				speciesTypesArray[s] = +(s + 1);
+				break;
+			case DISCRETE:
+				speciesTypesArray[s] = -(s + 1);
+				break;
+			}
+		}
+		return speciesTypesArray;
 	}
 
 }

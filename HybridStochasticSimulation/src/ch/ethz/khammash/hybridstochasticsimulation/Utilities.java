@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import java.util.Collection;
+
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -67,6 +69,22 @@ public class Utilities {
 			sb.append(array[i]);
 			if (i < array.length - 1)
 				sb.append(", ");
+		}
+		sb.append("]");
+		System.out.println(sb.toString());
+	}
+
+	public static void printCollection(String name, Collection<? extends Object> collection) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(name);
+		sb.append(": [");
+		java.util.Iterator<? extends Object> it = collection.iterator();
+		int i = 0;
+		while (it.hasNext()) {
+			sb.append(it.next());
+			if (i < collection.size() - 1)
+				sb.append(", ");
+			i++;
 		}
 		sb.append("]");
 		System.out.println(sb.toString());

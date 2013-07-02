@@ -4,15 +4,9 @@ import java.util.List;
 
 import org.apache.commons.math3.util.FastMath;
 
-import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfiguration;
-import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfigurationFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent.EventType;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.PlotWindow;
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.DependencyEdge;
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.DependencyGraph;
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.ReactionNetworkGraph;
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 import com.google.common.eventbus.Subscribe;
@@ -45,10 +39,12 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Main.repressedBacteriumOperonNetwork();
 							// Example 3
 //							List<FinitePlotData> plotDataList = Main.heatShockResponseNetwork();
-//							List<FinitePlotData> plotDataList = Main.vilarOscillatorNetwork();
+							List<FinitePlotData> plotDataList = Main.vilarOscillatorNetwork();
 //							List<FinitePlotData> plotDataList = Main.bacteriophageT7Network();
 //							List<FinitePlotData> plotDataList = Main.fastIsomerization();
-							List<FinitePlotData> plotDataList = Main.fastDimerization();
+//							List<FinitePlotData> plotDataList = Main.fastDimerization();
+//							List<FinitePlotData> plotDataList = Main.repressilator();
+//							List<FinitePlotData> plotDataList = Main.toggleSwitch();
 							int rows;
 							int cols;
 							if (plotDataList.size() >= 3) {
@@ -81,16 +77,16 @@ public class GUI {
 			}
 		};
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Vilar Oscillator");
-
-    	ReactionNetworkGraph graph = new ReactionNetworkGraph(nss.net);
-    	DependencyGraph depGraph = new DependencyGraph(graph);
-    	for (SpeciesVertex v : depGraph.vertexSet()) {
-    		System.out.println("Reachable from " + v);
-    		for (DependencyEdge e : depGraph.outgoingEdgesOf(v)) {
-    			System.out.println("  " + e.getTarget());
-    		}
-    	}
+//		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Vilar Oscillator");
+//
+//    	ReactionNetworkGraph graph = new ReactionNetworkGraph(nss.net);
+//    	DependencyGraph depGraph = new DependencyGraph(graph);
+//    	for (SpeciesVertex v : depGraph.vertexSet()) {
+//    		System.out.println("Reachable from " + v);
+//    		for (DependencyEdge e : depGraph.outgoingEdgesOf(v)) {
+//    			System.out.println("  " + e.getTarget());
+//    		}
+//    	}
 
 //        // create a JGraphT graph
 //    	ReactionNetworkGraph graph = new ReactionNetworkGraph(nss.net);

@@ -34,78 +34,6 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 	private ReactionType[] reactionTypes;
 	private boolean reactionTermTypesInvalid;
 
-//	public static boolean[] checkBalanceEquations(ReactionNetwork rn, double[] alpha, double[] beta, double epsilon) {
-//		boolean[] result = new boolean[rn.getNumberOfSpecies()];
-//		for (int s=0; s < rn.getNumberOfSpecies(); s++) {
-//			double maxPlus = -Double.MAX_VALUE;
-//			double maxMinus = -Double.MAX_VALUE;
-//			for (int r=0; r < rn.getNumberOfReactions(); r++) {
-//				if (rn.getStochiometry(s, r) != 0) {
-//					int[] consumptionStochiometries = rn.getConsumptionStochiometries(r);
-//					double v = beta[r];
-//					for (int s2=0; s2 < rn.getNumberOfSpecies(); s2++)
-//						v += consumptionStochiometries[s2] * alpha[s2];
-//					if (rn.getStochiometry(s, r) > 0 && v > maxPlus)
-//						maxPlus = v;
-//					else if (rn.getStochiometry(s, r) < 0 && v > maxMinus)
-//						maxMinus = v;
-//				}
-//			}
-//			result[s] = FastMath.abs(maxPlus - maxMinus) <= epsilon;
-//		}
-//		return result;
-//	}
-
-//	public static double[] computeTimeScaleConstraintValues(ReactionNetwork rn,
-//			double gamma, double[] alpha, double[] beta, double epsilon) {
-//		double[] result = new double[rn.getNumberOfSpecies()];
-//		for (int s=0; s < rn.getNumberOfSpecies(); s++) {
-//			double maxV = Double.MIN_VALUE;
-//			for (int r=0; r < rn.getNumberOfReactions(); r++) {
-//				if (rn.getStochiometry(s, r) != 0) {
-//					int[] consumptionStochiometries = rn.getConsumptionStochiometries(r);
-//					double v = beta[r];
-//					for (int s2=0; s2 < rn.getNumberOfSpecies(); s2++)
-//						v += consumptionStochiometries[s2] * alpha[s2];
-//					if (v > maxV)
-//						maxV = v;
-//				}
-//			}
-//			result[s] = gamma - (alpha[s] - maxV);
-//		}
-//		return result;
-//	}
-
-//	public static boolean[] checkTimeScaleConstraints(ReactionNetwork rn,
-//			double gamma, double[] alpha, double[] beta, double epsilon) {
-//		boolean[] result = new boolean[rn.getNumberOfSpecies()];
-//		for (int s=0; s < rn.getNumberOfSpecies(); s++) {
-//			double maxV = Double.MIN_VALUE;
-//			for (int r=0; r < rn.getNumberOfReactions(); r++) {
-//				if (rn.getStochiometry(s, r) != 0) {
-//					int[] consumptionStochiometries = rn.getConsumptionStochiometries(r);
-//					double v = beta[r];
-//					for (int s2=0; s2 < rn.getNumberOfSpecies(); s2++)
-//						v += consumptionStochiometries[s2] * alpha[s2];
-//					if (v > maxV)
-//						maxV = v;
-//				}
-//			}
-//			result[s] = alpha[s] - gamma - maxV >= -epsilon;
-//		}
-//		return result;
-//	}
-
-//	public static boolean[] checkSpeciesBalanceConditions(ReactionNetwork rn,
-//			double gamma, double[] alpha, double[] beta, double epsilon) {
-//		boolean[] balanceEquations = checkBalanceEquations(rn, alpha, beta, epsilon);
-//		boolean[] timeScaleConstraints = checkTimeScaleConstraints(rn, gamma, alpha, beta, epsilon);
-//		boolean[] result = new boolean[rn.getNumberOfSpecies()];
-//		for (int s=0; s < rn.getNumberOfSpecies(); s++)
-//			result[s] = balanceEquations[s] || timeScaleConstraints[s];
-//		return result;
-//	}
-
 	public MSHybridReactionNetwork(
 			int numOfSpecies, int numOfReactions, double N, double gamma, double[] alpha, double[] beta) {
 		super(numOfSpecies, numOfReactions);
@@ -336,7 +264,21 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		return reactionTermTypes[r][s];
 	}
 
+	protected void overrideSpeciesType(int species, SpeciesType speciesType) {
+		if (reactionTermTypesInvalid)
+			computeReactionTermTypes();
+		speciesTypes[species] = speciesType;
+	}
+
+	protected void overrideSpeciesTypes(SpeciesType[] speciesTypes) {
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			this.speciesTypes[s] = speciesTypes[s];
+		reactionTermTypesInvalid = false;
+	}
+
 	protected void overrideReactionType(int reaction, ReactionType reactionType) {
+		if (reactionTermTypesInvalid)
+			computeReactionTermTypes();
 		reactionTypes[reaction] = reactionType;
 	}
 
@@ -385,9 +327,15 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		for (int s2 = 0; s2 < alpha.length; s2++)
 			if (getConsumptionStochiometry(s2, reaction) > 0)
 				gammaPlusRho += getConsumptionStochiometry(s2, reaction) * alpha[s2];
-		if (alpha[species] > delta - tolerance) {
+		if (alpha[species] >= delta - tolerance) {
 			if (alpha[species] >= gammaPlusRho - tolerance)
-				return ReactionTermType.DETERMINISTIC;
+				// TODO: How to incorparate this in a good way
+//				if (alpha[species] - 2*delta >= gammaPlusRho - tolerance) {
+//					System.out.println("NONE!");
+//					return ReactionTermType.NONE;
+//				}
+//				else
+					return ReactionTermType.DETERMINISTIC;
 			else {
 				// TODO
 				System.out.println("EXPLODING: alpha[" + species + "]=" + alpha[species] + ", gamma+rho[" + reaction + "]=" + gammaPlusRho);

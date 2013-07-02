@@ -2,13 +2,15 @@ package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
-import javax.print.attribute.standard.MediaSize.Other;
-
-import org.apache.commons.math3.optim.InitialGuess;
 import org.apache.commons.math3.optim.PointValuePair;
 import org.apache.commons.math3.optim.linear.LinearConstraint;
 import org.apache.commons.math3.optim.linear.LinearConstraintSet;
@@ -18,11 +20,13 @@ import org.apache.commons.math3.optim.linear.SimplexSolver;
 import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
 import org.apache.commons.math3.util.FastMath;
 
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.DependencyEdge;
+import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
 import ch.ethz.khammash.hybridstochasticsimulation.sandbox.DependencyGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.sandbox.ReactionEdge;
 import ch.ethz.khammash.hybridstochasticsimulation.sandbox.ReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.sandbox.SpeciesVertex;
+
+import com.google.common.collect.Sets;
 
 
 
@@ -32,17 +36,20 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	private double xi = 0.5;
 	private double epsilon = 0.1;
 	private double theta = 1000;
+	private List<List<Integer>> involvedSpecies;
+	private List<List<Integer>> involvedReactions;
 	private ReactionNetworkGraph graph;
+	private HashSet<SpeciesVertex> importantSpeciesVertices;
 	private DependencyGraph depGraph;
 
-	public AdaptiveMSHRN(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
+	public AdaptiveMSHRN(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta, int[] importantSpecies) {
 		super(net, N, gamma, alpha, beta);
-		init();
+		init(importantSpecies);
 	}
 
-	public AdaptiveMSHRN(MSHybridReactionNetwork hrn) {
+	public AdaptiveMSHRN(MSHybridReactionNetwork hrn, int[] importantSpecies) {
 		super(hrn);
-		init();
+		init(importantSpecies);
 	}
 
 	public AdaptiveMSHRN(AdaptiveMSHRN hrn) {
@@ -50,13 +57,46 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		setEpsilon(hrn.getEpsilon());
 		setXi(hrn.getXi());
 		setTheta(hrn.getTheta());
-		init();
+		init(hrn.importantSpeciesVertices);
 	}
 
-	final private void init() {
+	final private void init(Set<SpeciesVertex> importantSpeciesVertices) {
+		int[] importantSpecies = new int[importantSpeciesVertices.size()];
+		int i = 0; 
+		for (SpeciesVertex v : importantSpeciesVertices) {
+			importantSpecies[i] = v.getSpecies();
+			i++;
+		}
+		init(importantSpecies);
+	}
+
+	final private void init(int[] importantSpecies) {
 		graph = new ReactionNetworkGraph(this);
+		importantSpeciesVertices = new HashSet<SpeciesVertex>(importantSpecies.length);
+		for (int s : importantSpecies)
+			importantSpeciesVertices.add(graph.getSpeciesVertex(s));
 		depGraph = new DependencyGraph(graph);
 		reset();
+		updateInvolvedSpeciesAndReactions();
+	}
+
+	final private void updateInvolvedSpeciesAndReactions() {
+		involvedSpecies = new ArrayList<List<Integer>>(getNumberOfReactions());
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			ArrayList<Integer> is = new ArrayList<Integer>();
+			for (int s=0; s < getNumberOfSpecies(); s++)
+				if (getProductionStochiometry(s, r) != 0 || getConsumptionStochiometry(s, r) != 0)
+					is.add(s);
+			involvedSpecies.add(Collections.unmodifiableList(is));
+		}
+		involvedReactions = new ArrayList<List<Integer>>(getNumberOfSpecies());
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			ArrayList<Integer> ir = new ArrayList<Integer>();
+			for (int r=0; r < getNumberOfReactions(); r++)
+				if (getProductionStochiometry(s, r) != 0 || getConsumptionStochiometry(s, r) != 0)
+					ir.add(r);
+			involvedReactions.add(Collections.unmodifiableList(ir));
+		}
 	}
 
 	final public double getXi() {
@@ -87,6 +127,14 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		this.theta = theta;
 	}
 
+	public List<Integer> getInvolvedReactions(int species) {
+		return involvedReactions.get(species);
+	}
+
+	public List<Integer> getInvolvedSpecies(int reaction) {
+		return involvedSpecies.get(reaction);
+	}
+
 	final public void reset() {
 		for (int s=0; s < getNumberOfSpecies(); s++)
 			setAlphaUnchecked(s, 0.0);
@@ -96,112 +144,107 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		updateScaleFactors();
 	}
 
-	public void adapt(double[] x) {
-		adapt(x, null, null);
-	}
+//	// TODO: Necessary?
+//	public void adapt(double t, double[] x) {
+//		adapt(t, x, null, null);
+//	}
 
-	public enum MySpeciesType {
-		DISCRETE, CONTINUOUS, UNDEFINED,
-	}
-
-	public enum MyReactionType {
-		NONE, STOCHASTIC, DETERMINISTIC, UNDEFINED,
-	}
-
-	public void checkForAveraging(int species, double[] x, double[] xDot, double[] propensities) {
-		int[] importantSpecies = { 0, 1 };
-		HashSet<Integer> importantSpeciesSet = new HashSet<Integer>();
-		for (int s : importantSpecies)
-			importantSpeciesSet.add(s);
-
-		MySpeciesType[] speciesTypes = new MySpeciesType[getNumberOfSpecies()];
-		for (int s=0; s < getNumberOfSpecies(); s++)
-			switch (getSpeciesType(s)) {
-			case CONTINUOUS:
-				speciesTypes[s] = MySpeciesType.CONTINUOUS;
-				break;
-			case DISCRETE:
-				speciesTypes[s] = MySpeciesType.DISCRETE;
-				break;
-			}
-		MyReactionType[] reactionTypes = new MyReactionType[getNumberOfReactions()];
-		for (int r=0; r < getNumberOfReactions(); r++)
-			switch (getReactionType(r)) {
-			case DETERMINISTIC:
-				reactionTypes[r] = MyReactionType.DETERMINISTIC;
-				break;
-			case STOCHASTIC:
-				reactionTypes[r] = MyReactionType.STOCHASTIC;
-				break;
-			case NONE:
-				reactionTypes[r] = MyReactionType.NONE;
-				break;
-			case EXPLODING:
-				throw new RuntimeException("This should not happen");
-			}
-
-		for (SpeciesVertex source : depGraph.vertexSet()) {
-			if (getSpeciesType(source.getSpecies()) == MSHybridReactionNetwork.SpeciesType.DISCRETE) {
-				if (importantSpeciesSet.contains(source.getSpecies()))
-					continue;
-				speciesTypes[source.getSpecies()] = MySpeciesType.UNDEFINED;
-				boolean importantDiscreteSpeciesReachable = false;
-				for (DependencyEdge edge : depGraph.outgoingEdgesOf(source)) {
-					SpeciesVertex target = edge.getTarget();
-					if (getSpeciesType(target.getSpecies()) == MSHybridReactionNetwork.SpeciesType.DISCRETE)
-						if (importantSpeciesSet.contains(target.getSpecies())) {
-							importantDiscreteSpeciesReachable = true;
-							break;
-						} else
-							speciesTypes[target.getSpecies()] = MySpeciesType.UNDEFINED;
+	private Set<SpeciesVertex> findSpeciesToAverage(double[] speciesTimescales) {
+		// First find a list of subnetworks that could be averaged
+		List<Set<SpeciesVertex>> averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
+		Set<SpeciesVertex> allSpecies = graph.vertexSet();
+		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
+outerLoop_findSpeciesToAverage:
+		for (Set<SpeciesVertex> subSpecies : speciesPowerset) {
+			if (subSpecies.size() == getNumberOfSpecies() || subSpecies.isEmpty())
+				continue;
+			boolean subnetworkHasImportantSpecies = false;
+			double maxSubnetworkTimescale = 0.0;
+			boolean subnetworkIsIsolated = true;
+			HashSet<Integer> subnetworkReactions = new HashSet<Integer>();
+			double minOutsideTimescale = Double.POSITIVE_INFINITY;
+			for (SpeciesVertex v : subSpecies) {
+				// Skip this subnetwork if it contains any important species
+				if (importantSpeciesVertices.contains(v)) {
+					subnetworkHasImportantSpecies = true;
+					break;
 				}
-				if (importantDiscreteSpeciesReachable)
-					continue;
-				LinkedList<ReactionEdge> involvedReactions = new LinkedList<ReactionEdge>();
-				// Check if this species could be averaged
-edgeLoop:
-				for (ReactionEdge edge : graph.outgoingEdgesOf(source)) {
-					// Compute timescale of this reaction and relative derivative of the consumed continuous species (if any)
-					int[] choiceIndices = getChoiceIndices(edge.getReaction());
-					// TODO: How to do this??
-					double sourceSpeciesAverage = computeAverageCopyNumber(source.getSpecies());
-					double propensity = sourceSpeciesAverage * getRateParameter(edge.getReaction());
-					double relativeDerivative = 0.0;
-					switch (choiceIndices.length) {
-					case 1:
-						break;
-					case 2:
-						int otherSpecies = (choiceIndices[0] == source.getSpecies()) ? choiceIndices[1] : choiceIndices[0];
-						if (otherSpecies == source.getSpecies()) {
-							continue edgeLoop;
-						}
-						propensity *= x[otherSpecies];
-						if (speciesTypes[otherSpecies] == MySpeciesType.CONTINUOUS && x[otherSpecies] > 0.0)
-							relativeDerivative = xDot[otherSpecies] / x[otherSpecies];
-						relativeDerivative = xDot[otherSpecies];
-						break;
-					default:
-						throw new RuntimeException("A reaction from a species must be either unary of binary");
+				subnetworkReactions.addAll(getInvolvedReactions(v.getSpecies()));
+				if (speciesTimescales[v.getSpecies()] > maxSubnetworkTimescale)
+					maxSubnetworkTimescale = speciesTimescales[v.getSpecies()];
+				// Look at the timescale of all outgoing edges that have targets outside of the subnetwork
+				for (ReactionEdge edge : graph.outgoingEdgesOf(v)) {
+					SpeciesVertex v2 = edge.getTarget();
+					if (subSpecies.contains(v2))
+						continue;
+					subnetworkIsIsolated = false;
+					if (speciesTimescales[v2.getSpecies()] < minOutsideTimescale)
+						minOutsideTimescale = speciesTimescales[v2.getSpecies()];
+				}
+				// Look at the timescale of all incoming edges from outside of the subnetwork where the sources
+				// can be influenced by the subnetwork
+				for (ReactionEdge edge : graph.incomingEdgesOf(v)) {
+					SpeciesVertex v2 = edge.getSource();
+					if (subSpecies.contains(v2))
+						continue;
+					if (speciesTimescales[v2.getSpecies()] < minOutsideTimescale) {
+						for (SpeciesVertex v3 : subSpecies)
+							if (depGraph.containsEdge(v3, v2)) {
+								minOutsideTimescale = speciesTimescales[v2.getSpecies()];
+								break;
+							}
 					}
-					involvedReactions.add(edge);
-					double tau = 1 / propensity;
-					double relativeChangeForTau = relativeDerivative * tau;
-					if (relativeChangeForTau >= 0.1)
-						reactionTypes[edge.getReaction()] = MyReactionType.STOCHASTIC;
-					else
-						reactionTypes[edge.getReaction()] = MyReactionType.DETERMINISTIC;
 				}
+				// Make sure that the subnetwork has only pseudo-linear reactions
+				for (int r : subnetworkReactions) {
+					int[] choiceIndices = getChoiceIndices(r);
+					int c = 0;
+					for (int s : choiceIndices) {
+						SpeciesVertex choiceVertex = graph.getSpeciesVertex(s);
+						if (subSpecies.contains(choiceVertex))
+							c++;
+					}
+					if (c >= 2)
+						continue outerLoop_findSpeciesToAverage;
+				}
+			}
+
+			if (subnetworkHasImportantSpecies || subnetworkIsIsolated)
+				continue;
+
+			double subnetworkTimescaleRatio = minOutsideTimescale / maxSubnetworkTimescale;
+//			if (subnetworkTimescaleRatio >= FastMath.pow(getN(), getDelta())) {
+			if (subnetworkTimescaleRatio >= theta) {
+				// Consider this subnetwork for averaging
+				averagingCandidates.add(subSpecies);
 			}
 		}
+
+		// Now always choose the candidate subnetworks with the maximum number of species
+		// as long as they don't share any species with already chosen subnetworks
+		// (this is a simple greedy strategy but should be good enough).
+		// Sort candidate subnetworks in decreasing order of their size
+		Collections.sort(averagingCandidates, new Comparator<Set<SpeciesVertex>>() {
+			@Override
+			public int compare(Set<SpeciesVertex> o1, Set<SpeciesVertex> o2) {
+				return Integer.compare(o2.size(), o1.size());
+			}
+		});
+		// Make the choices, going from larger to smaller candidate subnetworks.
+		HashSet<SpeciesVertex> speciesToAverage = new HashSet<SpeciesVertex>();
+		for (Set<SpeciesVertex> candidate : averagingCandidates)
+			if (Sets.intersection(speciesToAverage, candidate).isEmpty())
+				speciesToAverage.addAll(candidate);
+		// Return the set of species chosen for averaging
+		return speciesToAverage;
 	}
 
-	private double computeAverageCopyNumber(int species) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
+	public void adapt(double t, double[] x, double[] xDot, double[] propensities) {
 
-	private boolean bla = false;
-	public void adapt(double[] x, double[] xDot, double[] propensities) {
+		boolean printMessages = false;
+
+		if (printMessages)
+			System.out.println("Adapting at t=" + t);
 
 		// Recover true copy numbers from scaled species values
 		for (int s=0; s < getNumberOfSpecies(); s++)
@@ -209,91 +252,64 @@ edgeLoop:
 
 		// Compute new values for alpha and beta
 		findOptimalScaling(x);
-//		findOptimalScalingFixedBeta(x);
 
-//		// TODO: Sanity check for exploding Reaction Terms
-//		for (int r=0; r < getNumberOfReactions(); r++) {
-//			ReactionType reactionType = getReactionType(r);
-//			if (reactionType == ReactionType.EXPLODING)
-//				throw new UnsupportedOperationException("Exploding reaction term encountered!");
-//		}
-
-//		List<Set<SpeciesVertex>> scc = graph.getStronglyConnectedSets();
-//		for (Set<SpeciesVertex> sv : scc) {
-//			System.out.println("Component:");
-//			for (SpeciesVertex v : sv) {
-//				System.out.println(" " + v.getName());
-//			}
-//		}
-
-//		checkForAveraging(2, x, xDot, propensities);
-
-//		getReactionType(0);
-//		if (getAlpha(0) > getDelta()) {
-//			for (int r=0; r < getNumberOfReactions(); r++)
-//				overrideReactionType(r, ReactionType.DETERMINISTIC);
-//		}
-//		else {
-//			for (int r=0; r < getNumberOfReactions(); r++)
-//				overrideReactionType(r, ReactionType.STOCHASTIC);
-//		}
-
-//		// TODO
-//		double propA = propensities[4];
-//		double prop5 = propensities[5];
-//		double prop6 = propensities[6];
-//		double prop12 = propensities[12];
-//		double prop15 = propensities[15];
-////		if (!bla && getRateParameter(15) * x[1] > 10 && getRateParameter(6) * x[0] > 1000 && getRateParameter(5) * x[8] > 100) {
-//		if (!bla && getRateParameter(6) * x[0] > 1000) {
-////			bla = true;
-////			double stationaryR = 1 / (getRateParameter(12) + getRateParameter(6) * x[0]) * (getRateParameter(15) * x[1] + getRateParameter(5) * x[8]);
-////			System.out.println("StationaryR=" + stationaryR);
-////			setRateParameter(5, getRateParameter(5));
-////			setStochiometry(3, 5, 0, 0);
-////			setRateParameter(6, getRateParameter(6) * stationaryR);
-////			setStochiometry(3, 6, 0, 0);
-////			setStochiometry(0, 6, 0, 1);
-////			setStochiometry(1, 6, 1, 0);
-////			setRateParameter(12, getRateParameter(12) * stationaryR);
-////			setStochiometry(3, 12, 0, 0);
-////			setRateParameter(15, getRateParameter(15));
-////			setStochiometry(3, 15, 0, 0);
-////			invalidate();
-////			System.out.println("Fast cycle");
-//			overrideReactionType(5, ReactionType.DETERMINISTIC);
-//			overrideReactionType(6, ReactionType.DETERMINISTIC);
-//			overrideReactionType(12, ReactionType.DETERMINISTIC);
-//			overrideReactionType(15, ReactionType.DETERMINISTIC);
-////			if (!bla && getRateParameter(7) * x[0] > 1000) {
-////				overrideReactionType(7, ReactionType.DETERMINISTIC);
-////			}
-////			if (!bla && getRateParameter(8) * x[0] >= 50) {
-////				overrideReactionType(8, ReactionType.DETERMINISTIC);
-////			}
-////			if (!bla && getRateParameter(9) * x[0] > 1000) {
-////				overrideReactionType(9, ReactionType.DETERMINISTIC);
-////			}
-////			if (!bla && getRateParameter(10) * x[0] >= 100) {
-////				overrideReactionType(10, ReactionType.DETERMINISTIC);
-////			}
-//		}
-//		if (!bla && getRateParameter(6) * x[3] > 1000) {
-//			overrideReactionType(4, ReactionType.DETERMINISTIC);
-//			overrideReactionType(6, ReactionType.DETERMINISTIC);
-//		}
-
-		// Scale copy numbers with new species scale factors.
-		// Unscaled species will be rounded to the nearest integer value and negative values will be adjustet to 0
+		// Round unscaled species copy numbers to the nearest integer value and adjust negative values to 0
 		for (int s=0; s < getNumberOfSpecies(); s++) {
-			x[s] *= getInverseSpeciesScaleFactor(s);
-			if (getAlpha(s) == 0.0)
+			if (getSpeciesType(s) == SpeciesType.DISCRETE)
 				x[s] = FastMath.round(x[s]);
 			if (x[s] < 0.0)
 				x[s] = 0.0;
 		}
 
-//		System.out.println("Adapting");
+		if (printMessages)
+			Utilities.printArray(" alpha=", getAlpha());
+
+		double[] speciesTimescales = new double[getNumberOfSpecies()];
+		if (printMessages)
+			System.out.println(" Species timescales:");
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			double v = 0.0;
+			for (int r=0; r < getNumberOfReactions(); r++)
+				if (getStochiometry(s, r) != 0) {
+					int[] choiceIndices = getChoiceIndices(r);
+					double q = 1.0;
+					for (int i=0; i < choiceIndices.length; i++)
+						if (x[choiceIndices[i]] > 0.0)
+							q *= x[choiceIndices[i]];
+//						q *= FastMath.pow(getN(), getAlpha(choiceIndices[i]));
+					q *= getRateParameter(r);
+					v += q * FastMath.abs(getStochiometry(s, r));
+//					v += q * getRateParameter(r);
+//					v += FastMath.pow(getN(), getBeta(r));
+				}
+//			v = FastMath.abs(v);
+			double q = 1.0;
+			if (x[s] > 0.0)
+				q = x[s];
+			speciesTimescales[s] = q / v;
+//			double tmp = FastMath.pow(getN(), getAlpha(s)) / v;
+			if (printMessages)
+				System.out.println("  " + s + ": " + speciesTimescales[s]);
+		}
+
+		boolean performAveraging = true;
+
+		if (performAveraging) {
+			Set<SpeciesVertex> speciesToAverage = findSpeciesToAverage(speciesTimescales);
+			if (printMessages)
+				Utilities.printCollection(" Species to average", speciesToAverage);
+			for (SpeciesVertex vertex : speciesToAverage) {
+				overrideSpeciesType(vertex.getSpecies(), SpeciesType.CONTINUOUS);
+				for (int reaction : getInvolvedReactions(vertex.getSpecies())) {
+					overrideReactionType(reaction, ReactionType.DETERMINISTIC);
+				}
+			}
+		}
+
+		// Scale copy numbers with new species scale factors.
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			x[s] *= getInverseSpeciesScaleFactor(s);
+		}
 
 		if (propensities != null) {
 
@@ -309,33 +325,27 @@ edgeLoop:
 						deterministicPropensitySum += propensities[r];
 				}
 			}
-	
-//			int cnt = 0;
-//			for (int r=0; r < getNumberOfReactions(); r++) {
-//				ReactionType rt = getReactionType(r);
-//				if (rt == ReactionType.DETERMINISTIC)
-//					cnt++;
-//			}
-//			System.out.println("Deterministic reactions: " + cnt);
-//			System.out.println("Stochastic propensities:");
-//			for (int r=0; r < getNumberOfReactions(); r++) {
-//				ReactionType rt = getReactionType(r);
-//				if (rt == ReactionType.STOCHASTIC)
-//					System.out.println(" " + r + ": " + propensities[r]);
-//			}
-//			System.out.println("Deterministic propensities:");
-//			for (int r=0; r < getNumberOfReactions(); r++) {
-//				ReactionType rt = getReactionType(r);
-//				if (rt == ReactionType.DETERMINISTIC)
-//					System.out.println(" " + r + ": " + propensities[r]);
-//			}
-	
-	//		double stochasticAvgWaitingTime = Double.POSITIVE_INFINITY;
-	//		double deterministicAvgWaitingTime = Double.POSITIVE_INFINITY;
-	//		if (stochasticAvgWaitingTime > 0.0)
-	//			stochasticAvgWaitingTime = 1 / stochasticPropensitySum;
-	//		if (deterministicAvgWaitingTime > 0.0)
-	//			deterministicAvgWaitingTime = 1 / deterministicPropensitySum;
+
+			if (printMessages) {
+				int cnt = 0;
+				for (int r=0; r < getNumberOfReactions(); r++) {
+					ReactionType rt = getReactionType(r);
+					if (rt == ReactionType.DETERMINISTIC)
+						cnt++;
+				}
+				System.out.println(" Stochastic propensities (" + (getNumberOfReactions() - cnt) + ")");
+				for (int r=0; r < getNumberOfReactions(); r++) {
+					ReactionType rt = getReactionType(r);
+					if (rt == ReactionType.STOCHASTIC)
+						System.out.println("  " + r + ": " + propensities[r]);
+				}
+				System.out.println(" Deterministic propensities (" + cnt + "):");
+				for (int r=0; r < getNumberOfReactions(); r++) {
+					ReactionType rt = getReactionType(r);
+					if (rt == ReactionType.DETERMINISTIC)
+						System.out.println("  " + r + ": " + propensities[r]);
+				}
+			}
 
 			// If the timescale-separation between stochastic and deterministic reactions is too small
 			// treat all reactions as stochastic
@@ -346,22 +356,19 @@ edgeLoop:
 				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
 				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
 				overrideReactionTypes(reactionTypes);
-				System.out.println("Overriding reaction types");
+				if (printMessages)
+					System.out.println(" Overriding reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + "<" + getTheta());
 			}
-//			else
-//				System.out.println("Keeping reaction types");
-
-//			System.out.println("Deterministic propensity sum: " + deterministicPropensitySum + ", stochastic propensity sum: " + stochasticPropensitySum + ", stochastic to deterministic waiting time: " + stochasticToDeterministicAvgWaitingTimeRatio);
-
+			else
+				if (printMessages)
+					System.out.println(" Keeping reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + getTheta());
 		}
-
-//		for (int r=0; r < getNumberOfReactions(); r++)
-//			overrideReactionType(r, ReactionType.DETERMINISTIC);
 
 	}
 
 	// Solve a linear program to find alpha and beta
 	private void findOptimalScaling(double[] x) {
+		final double boundTolerance = 1e-3;
 		// We only optimize for alpha_i which are allowed to be > 0
 		boolean[] nonZeroAlphaMask = new boolean[getNumberOfSpecies()];
 		int[] nonZeroAlphaIndex = new int[getNumberOfSpecies()];
@@ -370,13 +377,19 @@ edgeLoop:
 		double[] maxBeta = new double[getNumberOfReactions()];
 		for (int s=0; s < getNumberOfSpecies(); s++) {
 			double a;
-			if (x[s] < FastMath.pow(getN(), getXi())) {
+			// TODO: Think about whether this is really OK
+//			if (x[s] < FastMath.pow(getN(), getXi())) {
+			if (x[s] <= 1.0)
 				a = 0.0;
+			else
+				// TODO: Use (+ 1) or not?
+				a = FastMath.log(x[s]) / FastMath.log(getN());
+			if (a < boundTolerance)
+				a = 0.0;
+			if (a == 0.0) {
 				nonZeroAlphaMask[s] = false;
 				nonZeroAlphaIndex[s] = -1;
 			} else {
-				// TODO: Use (+ 1) or not?
-				a = FastMath.log(x[s]) / FastMath.log(getN());
 				nonZeroAlphaMask[s] = true;
 				nonZeroAlphaIndex[s] = numOfNonZeroAlphas;
 				numOfNonZeroAlphas++;
@@ -390,6 +403,8 @@ edgeLoop:
 		for (int r=0; r < getNumberOfReactions(); r++) {
 			// TODO: Use (+ 1) or not
 			double b = FastMath.log(getRateParameter(r)) / FastMath.log(getN());
+			if (b < boundTolerance)
+				b = 0.0;
 			maxBeta[r] = b;
 		}
 
@@ -461,25 +476,25 @@ edgeLoop:
 //			initialGuess[maxAlphaNZ.length + r] = FastMath.min(maxBeta[r], v) - 1.0;
 //		}
 //		InitialGuess ig = new InitialGuess(initialGuess);
-		int i = 0;
-		for (int s=0; s < getNumberOfSpecies(); s++)
-			if (nonZeroAlphaMask[s]) {
-				qVector[i] = getAlpha(s);
-				i++;
-			}
-		for (int r=0; r < getNumberOfReactions(); r++)
-			qVector[r + i] = getBeta(r);
-		InitialGuess ig = new InitialGuess(qVector);
+//		int i = 0;
+//		for (int s=0; s < getNumberOfSpecies(); s++)
+//			if (nonZeroAlphaMask[s]) {
+//				qVector[i] = getAlpha(s);
+//				i++;
+//			}
+//		for (int r=0; r < getNumberOfReactions(); r++)
+//			qVector[r + i] = getBeta(r);
+//		InitialGuess ig = new InitialGuess(qVector);
 
 		// Run optimization
 		SimplexSolver solver = new SimplexSolver();
-		PointValuePair pv = solver.optimize(objectiveFunction, constraints, GoalType.MAXIMIZE, ig);
-//		PointValuePair pv = solver.optimize(objectiveFunction, constraints, GoalType.MAXIMIZE);
+//		PointValuePair pv = solver.optimize(objectiveFunction, constraints, GoalType.MAXIMIZE, ig);
+		PointValuePair pv = solver.optimize(objectiveFunction, constraints, GoalType.MAXIMIZE);
 		double[] solution = pv.getPointRef();
 
 		// Extract alpha and beta values from the solution vector
 		for (int s=0; s < getNumberOfSpecies(); s++)
-			if (nonZeroAlphaMask[s])
+			if (nonZeroAlphaMask[s] && x[s] >= FastMath.pow(getN(), getXi()))
 				setAlphaUnchecked(s, solution[nonZeroAlphaIndex[s]]);
 			else
 				setAlphaUnchecked(s, 0.0);
@@ -491,103 +506,5 @@ edgeLoop:
 //		updateRateScaleFactors();
 		invalidateReactionTermTypes();
 	}
-
-//	// Solve a linear program to find alpha and beta
-//	private void findOptimalScalingFixedBeta(double[] x) {
-//		// We only optimize for alpha_i which are allowed to be > 0
-//		boolean[] nonZeroAlphaMask = new boolean[getNumberOfSpecies()];
-//		int[] nonZeroAlphaIndex = new int[getNumberOfSpecies()];
-//		int numOfNonZeroAlphas = 0;
-//		double[] maxAlpha = new double[getNumberOfSpecies()];
-//		for (int s=0; s < getNumberOfSpecies(); s++) {
-//			double a;
-//			if (x[s] < FastMath.pow(getN(), getXi())) {
-//				a = 0.0;
-//				nonZeroAlphaMask[s] = false;
-//				nonZeroAlphaIndex[s] = -1;
-//			} else {
-//				// TODO: Use (+ 1) or not?
-//				a = FastMath.log(x[s]) / FastMath.log(getN());
-//				nonZeroAlphaMask[s] = true;
-//				nonZeroAlphaIndex[s] = numOfNonZeroAlphas;
-//				numOfNonZeroAlphas++;
-//			}
-//			maxAlpha[s] = a;
-//		}
-//		double[] maxAlphaNZ = new double[numOfNonZeroAlphas];
-//		for (int s=0; s < maxAlpha.length; s++)
-//			if (nonZeroAlphaMask[s])
-//				maxAlphaNZ[nonZeroAlphaIndex[s]] = maxAlpha[s];
-//		for (int r=0; r < getNumberOfReactions(); r++) {
-//			double b = FastMath.log(getRateParameter(r)) / FastMath.log(getN());
-//			setBeta(r, b);
-//		}
-//
-//		// Define linear objective function
-//		double[] qVector = new double[maxAlphaNZ.length];
-//		for (int s=0; s < maxAlphaNZ.length; s++)
-//			qVector[s] = 1 / maxAlphaNZ[s];
-//		LinearObjectiveFunction objectiveFunction = new LinearObjectiveFunction(qVector, 0.0);
-//
-//		// Define linear constraints
-//		LinkedList<LinearConstraint> constraintList = new LinkedList<LinearConstraint>();
-//		for (int i=0; i < qVector.length; i++)
-//			qVector[i] = 0.0;
-//		for (int s=0; s < maxAlphaNZ.length; s++) {
-//			qVector[s] = 1.0;
-//			constraintList.add(new LinearConstraint(qVector, Relationship.GEQ, 0.0));
-//			constraintList.add(new LinearConstraint(qVector, Relationship.LEQ, maxAlphaNZ[s]));
-//			qVector[s] = 0.0;
-//		}
-//		for (int r=0; r < getNumberOfReactions(); r++) {
-//			int[] choiceIndices = getChoiceIndices(r);
-//			for (int choiceIndex : choiceIndices)
-//				if (choiceIndex >= 0)
-//					if (nonZeroAlphaMask[choiceIndex])
-//						qVector[nonZeroAlphaIndex[choiceIndex]] += 1.0;
-//			for (int s=0; s < getNumberOfSpecies(); s++) {
-//				if (getStochiometry(s, r) != 0) {
-//					if (nonZeroAlphaMask[s]) {
-//						qVector[nonZeroAlphaIndex[s]] -= 1.0;
-//						constraintList.add(new LinearConstraint(qVector, Relationship.LEQ, -getGamma() - getBeta(r)));
-//						qVector[nonZeroAlphaIndex[s]] += 1.0;
-//					} else {
-//						constraintList.add(new LinearConstraint(qVector, Relationship.LEQ, -getGamma() - getBeta(r)));
-//					}
-//				}
-//			}
-//			for (int choiceIndex : choiceIndices)
-//				if (choiceIndex >= 0)
-//					if (nonZeroAlphaMask[choiceIndex])
-//						qVector[nonZeroAlphaIndex[choiceIndex]] -= 1.0;
-//		}
-//		LinearConstraintSet constraints = new LinearConstraintSet(constraintList);
-//
-////		int i = 0;
-////		for (int s=0; s < getNumberOfSpecies(); s++)
-////			if (nonZeroAlphaMask[s]) {
-////				qVector[i] = getAlpha(s);
-////				i++;
-////			}
-////		InitialGuess ig = new InitialGuess(qVector);
-//
-//		// Run optimization
-//		SimplexSolver solver = new SimplexSolver();
-////		PointValuePair pv = solver.optimize(objectiveFunction, constraints, GoalType.MAXIMIZE, ig);
-//		PointValuePair pv = solver.optimize(objectiveFunction, constraints, GoalType.MAXIMIZE);
-//		double[] solution = pv.getPointRef();
-//
-//		// Extract alpha and beta values from the solution vector
-//		for (int s=0; s < getNumberOfSpecies(); s++)
-//			if (nonZeroAlphaMask[s])
-//				setAlphaUnchecked(s, solution[nonZeroAlphaIndex[s]]);
-//			else
-//				setAlphaUnchecked(s, 0.0);
-//
-//		// Make sure that the internal state of the object is not violated
-//		updateSpeciesScaleFactors();
-////		updateRateScaleFactors();
-//		invalidateReactionTermTypes();
-//	}
 
 }

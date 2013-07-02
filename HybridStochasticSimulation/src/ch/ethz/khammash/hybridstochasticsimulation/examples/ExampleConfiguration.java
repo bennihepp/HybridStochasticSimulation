@@ -20,7 +20,8 @@ public class ExampleConfiguration {
 	public double[] x0;
 	public double[] plotScales;
 	public String[] speciesNames;
-	public int[] deterministicReactions = { };
+	public int[] importantSpecies = {};
+	public int[] deterministicReactions = {};
 	public double epsilon = 0.1;
 	public double delta = 0.5;
 	public double xi = 0.5;

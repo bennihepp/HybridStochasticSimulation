@@ -25,9 +25,9 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //  R1:  Pa_A   -> Pa_A   + mRNA_a     [500.0]
 //  R2:  Pr     -> Pr     + mRNA_r     [0.01]
 //  R3:  Pr_A   -> Pr_A   + mRNA_r     [50.0]
-//  R4:  mRNA_a -> mRNA_a + A        * [50.0]
+//  R4:  mRNA_a -> mRNA_a + A          [50.0]
 //  R5:  mRNA_r -> mRNA_r + R          [5.0]
-//  R6:  A + R  -> A_R               * [20.0]
+//  R6:  A + R  -> A_R                 [20.0]
 //  R7:  A + Pa -> Pa_A                [1.0]
 //  R8:  Pa_A   -> A      + Pa         [50.0]
 //  R9:  A + Pr -> Pr_A                [1.0]
@@ -36,11 +36,15 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //  R12: R      -> ~                   [0.2]
 //  R13: mRNA_a -> ~                   [10.0]
 //  R14: mRNA_r -> ~                   [0.5]
-//  R15: A_R    -> R                 * [1.0]
+//  R15: A_R    -> R                   [1.0]
 
 public class VilarOscillator extends ExampleConfiguration {
 
 	public VilarOscillator() {
+		this(false);
+	}
+
+	public VilarOscillator(boolean modifiedParameters) {
 
 //		int i_A = 0;
 //		int i_A_R = 1;
@@ -83,52 +87,42 @@ public class VilarOscillator extends ExampleConfiguration {
 		x0[i_Pr] = 1;
 
 		double[] rateParameters = new double[productionStochiometries[0].length];
-		double[] params = new double[16];
 		// Original parameters
-		params[0] = 50.0;
-		params[1] = 0.01;
-		params[2] = 50.0;
-		params[3] = 5.0;
-		params[4] = 20.0;
-		params[5] = 1.0;
-		params[6] = 50.0;
-		params[7] = 1.0;
-		params[8] = 100.0;
-		params[9] = 1.0;
-		params[10] = 0.20;
-		params[11] = 10.0;
-		params[12] = 0.5;
-		params[13] = 1.0;
-		params[14] = 10.0;
-		params[15] = 5000.0;
+		double alphaA = 50.0;
+		double alphaR = 0.01;
+		double betaA = 50.0;
+		double betaR = 5.0;
+		double gammaC = 20.0;
+		double gammaA = 1.0;
+		double thetaA = 50.0;
+		double gammaR = 1.0;
+		double thetaR = 100.0;
+		double deltaA = 1.0;
+		double deltaR = 0.20;
+		double deltaMA = 10.0;
+		double deltaMR = 0.5;
+		double delta_C = 1.0;
+		double alpha_a = 10.0;
+		double alpha_r = 5000.0;
 		// Modified parameters
-//		params[0] = 2 * params[0];
-//		params[2] = 2 * params[2];
-//		params[2] = 10 * params[2];
-//		params[4] = 0.0001 * params[4];
-////		params[3] = 10 * params[3];
-////		params[7] = 0.5 * params[7];
-////		params[8] = 10 * params[8];
-////		params[9] = 0.01 * params[9];
-
-		/* Parameters */
-		double alphaA = params[0];
-		double alphaR = params[1];
-		double betaA = params[2];
-		double betaR = params[3];
-		double gammaC = params[4];
-		double gammaA = params[5];
-		double thetaA = params[6];
-		double gammaR = params[7];
-		double thetaR = params[8];
-		double deltaA = params[9];
-		double deltaR = params[10];
-		double deltaMA = params[11];
-		double deltaMR = params[12];
-		double delta_C = params[13];
-		double alpha_a = params[14];
-		double alpha_r = params[15];
-		/* Reaction propensities */
+		if (modifiedParameters) {
+			alpha_r = 50;
+			gammaC = 0.2;
+			alphaA *= 10.0;
+			alphaR *= 10.0;
+//			deltaMA *= 10.0;
+//			deltaMR *= 10.0;
+//	
+//	//		alphaA = 5.0;
+//	//		alpha_a = 100.0;
+//	//		deltaMA = 1.0;
+//			betaA = 100.0;
+//			gammaR = 0.1;
+//			delta_C = 0.1;
+//	//		gammaR = 0.1;
+//	//		thetaR = 10.0;
+		}
+		// Reaction propensities
 		rateParameters[0] = alphaA;            // 50.0
 		rateParameters[1] = alpha_a * alphaA;  // 500.0
 		rateParameters[2] = alphaR;            // 0.01
@@ -152,6 +146,7 @@ public class VilarOscillator extends ExampleConfiguration {
 		double gamma = 0;
 		double[] alpha = new double[x0.length];
 		double[] beta = new double[rateParameters.length];
+//		int[] importantSpecies = { 0 };
 
 		productionStochiometries = transpose(productionStochiometries);
 		consumptionStochiometries = transpose(consumptionStochiometries);
@@ -177,6 +172,7 @@ public class VilarOscillator extends ExampleConfiguration {
 		this.gamma = gamma;
 		this.alpha = alpha;
 		this.beta = beta;
+//		this.importantSpecies = importantSpecies;
 		this.t0 = t0;
 		this.t1 = t1;
 		this.x0 = x0;

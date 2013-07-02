@@ -13,6 +13,8 @@ import org.apache.commons.math3.ode.nonstiff.EulerIntegrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 
+import com.google.common.primitives.Doubles;
+
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.StochasticSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfiguration;
@@ -45,6 +47,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFinitePlot
 import ch.ethz.khammash.ode.cvode.CVodeSolver;
 import ch.ethz.khammash.ode.lsodar.LsodarDirectSolver;
 import ch.ethz.khammash.ode.nonstiff.AdaptiveEulerSolver;
+import ch.ethz.khammash.ode.nonstiff.AdaptiveRungeKutta4thOrderSolver;
 import ch.ethz.khammash.ode.nonstiff.EulerSolver;
 import ch.ethz.khammash.ode.nonstiff.RungeKutta4thOrderSolver;
 
@@ -224,7 +227,7 @@ public class SimulationUtilities {
 	}
 
 	public static List<VectorFinitePlotData> simulateAdaptiveMSPDMPCommonsMath(ExampleConfiguration nss, double[] tSeries, boolean printMessages, boolean completeTrajectory) {
-		AdaptiveMSHRN hrn = new AdaptiveMSHRN(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		AdaptiveMSHRN hrn = new AdaptiveMSHRN(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta, nss.importantSpecies);
 		hrn.setDelta(nss.delta);
 		hrn.setEpsilon(nss.epsilon);
 		hrn.setXi(nss.xi);
@@ -319,7 +322,7 @@ public class SimulationUtilities {
 	}
 
 	public static List<VectorFinitePlotData> simulateAdaptiveMSPDMP(ExampleConfiguration nss, double[] tSeries, boolean printMessages, boolean completeTrajectory) {
-		AdaptiveMSHRN hrn = new AdaptiveMSHRN(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		AdaptiveMSHRN hrn = new AdaptiveMSHRN(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta, nss.importantSpecies);
 		hrn.setDelta(nss.delta);
 		hrn.setEpsilon(nss.epsilon);
 		hrn.setXi(nss.xi);
@@ -337,7 +340,7 @@ public class SimulationUtilities {
 				@Override
 				public Simulator<AdaptiveMSHRNModel, ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>> createSimulator(
 						RandomDataGenerator rdg) {
-					CVodeSolver solver = new CVodeSolver(1e-3, 1e-3);
+					CVodeSolver solver = new CVodeSolver(1e-2, 1e-2);
 //					solver.setMinStep(1e-3);
 //					solver.setMaxStep(1e-3);
 //					solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);
@@ -347,8 +350,8 @@ public class SimulationUtilities {
 //					solver.setAbsoluteTolerance(1e-1);
 //					solver.setRelativeTolerance(1e-1);
 //					ImplicitEulerSolver solver = new ImplicitEulerSolver(1e-4, 1e-4, 1e-4, 1e-4);
-//					AdaptiveEulerSolver solver = new AdaptiveEulerSolver(1e-3, 1e-2, 1e-2, 1e-2);
-//					EulerSolver solver = new EulerSolver(1e-3);
+//					AdaptiveEulerSolver solver = new AdaptiveEulerSolver(1e-3, 1e-8, 1e-8, 1e-4);
+//					EulerSolver solver = new EulerSolver(1e-4);
 //					RungeKutta4thOrderSolver solver = new RungeKutta4thOrderSolver(1e-3);
 //					AdaptiveRungeKutta4thOrderSolver solver = new AdaptiveRungeKutta4thOrderSolver(1e-8, 1e-8);
 					return new PDMPSimulator<AdaptiveMSHRNModel>(solver, rdg);
@@ -381,15 +384,18 @@ public class SimulationUtilities {
 		String[] alphaNames = new String[hrn.getNumberOfSpecies()];
 		String[] rhoNames = new String[hrn.getNumberOfReactions()];
 		String[] betaNames = new String[hrn.getNumberOfReactions()];
+		String[] stNames = new String[hrn.getNumberOfSpecies()];
 		String[] rttNames = new String[hrn.getNumberOfReactions()];
 		String[] scaledNames = new String[hrn.getNumberOfSpecies()];
-		String[] integratorNames = { "Integrating", "Counter" };
+		String[] integratorNames = { "IntState", "IntCount", "ReactionCount" };
 		for (int s=0; s < alphaNames.length; s++)
-			alphaNames[s] = "alpha"+nss.speciesNames[s];
+			alphaNames[s] = "a_"+nss.speciesNames[s];
 		for (int r=0; r < rhoNames.length; r++)
 			rhoNames[r] = "rho"+r;
 		for (int r=0; r < betaNames.length; r++)
 			betaNames[r] = "beta"+r;
+		for (int s=0; s < stNames.length; s++)
+			stNames[s] = "st_"+nss.speciesNames[s];
 		for (int r=0; r < rttNames.length; r++)
 			rttNames[r] = "rtt"+r;
 		for (int s=0; s < scaledNames.length; s++)
@@ -410,6 +416,9 @@ public class SimulationUtilities {
 			pd = new VectorFinitePlotData(tSeries, completeTr.getBetaTrajectory().getxSeries());
 			pd.setStateNames(betaNames);
 			result.add(pd);
+			pd = new VectorFinitePlotData(tSeries, completeTr.getStTrajectory().getxSeries());
+			pd.setStateNames(stNames);
+			result.add(pd);
 			pd = new VectorFinitePlotData(tSeries, completeTr.getRttTrajectory().getxSeries());
 			pd.setStateNames(rttNames);
 			result.add(pd);
@@ -417,6 +426,10 @@ public class SimulationUtilities {
 			pd.setStateNames(scaledNames);
 			result.add(pd);
 			pd = new VectorFinitePlotData(tSeries, completeTr.getIntegratorTrajectory().getxSeries());
+			double integratorCounterMax = -Doubles.min(completeTr.getIntegratorTrajectory().getxSeries()[1]);
+			double reactionCounterMax = -Doubles.min(completeTr.getIntegratorTrajectory().getxSeries()[2]);
+			pd.setPlotScale(0, 0.1 * integratorCounterMax);
+			pd.setPlotScale(2, integratorCounterMax / reactionCounterMax);
 			pd.setStateNames(integratorNames);
 			result.add(pd);
 		}
@@ -825,7 +838,7 @@ public class SimulationUtilities {
 
 	public static VectorFiniteDistributionPlotData simulateAdaptiveMSPDMPDistributionCommonsMath(int runs, final ExampleConfiguration nss,
 			final double[] tSeries, boolean printMessages) {
-		final AdaptiveMSHRN hrn = new AdaptiveMSHRN(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		final AdaptiveMSHRN hrn = new AdaptiveMSHRN(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta, nss.importantSpecies);
 		hrn.setDelta(nss.delta);
 		hrn.setEpsilon(nss.epsilon);
 		hrn.setXi(nss.xi);
@@ -899,7 +912,7 @@ public class SimulationUtilities {
 
 	public static VectorFiniteDistributionPlotData simulateAdaptiveMSPDMPDistribution(int runs, final ExampleConfiguration nss,
 			final double[] tSeries, boolean printMessages) {
-		final AdaptiveMSHRN hrn = new AdaptiveMSHRN(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		final AdaptiveMSHRN hrn = new AdaptiveMSHRN(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta, nss.importantSpecies);
 		hrn.setDelta(nss.delta);
 		hrn.setEpsilon(nss.epsilon);
 		hrn.setXi(nss.xi);
@@ -923,19 +936,19 @@ public class SimulationUtilities {
 				@Override
 				public Simulator<AdaptiveMSHRNModel, ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>> createSimulator(
 						RandomDataGenerator rdg) {
-//					CVodeSolver solver = new CVodeSolver(1e-3, 1e-3);
+//					CVodeSolver solver = new CVodeSolver(1e-2, 1e-2);
 //					solver.setMinStep(1e-3);
 //					solver.setMaxStep(1e-3);
 //					solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);
 //					solver.setIterationType(CVodeSolver.ITERATIONTYPE_FUNCTIONAL);
 //					solver.setMaxNumOfSteps(5000);
 //					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
-//					solver.setAbsoluteTolerance(1e-1);
-//					solver.setRelativeTolerance(1e-1);
+//					solver.setAbsoluteTolerance(1e-2);
+//					solver.setRelativeTolerance(1e-2);
 //					ImplicitEulerSolver solver = new ImplicitEulerSolver(1e-4, 1e-4, 1e-4, 1e-4);
-//					AdaptiveEulerSolver solver = new AdaptiveEulerSolver(1e-4, 1e-4, 1e-3, 1e-4);
+//					AdaptiveEulerSolver solver = new AdaptiveEulerSolver(1e-4, 1e-1, 1e-1, 1e-4);
 					EulerSolver solver = new EulerSolver(1e-2);
-//					RungeKutta4thOrderSolver solver = new RungeKutta4thOrderSolver(1e-2);
+//					RungeKutta4thOrderSolver solver = new RungeKutta4thOrderSolver(1e-1);
 //					AdaptiveRungeKutta4thOrderSolver solver = new AdaptiveRungeKutta4thOrderSolver(1e-8, 1e-8);
 					return new PDMPSimulator<AdaptiveMSHRNModel>(solver, rdg);
 				}

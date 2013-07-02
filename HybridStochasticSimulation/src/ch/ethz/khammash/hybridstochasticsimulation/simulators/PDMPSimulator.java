@@ -53,10 +53,13 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 		trajectoryRecorders = new LinkedList<FiniteTrajectoryRecorder<T>>();
 	}
 
-	public int isIntegrating = 0;
-	public int integratorCounter = 0;
+	public int isIntegrating;
+	public int integratorCounter;
+	public int reactionCounter;
 
 	public double simulate(T model, final double t0, final double[] x0, double t1, double[] x1) {
+		rdg = new RandomDataGenerator();
+		rdg.reSeed(102L);
 		boolean showProgress = false;
 		double t = t0;
 		for (FiniteTrajectoryRecorder<T> tr : trajectoryRecorders) {
@@ -85,12 +88,12 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 		double[] xDot = x.clone();
     	model.initialize(t, x);
 		double[] propVec = new double[rnm.getNumberOfReactions()];
-    	long reactionCounter = 0;
     	double[] reactionCounterArray = new double[model.getNumberOfReactions()];
     	double msgDt = (t1 - t0) / 20.0;
     	double nextMsgT = t0 + msgDt;
     	int j = 0;
     	integratorCounter = 0;
+    	reactionCounter = 0;
     	isIntegrating = 0;
 		synchronized (solver) {
 			solver.initialize(ode, eventObserver, stateObserver, eventObserver);
@@ -180,8 +183,10 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 		        	reactionCounterArray[reaction]++;
 		        	stateObserver.report(t, x);
 		        	// TODO: Should this also be coupled to N?
-		        	if (j > 100)
+		        	if (j > 100) {
 		        		model.checkAndHandleOptionalEvent(t, x);
+		        		j = 0;
+		        	}
 		        	j++;
 		        }
 			}

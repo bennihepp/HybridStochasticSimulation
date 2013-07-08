@@ -1,10 +1,12 @@
 inputfilepath = 'data/';
 inputfilename = 'heatShockResponse_distribution_set2';
+inputfilename = '../../simulation';
 outputfilepath = 'plots/';
 outputfilename = inputfilename;
 useTransparency = true;
 drawStdDevOutlines = false;
 linkAxes = false;
+writeOutput = false;
 
 S = load([inputfilepath, inputfilename,'.mat'], 'plots', 'rows', 'cols');
 
@@ -27,9 +29,9 @@ axArr = [];
 rows = S.rows;
 cols = S.cols;
 plotIndices = 1:length(S.plots);
-rows = 2;
-cols = 1;
-plotIndices = [1,10];
+%rows = 2;
+%cols = 1;
+%plotIndices = [1,10];
 l = 1;
 for i=plotIndices
     plt = S.plots(i);
@@ -110,9 +112,9 @@ for i=plotIndices
     end
     l = l + 1;
 end
-for i=1:1
-    linkaxes([axArr(i),axArr(1+i)],'y');
-end
+%for i=1:1
+%    linkaxes([axArr(i),axArr(1+i)],'y');
+%end
 if linkAxes
     for i=plotIndices
         subplot(rows, cols, i);
@@ -121,17 +123,19 @@ if linkAxes
     end
 end
 
-%opts = struct('width', 7, 'height', 7, 'Resolution', 600, 'Color', 'CMYK');
-% 11.7 x 8.3
-%opts = struct('Resolution', 600, 'Color', 'CMYK');
-%exportfig(gcf, [outputfilepath, outputfilename, '.eps'], opts);
-%exportfig(gcf, [outputfilepath, outputfilename, '.pdf'], opts);
+if writeOutput
+    %opts = struct('width', 7, 'height', 7, 'Resolution', 600, 'Color', 'CMYK');
+    % 11.7 x 8.3
+    %opts = struct('Resolution', 600, 'Color', 'CMYK');
+    %exportfig(gcf, [outputfilepath, outputfilename, '.eps'], opts);
+    %exportfig(gcf, [outputfilepath, outputfilename, '.pdf'], opts);
 
-saveas(gcf(), [outputfilepath, outputfilename, '.fig'], 'fig');
-print(gcf(), [outputfilepath, outputfilename, '.pdf'], '-dpdf', '-r600', '-cmyk', '-painters');
-print(gcf(), [outputfilepath, outputfilename, '.eps'], '-depsc2', '-r600', '-cmyk', '-painters');
-% matfig2pgf('filename', [outputfilepath, outputfilename, '.pgf'], 'figwidth', paperSize(1));
-matlab2tikz('filename', [outputfilepath, outputfilename, '.tikz'], ...
-            'checkForUpdates', false, 'showInfo', false);
-%             'width', [int2str(round(paperSize(1))), 'cm']
-%             'standalone', true
+    saveas(gcf(), [outputfilepath, outputfilename, '.fig'], 'fig');
+    print(gcf(), [outputfilepath, outputfilename, '.pdf'], '-dpdf', '-r600', '-cmyk', '-painters');
+    print(gcf(), [outputfilepath, outputfilename, '.eps'], '-depsc2', '-r600', '-cmyk', '-painters');
+    % matfig2pgf('filename', [outputfilepath, outputfilename, '.pgf'], 'figwidth', paperSize(1));
+    matlab2tikz('filename', [outputfilepath, outputfilename, '.tikz'], ...
+                'checkForUpdates', false, 'showInfo', false);
+    %             'width', [int2str(round(paperSize(1))), 'cm']
+    %             'standalone', true
+end

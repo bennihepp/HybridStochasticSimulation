@@ -18,5 +18,5 @@ export LD_LIBRARY_PATH=../JavaOde/jni/lib
 #echo "$CLASSPATH"
 #echo "$LD_LIBRARY_PATH"
 
-java ch.ethz.khammash.hybridstochasticsimulation.Console
+mpjrun.sh -np $1 -cp $CLASSPATH ch.ethz.khammash.hybridstochasticsimulation.MPIMain
 

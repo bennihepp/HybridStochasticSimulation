@@ -188,7 +188,6 @@ public class CVodeSolver implements Solver {
 	public double integrate() {
     	if (initialized) {
     		double t = timepointProvider.getCurrentTimepoint();
-    		double tNext = timepointProvider.getNextTimepoint();
 			stateObserver.report(t, x);
 
 //			// Crude root-finding
@@ -206,7 +205,8 @@ public class CVodeSolver implements Solver {
 //    		double t = timepointProvider.getCurrentTimepoint();
 //    		while (timepointProvider.hasNextTimepoint()) {
 //    			double tNext = timepointProvider.getNextTimepoint();
-    		while (true) {
+    		do {
+        		double tNext = timepointProvider.getNextTimepoint();
 //        		System.out.println("t="+t+", tNext="+tNext);
 				t = jni_integrate(jni_pointer, tNext);
         		xBuffer.position(0);
@@ -228,14 +228,11 @@ public class CVodeSolver implements Solver {
             			resetEventOccuredFlags();
             			return t;
             		} else
-            			throw new RuntimeException("Integration of ODE failed");
-        		if (t == tNext)
-        			stateObserver.report(t, x);
-        		if (timepointProvider.hasNextTimepoint())
-        			tNext = timepointProvider.getNextTimepoint();
-        		else
-        			break;
-    		}
+            			throw new RuntimeException("Integration of ODE failed: t < tNext");
+        		if (t > tNext)
+        			throw new RuntimeException("Integration of ODE failed: t > tNext");
+    			stateObserver.report(t, x);
+    		} while (timepointProvider.hasNextTimepoint());
     		return t;
     	} else
     		throw new IllegalStateException("Solver has not yet been initialized");

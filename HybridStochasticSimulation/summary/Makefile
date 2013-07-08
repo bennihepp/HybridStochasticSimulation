@@ -1,0 +1,19 @@
+LYX = lyx
+TEX = pdflatex
+
+DOCUMENT = hybrid_stochastic_simulation_summary
+LYXDOCUMENT = $(DOCUMENT).lyx
+TEXDOCUMENT = $(DOCUMENT).tex
+TARGETDOCUMENT = $(DOCUMENT).pdf
+
+all: $(TARGETDOCUMENT)
+
+$(TARGETDOCUMENT): $(TEXDOCUMENT)
+	$(TEX) $(TEXDOCUMENT) -job-name=$(TARGETDOCUMENT)
+
+$(TEXDOCUMENT): $(LYXDOCUMENT)
+	$(LYX) --export pdflatex $(LYXDOCUMENT)
+
+clean:
+	rm -f $(TEXDOCUMENT) $(TARGETDOCUMENT)
+

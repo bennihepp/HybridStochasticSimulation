@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<configuration>
+	<networks>
+		<network name="fiAdaptiveNet" type="AdaptiveMSHRN">
+			<importantSpecies></importantSpecies>
+			<delta>1.0</delta>
+			<xi>1.0</xi>
+			<eta>0.5</eta>
+			<theta>10</theta>
+			<!--  <network name="fiMSNet" example="BacteriophageT7" type="MSHybridReactionNetwork" /> -->
+		<!-- <network name="fiNet" example="BacteriophageT7" type="DefaultUnaryBinaryReactionNetwork" /> -->
+			<network name="fiMSNet" type="MSHybridReactionNetwork">
+				<N>100.0</N>
+				<gamma>0.0</gamma>
+				<network name="fiNet" example="BacteriophageT7" type="DefaultUnaryBinaryReactionNetwork" />
+			</network>
+		</network>
+	</networks>
+	<models>
+		<model name="fiAdaptiveModel" network="fiAdaptiveNet" type="AdaptiveMSHRNModel" />
+		<model name="fiStochModel" network="fiNet" type="UnaryBinaryStochasticModel" />
+	</models>
+	<trajectoryRecorders>
+		<trajectoryRecorder name="trajRecorder" type="ArrayFiniteTrajectoryRecorder" numOfTimePoints="1001" />
+	</trajectoryRecorders>
+	<solvers>
+		<solver name="solv" type="CVodeSolver" relTolerance="1e-3" absTolerance="1e-3" />
+	</solvers>
+	<simulators>
+		<simulator name="stochSim" type="StochasticSimulator" />
+		<simulator name="adaptiveSim" type="PDMPSimulator" solver="solv" />
+	</simulators>
+	<simulationControllers>
+		<simulationController name="stochSimCtrl" type="StochasticSimulationController" simulator="stochSim" numOfThreads="4" />
+		<simulationController name="adaptiveSimCtrl" type="PDMPSimulationController" simulator="adaptiveSim" numOfThreads="4" />
+	</simulationControllers>
+	<simulations>
+		<simulation name="fiAdaptiveSim" type="trajectory" model="fiAdaptiveModel" simulationController="adaptiveSimCtrl" trajectoryRecorder="trajRecorder"
+					numOfTimePoints="1001" t0="0" t1="200" output="matOut" runs="2">
+			<x0> 1, 0, 0, 0 </x0>
+			<output>simulation.mat</output>
+		</simulation>
+		<simulation name="fiAdaptiveDistSim" type="distribution" model="fiAdaptiveModel" simulationController="adaptiveSimCtrl" trajectoryRecorder="trajRecorder"
+					numOfTimePoints="1001" t0="0" t1="200" output="matOut" runs="1000">
+			<x0> 1, 0, 0, 0 </x0>
+			<labels> tem, gen, struc, virus </labels>
+			<plotScales> 1.0, 1.0, 1.0, 1.0 </plotScales>
+		</simulation>
+		<!--
+		<simulation name="fiStochSim" type="distribution" model="fiStochModel" simulationController="stochSimCtrl" trajectoryRecorder="trajRecorder"
+					numOfTimePoints="1001" t0="0" t1="200" output="matOut" runs="100">
+			<x0> 1, 0, 0, 0 </x0>
+			<labels> tem, gen, struc, virus </labels>
+			<plotScales> 1.0, 1.0, 1.0, 1.0 </plotScales>
+		</simulation>
+		<simulation name="fiAdaptiveSim" type="trajectory" model="fiAdaptiveModel" simulationController="adaptiveSimCtrl" trajectoryRecorder="trajRecorder"
+					numOfTimePoints="1001" t0="0" t1="20000" output="matOut" runs="5">
+			<x0> 1200, 600, 0 </x0>
+			<output>simulation.mat</output>
+		</simulation>
+		<simulation name="fiStochSim" type="trajectory" model="fiStochModel" simulationController="stochSimCtrl" trajectoryRecorder="trajRecorder"
+					numOfTimePoints="1001" t0="0" t1="2000" output="matOut">
+			<x0> 1200, 600, 0 </x0>
+		</simulation>
+		-->
+	</simulations>
+	<outputs>
+		<output name="matOut" type="Matlab" overwrite="true" filename="matlab/data/simulationBacteriophageT7.mat" />
+	</outputs>
+</configuration>

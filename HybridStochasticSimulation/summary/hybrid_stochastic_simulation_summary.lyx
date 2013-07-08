@@ -6,6 +6,9 @@
 \begin_preamble
 \usepackage{amsthm}
 \usepackage{amsfonts}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \end_preamble
 \use_default_options true
 \maintain_unincluded_children false
@@ -68,6 +71,10 @@
 Summary for Hybrid Stochastic Simulation
 \end_layout
 
+\begin_layout Section
+Theory
+\end_layout
+
 \begin_layout Standard
 Here we summarize some thoretical results from the literature about Hybrid
  Stochastic Systems and approximation schemes for such systems.
@@ -88,7 +95,7 @@ key "kang2013separation"
 .
 \end_layout
 
-\begin_layout Section
+\begin_layout Subsection
 Description of a biochemical stochastic reaction network
 \end_layout
 
@@ -260,7 +267,7 @@ Additionally we partition the
 
 \end_layout
 
-\begin_layout Section
+\begin_layout Subsection
 Convergence of Markov Jump Processes to Piecewise Deterministic Markov Processes
 \end_layout
 
@@ -780,7 +787,7 @@ X(t) & \equiv\underset{N\rightarrow\infty}{\lim}X^{N}(t)=\left(\Psi_{C}(t),X_{D}
 
 \end_layout
 
-\begin_layout Section
+\begin_layout Subsection
 Averaging of some discrete variables
 \end_layout
 
@@ -1244,7 +1251,7 @@ end{theorem}
 
 \end_layout
 
-\begin_layout Section
+\begin_layout Subsection
 Multiscale approximations of stochastic reaction networks
 \end_layout
 
@@ -1802,7 +1809,7 @@ key "kang2013separation"
  for a more elaborate discussion.
 \end_layout
 
-\begin_layout Section
+\begin_layout Subsection
 Constraints for selection of the scaling parameters
 \end_layout
 
@@ -3646,7 +3653,7 @@ for
 
 \end_layout
 
-\begin_layout Section
+\begin_layout Subsection
 Combination of convergence results and multiscale parametrization
 \end_layout
 
@@ -3752,6 +3759,690 @@ reference "theo:theorem_convergence_averaging"
 
  to derive the PDMP that corresponds to the limiting process of the multiscale
  network.
+\end_layout
+
+\begin_layout Section
+Implementation
+\end_layout
+
+\begin_layout Standard
+Here we summarize how the adaptive multiscale network is implemented as
+ a PDMP, how to simulate the PDMP and then go into more details about the
+ steps of the adaptation.
+\end_layout
+
+\begin_layout Subsection
+Adaptive Multiscale Network as a PDMP
+\end_layout
+
+\begin_layout Standard
+To distinguish between stochastic and deterministic reactions we follow
+ the theoretical foundation stated further up with an additional threshold
+ parameter 
+\begin_inset Formula $\delta\geq0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{cases}
+Y_{k}\left(\int_{0}^{t}\lambda_{k}^{N}\left(Z_{i}^{N,\gamma}(s)\right)ds\right) & \mbox{for }\alpha_{i}<\delta\\
+\int_{0}^{t}\lambda_{k}^{N}\left(Z_{i}^{N,\gamma}(s)\right)ds & \mbox{for }\alpha_{i}\geq\delta
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If any term of a reaction is stochastic by the previous definition, then
+ the whole reaction is treated stochastically, as we have to simulate the
+ stochastic event anyway.
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $\alpha_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $\beta_{k}$
+\end_inset
+
+ are computed by solving the following linear program:
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Formula 
+\begin{equation}
+\begin{array}{ccc}
+\mbox{maximize } & \sum_{i=1}^{Q}\frac{\alpha_{i}}{A_{i}}+\sum_{i=1}^{W}\frac{\beta_{k}}{B_{k}}\\
+\\
+\mbox{subject to } & 0\leq\alpha_{i}\leq A_{i} & \mbox{ for each \ensuremath{i\in\{1,...,Q\}}}\\
+\mbox{and } & \beta_{k}\leq B_{k} & \mbox{for each }k\in\{1,...,W\}\\
+\mbox{and } & \alpha_{i}\geq\beta_{k}+\alpha\cdot\nu_{k} & \mbox{ for each \ensuremath{i\in\{1,...,Q\},\ k\in\{1,...,W\}}}
+\end{array}\label{eq:linear_program_alpha_beta}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+whereas 
+\begin_inset Formula $A_{i}=\frac{\log(x_{i})}{\log(N)}{\color{green}+1}$
+\end_inset
+
+ and 
+\begin_inset Formula $B_{i}=\frac{log(\kappa'_{k})}{\log(N)}{\color{green}+1}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+If a species 
+\begin_inset Formula $i$
+\end_inset
+
+ has 
+\begin_inset Formula $\alpha_{i}\geq\delta$
+\end_inset
+
+ it is a scaled species, otherwise it is an unscaled species.
+\end_layout
+
+\begin_layout Standard
+In the next step the reaction graph is searched for subnetworks that can
+ be averaged (see section 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+ref{subsection:averaging}
+\end_layout
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Subsection
+Simulation of a PDMP with adaptation
+\end_layout
+
+\begin_layout Standard
+
+\size footnotesize
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{algorithm}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+label{PDMP_algorithm}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+algblock[evolve]{evolve}{until}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+algblockdefx[evolve]{Evolve}{EndEvolve}%
+\end_layout
+
+\begin_layout Plain Layout
+
+	{
+\backslash
+textbf{evolve}}%
+\end_layout
+
+\begin_layout Plain Layout
+
+	{
+\backslash
+textbf{until }}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{algorithmic}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State $t
+\backslash
+gets t_0$
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State $X
+\backslash
+gets x_0$
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State $i
+\backslash
+gets 0$
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+State $Y
+\backslash
+gets [
+\backslash
+mbox{exprnd}
+\backslash
+left(1
+\backslash
+right), 0]$
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+While {$t_0 
+\backslash
+leq t_1$}
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+Evolve
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+State $X$ according to $X'(t) = 
+\backslash
+sum_{M_D} 
+\backslash
+lambda_k
+\backslash
+left(X(t)
+\backslash
+right) 
+\backslash
+left(
+\backslash
+nu'_k - 
+\backslash
+nu_k
+\backslash
+right)$
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+State $Y$ according to $Y'(t) = [0, 
+\backslash
+sum_{M_S} 
+\backslash
+lambda_k
+\backslash
+left(X(t)
+\backslash
+right)]$
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+EndEvolve {either $t=t_1$ or $Y_1 = Y_2$ or 
+\backslash
+textit{copy number bounds have been crossed}}
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+If {
+\backslash
+textit{copy number bounds have been crossed}}
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+State Adapt scaling parameters and update scaled copy numbers
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+ElsIf {$Y_1=Y_2$}
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+State $Y
+\backslash
+gets [
+\backslash
+mbox{exprnd}
+\backslash
+left(1
+\backslash
+right), 0]$
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+State $r
+\backslash
+gets k 
+\backslash
+mbox{ with probability } p_k
+\backslash
+propto 
+\backslash
+lambda_k
+\backslash
+left(X
+\backslash
+right)$
+\end_layout
+
+\begin_layout Plain Layout
+
+		
+\backslash
+State $X
+\backslash
+gets X + 
+\backslash
+nu'_k - 
+\backslash
+nu_k$
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+EndIf
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+EndWhile
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{algorithmic}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{algorithm}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Copy number bounds
+\end_layout
+
+\begin_layout Standard
+As stated in the algorithm 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+ref{PDMP_algorithm}
+\end_layout
+
+\end_inset
+
+ an adaptation procedure is performed whenever the copy number bounds are
+ crossed.
+ These bounds are defined by two parameters 
+\begin_inset Formula $\delta\geq0$
+\end_inset
+
+ and 
+\begin_inset Formula $\eta>0$
+\end_inset
+
+.
+ The copy number bounds for an unscaled species 
+\begin_inset Formula $i$
+\end_inset
+
+ are 
+\begin_inset Formula $0\leq x_{i}<N^{\delta}$
+\end_inset
+
+ and the bounds for a scaled species 
+\begin_inset Formula $j$
+\end_inset
+
+ are 
+\begin_inset Formula $N^{-\eta}<z_{j}=N^{-\alpha_{j}}x_{j}<N^{\eta}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+An unscaled species 
+\begin_inset Formula $i$
+\end_inset
+
+ that crosses it's upper copy number bound 
+\begin_inset Formula $N^{\delta}$
+\end_inset
+
+ can be a scaled species after the adaptation.
+ Only when the copy number of the scaled species crosses it's lower bound
+ 
+\begin_inset Formula $N^{-\eta}$
+\end_inset
+
+ will the species revert to an unscaled species.
+ This means that there is a hysteresis-like effect for the switching between
+ unscaled and scaled copy numbers for a species.
+ In the range 
+\begin_inset Formula $(N^{-\eta}N^{\delta},N^{\delta})$
+\end_inset
+
+ of real copy numbers a species can be either scaled or unscaled depending
+ on whether the species was unscaled or scaled before the switching.
+ This might seem like an inconvenience of the implementation but actually
+ this is necessary to prevent endless adaptation and thus a high performance
+ penalty due to numerical errors and small changes in the copy numbers and
+ also to enable the detection of crossings of copy number bounds by root
+ finding during the ODE integration in the first place.
+\end_layout
+
+\begin_layout Subsection
+Averaging
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+label{subsection:averaging}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+After the 
+\begin_inset Formula $\alpha_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $\beta_{k}$
+\end_inset
+
+ have been computed a timescale 
+\begin_inset Formula $\tau_{i}$
+\end_inset
+
+ is computed for each species as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\tau_{i}:=\frac{q_{i}}{\sum_{k\ s.t.\ v'_{ik}\neq0}\sum_{j}|q\nu_{jk}|}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+whereas 
+\begin_inset Formula $q_{i}=\max(x_{i},1)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Now for each possible subset 
+\begin_inset Formula $S$
+\end_inset
+
+ of species we compute the timescale of the subset 
+\begin_inset Formula $\tau_{S}$
+\end_inset
+
+ and the timescale of the outside network 
+\begin_inset Formula $\tau_{\bar{S}}$
+\end_inset
+
+ as follows:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\tau_{S}=max_{i\in S}(\tau_{i})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\tau_{\bar{S}}=min_{i\in\bar{S}}(\tau_{i})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+whereas 
+\begin_inset Formula $\bar{S}$
+\end_inset
+
+ is the set of species 
+\begin_inset Formula $j$
+\end_inset
+
+ that are directly involved in reactions with species 
+\begin_inset Formula $i\in S$
+\end_inset
+
+.
+ That is either
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\bar{S}=\bar{S}_{1}\cup\bar{S}_{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\bar{S}_{1}=\{j:\nu'_{kj}\neq0\mbox{ and }\nu_{ki}\neq0\mbox{ for some }i\in S\mbox{ and }k\}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\bar{S}_{2}=\{j:\nu{}_{kj}\neq0\mbox{ and }\nu'_{ki}\neq0\mbox{ and }l\mbox{ is connected to }j\mbox{ for some }i,l\in S\mbox{ and }k\}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\frac{\tau_{\bar{S}}}{\tau_{S}}\geq\theta$
+\end_inset
+
+ and for all reactions 
+\begin_inset Formula $k$
+\end_inset
+
+ there is no 
+\begin_inset Formula $i\in S$
+\end_inset
+
+ s.t.
+ 
+\begin_inset Formula $\nu_{ki}>1$
+\end_inset
+
+ and no 
+\begin_inset Formula $i,j\in S$
+\end_inset
+
+ s.t.
+ 
+\begin_inset Formula $\nu_{ki}>0$
+\end_inset
+
+ and 
+\begin_inset Formula $\nu_{kj}>0$
+\end_inset
+
+ then we remember 
+\begin_inset Formula $S$
+\end_inset
+
+ as a candidate subnetwork for averaging.
+\end_layout
+
+\begin_layout Standard
+Finally we start with an empty list 
+\begin_inset Formula $L_{A}$
+\end_inset
+
+ of species to average and an empty list 
+\begin_inset Formula $L$
+\end_inset
+
+ of subnetworks to average and iterate in order of decreasing number of
+ species over the candidate subnetworks.
+ If 
+\begin_inset Formula $L_{A}\cap S=\emptyset$
+\end_inset
+
+ we add all the species from 
+\begin_inset Formula $S$
+\end_inset
+
+ to 
+\begin_inset Formula $L_{A}$
+\end_inset
+
+ and add 
+\begin_inset Formula $S$
+\end_inset
+
+ to 
+\begin_inset Formula $L$
+\end_inset
+
+.
+ After the iteration 
+\begin_inset Formula $L$
+\end_inset
+
+ contains all the subnetworks to average so we treat the copy numbers of
+ all species of those subnetworks as continuous and all the reactions within
+ those subnetwork as deterministic.
 \end_layout
 
 \begin_layout Standard

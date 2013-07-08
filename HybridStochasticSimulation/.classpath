@@ -16,7 +16,6 @@
 	<classpathentry kind="lib" path="lib/jfreechart-1.0.14.jar"/>
 	<classpathentry kind="lib" path="lib/jgrapht-jdk1.6.jar"/>
 	<classpathentry kind="lib" path="lib/matlabcontrol-4.1.0.jar"/>
-	<classpathentry kind="lib" path="lib/commons-lang3-3.1.jar"/>
 	<classpathentry kind="lib" path="lib/Jama-1.0.1.jar"/>
 	<classpathentry kind="lib" path="/JavaOde/bin" sourcepath="/JavaOde/src">
 		<attributes>
@@ -25,5 +24,10 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="/JavaOde/lib/ejml-0.23.jar"/>
 	<classpathentry kind="lib" path="lib/jgraph.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/mpj.jar"/>
+	<classpathentry kind="lib" path="lib/commons-configuration-1.9.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang-2.6.jar"/>
+	<classpathentry kind="lib" path="lib/commons-lang3-3.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.1.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

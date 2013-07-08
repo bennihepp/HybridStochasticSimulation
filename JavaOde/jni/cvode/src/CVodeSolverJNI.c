@@ -323,7 +323,6 @@ JNIEXPORT jlong JNICALL Java_ch_ethz_khammash_ode_cvode_CVodeSolver_jni_1initial
 
     /* Call CVodeCreate to create the solver memory and specify the 
     * Backward Differentiation Formula and the use of a Newton iteration */
-    // TODO: Make this configurable from Java side
     data->cvode_mem = CVodeCreate(multistepType, iterationType);
     if (data->cvode_mem == NULL) {
         fprintf(stderr, "jni_initialize: Failed to allocate cvode_mem with jni_malloc\n");

@@ -502,6 +502,8 @@ public class Main {
 	private void run() {
 		Set<SimulationOutput> usedOutputs = new LinkedHashSet<>();
 		for (String name : simulationMap.keySet()) {
+			System.out.println("Running simulation " + name);
+			long startTime = System.currentTimeMillis();
 			Simulation sim = simulationMap.get(name);
 			List<FinitePlotData> plotDataList = new LinkedList<>();
 			switch (sim.getSimulationType()) {
@@ -549,6 +551,8 @@ public class Main {
 				output.addAll(name, plotDataList);
 				usedOutputs.add(output);
 			}
+			long endTime = System.currentTimeMillis();
+			System.out.println("  Runtime: " + (endTime - startTime) + "ms");
 		}
 		for (SimulationOutput output : usedOutputs)
 			try {

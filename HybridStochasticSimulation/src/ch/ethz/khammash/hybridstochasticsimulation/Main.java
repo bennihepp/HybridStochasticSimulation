@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -58,7 +59,10 @@ public class Main {
 			filename = args[0];
 		XMLConfiguration config;
 		try {
-			config = new XMLConfiguration(new File(filename));
+			File configFile = new File(filename);
+			if (!configFile.exists())
+				throw new FileNotFoundException(configFile.getAbsolutePath());
+			config = new XMLConfiguration(configFile);
 			Main main = new Main(config);
 			main.run();
 		} catch (ConfigurationException | IOException e) {
@@ -502,10 +506,10 @@ public class Main {
 	private void run() {
 		Set<SimulationOutput> usedOutputs = new LinkedHashSet<>();
 		for (String name : simulationMap.keySet()) {
-			System.out.println("Running simulation " + name);
 			long startTime = System.currentTimeMillis();
 			Simulation sim = simulationMap.get(name);
 			List<FinitePlotData> plotDataList = new LinkedList<>();
+			System.out.println("Running simulation " + name + " [" + sim.getSimulationType() + "] (" + sim.getRuns() + ")");
 			switch (sim.getSimulationType()) {
 			case TRAJECTORY:
 				for (int i=0; i < sim.getRuns(); i++) {

@@ -13,7 +13,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteDistributionPlotData;
 
 
 public class VectorFiniteDistributionPlotData extends VectorFinitePlotData implements FiniteDistributionPlotData {
@@ -47,12 +46,12 @@ public class VectorFiniteDistributionPlotData extends VectorFinitePlotData imple
 
 	public VectorFiniteDistributionPlotData(FiniteDistributionTrajectory tr) {
 		super(tr);
-		initxStdDevVectors(xStdDevVectors);
+		initxStdDevVectors(tr.getxStdDevVectors());
 	}
 
 	public VectorFiniteDistributionPlotData(FiniteDistributionPlotData td) {
 		super(td);
-		initxStdDevVectors(xStdDevVectors);
+		initxStdDevVectors(td.getxStdDevVectors());
 	}
 
 	final private void initxStdDevVectors() {
@@ -72,17 +71,17 @@ public class VectorFiniteDistributionPlotData extends VectorFinitePlotData imple
 		checkArgument(getNumberOfStates() == xStdDevVectors.size());
 		for (RealVector xVector : xStdDevVectors)
 			checkArgument(getNumberOfTimePoints() == xVector.getDimension());
-		xStdDevVectors = new ArrayList<RealVector>(getNumberOfStates());
+		this.xStdDevVectors = new ArrayList<RealVector>(getNumberOfStates());
 		for (int s=0; s < getNumberOfStates(); s++)
-			xStdDevVectors.add(xStdDevVectors.get(s));
+			this.xStdDevVectors.add(xStdDevVectors.get(s));
 	}
 
 	final private void initxStdDevVectors(RealMatrix xStdDevMatrix) {
 		checkArgument(getNumberOfStates() == xStdDevMatrix.getRowDimension());
 		checkArgument(getNumberOfTimePoints() == xStdDevMatrix.getColumnDimension());
-		xStdDevVectors = new ArrayList<RealVector>(getNumberOfStates());
+		this.xStdDevVectors = new ArrayList<RealVector>(getNumberOfStates());
 		for (int s=0; s < getNumberOfStates(); s++)
-			xStdDevVectors.add(xStdDevMatrix.getRowVector(s));
+			this.xStdDevVectors.add(xStdDevMatrix.getRowVector(s));
 	}
 
 	@Override

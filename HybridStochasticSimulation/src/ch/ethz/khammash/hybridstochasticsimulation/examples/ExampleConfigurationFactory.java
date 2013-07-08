@@ -100,6 +100,24 @@ public class ExampleConfigurationFactory {
 				return new BacteriophageT7();
 			}
 		});
+		registerExampleConfiguration("FastIsomerization", new ExampleConfigurationCreator() {
+			@Override
+			public ExampleConfiguration create() {
+				return new FastIsomerization();
+			}
+		});
+		registerExampleConfiguration("FastDimerization", new ExampleConfigurationCreator() {
+			@Override
+			public ExampleConfiguration create() {
+				return new FastDimerization();
+			}
+		});
+		registerExampleConfiguration("ToggleSwitch", new ExampleConfigurationCreator() {
+			@Override
+			public ExampleConfiguration create() {
+				return new ToggleSwitch();
+			}
+		});
 	}
 
 	public void registerExampleConfiguration(String name, ExampleConfigurationCreator creator) {

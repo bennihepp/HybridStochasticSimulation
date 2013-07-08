@@ -1,27 +1,27 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 
+public class ArrayFiniteTrajectoryRecorder extends ArrayFiniteTrajectory implements FiniteTrajectoryRecorder, TrajectoryRecorder {
 
-public class ArrayFiniteTrajectoryRecorder<T extends ReactionNetworkModel>
-		extends ArrayFiniteTrajectory implements FiniteTrajectoryRecorder<T>, TrajectoryRecorder<T> {
+	private int numOfTimePoints;
 
-	public ArrayFiniteTrajectoryRecorder(double[] tSeries) {
-		super(tSeries);
+	public ArrayFiniteTrajectoryRecorder(int numOfTimePoints) {
+		super(new double[numOfTimePoints]);
+		this.numOfTimePoints = numOfTimePoints;
 	}
 
-	public ArrayFiniteTrajectoryRecorder(double[] tSeries, double[][] xSeries) {
-		super(tSeries, xSeries);
-	}
-
-	protected void initialize(double[] x0) {
-		initialize(x0, x0.length);
-	}
-
-	protected void initialize(double[] x0, int numberOfStates) {
-		xSeries = new double[numberOfStates][tSeries.length];
+	protected void initialize(double t0, double[] x0, double t1) {
+		tSeries = computeTimeSeries(numOfTimePoints, t0, t1);
+		xSeries = new double[x0.length][tSeries.length];
 		index = 0;
+	}
+
+	public static double[] computeTimeSeries(int numOfTimePoints, double t0, double t1) {
+		double[] tSeries = new double[numOfTimePoints];
+		for (int i = 0; i < numOfTimePoints; i++) {
+			tSeries[i] = t0 + i * (t1 - t0) / (double) (numOfTimePoints - 1);
+		}
+		return tSeries;
 	}
 
 	protected void setState(int index, double[] x) {
@@ -30,31 +30,18 @@ public class ArrayFiniteTrajectoryRecorder<T extends ReactionNetworkModel>
 	}
 
 	@Override
-	public void setSimulator(Simulator<T, ? extends TrajectoryRecorder<T>> simulator) {
-	}
-
-	@Override
-	public void setModel(T model) {
-	}
-
-	@Override
-	public void setInitialState(double t0, double[] x0) {
-		setInitialState(t0, x0, x0.length);
-	}
-
-	@Override
-	public void setInitialState(double t0, double[] x0, int numOfStates) {
-		initialize(x0, numOfStates);
+	public void beginRecording(double t0, double[] x0, double t1) {
+		initialize(t0, x0, t1);
 		setState(index, x0);
 	}
 
 	@Override
-	public void setFinalState(double t1, double[] x1) {
+	public void endRecording(double[] x1) {
 		setState(xSeries[0].length - 1, x1);
 	}
 
 	@Override
-	public void reportState(double t, double[] x) {
+	public void record(double t, double[] x) {
 		if (index >= tSeries.length)
 			return;
 		if (t <= tSeries[index]) {

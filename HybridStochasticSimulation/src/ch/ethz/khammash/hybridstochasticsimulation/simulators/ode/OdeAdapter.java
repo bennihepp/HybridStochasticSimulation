@@ -5,12 +5,12 @@ import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.ode.Ode;
 
-public class OdeAdapter<T extends PDMPModel> implements Ode {
+public class OdeAdapter implements Ode {
 
 	private FirstOrderDifferentialEquations vectorField;
 	private long evaluations;
 
-	public OdeAdapter(T model) {
+	public OdeAdapter(PDMPModel model) {
 		this.vectorField = model.getVectorField();
 		resetEvaluations();
 	}

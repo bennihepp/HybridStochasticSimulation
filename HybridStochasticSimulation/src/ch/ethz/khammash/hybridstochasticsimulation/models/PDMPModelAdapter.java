@@ -134,4 +134,19 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 	public void resetState(double t, double[] x) {
 	}
 
+	@Override
+	public double[] computePrimaryState(double t, double[] x) {
+		return x;
+	}
+
+	@Override
+	public boolean hasOptionalState() {
+		return false;
+	}
+
+	@Override
+	public double[] computeOptionalState(double t, double[] x) {
+		return null;
+	}
+
 }

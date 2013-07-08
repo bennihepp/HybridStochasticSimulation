@@ -12,10 +12,20 @@ public class PDMPMSHRNModel extends MSHybridReactionNetworkModel implements PDMP
 
 //	public static double[] globalxDot;
 //	private double[] propVector;
+	private double[] primaryState;
+	private boolean exposeOptionalState;
+	private double[] optionalState;
 
 	public PDMPMSHRNModel(MSHybridReactionNetwork hrn) {
 		super(hrn);
+		primaryState = new double[getNumberOfSpecies()];
+		setExposeOptionalState(false);
+		optionalState = new double[2 * getNumberOfSpecies() + 2 * getNumberOfReactions()];
 //		propVector = new double[getNumberOfReactions()];
+	}
+
+	public void setExposeOptionalState(boolean exposeOptionalState) {
+		this.exposeOptionalState = exposeOptionalState;
 	}
 
 	@Override
@@ -132,6 +142,32 @@ public class PDMPMSHRNModel extends MSHybridReactionNetworkModel implements PDMP
 
 	@Override
 	public void resetState(double t, double[] x) {
+	}
+
+	@Override
+	public double[] computePrimaryState(double t, double[] x) {
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			primaryState[s] = x[s] * getNetwork().getSpeciesScaleFactor(s);
+		return primaryState;
+	}
+
+	@Override
+	public boolean hasOptionalState() {
+		return exposeOptionalState;
+	}
+
+	@Override
+	public double[] computeOptionalState(double t, double[] x) {
+		int i = 0;
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			optionalState[i++] = getNetwork().getAlpha(s);
+		for (int r=0; r < getNumberOfReactions(); r++)
+			optionalState[i++] = getNetwork().computeInsideScalingExponent(r);
+		for (int r=0; r < getNumberOfReactions(); r++)
+			optionalState[i++] = getNetwork().getBeta(r);
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			optionalState[i++] = x[s];
+		return optionalState;
 	}
 
 }

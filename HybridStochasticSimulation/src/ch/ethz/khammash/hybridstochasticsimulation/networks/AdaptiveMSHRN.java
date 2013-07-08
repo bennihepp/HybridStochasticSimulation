@@ -3,7 +3,6 @@ package ch.ethz.khammash.hybridstochasticsimulation.networks;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -41,6 +40,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	private ReactionNetworkGraph graph;
 	private HashSet<SpeciesVertex> importantSpeciesVertices;
 	private DependencyGraph depGraph;
+	private List<Set<SpeciesVertex>> pseudoLinearSubnetworksToAverage;
 
 	public AdaptiveMSHRN(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta, int[] importantSpecies) {
 		super(net, N, gamma, alpha, beta);
@@ -76,6 +76,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		for (int s : importantSpecies)
 			importantSpeciesVertices.add(graph.getSpeciesVertex(s));
 		depGraph = new DependencyGraph(graph);
+//		subnetworksToAverage = Collections.<Set<SpeciesVertex>>emptyList();
+//		speciesToAverageMask = new boolean[getNumberOfSpecies()];
 		reset();
 		updateInvolvedSpeciesAndReactions();
 	}
@@ -144,12 +146,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		updateScaleFactors();
 	}
 
-//	// TODO: Necessary?
-//	public void adapt(double t, double[] x) {
-//		adapt(t, x, null, null);
-//	}
-
-	private Set<SpeciesVertex> findSpeciesToAverage(double[] speciesTimescales) {
+	private List<Set<SpeciesVertex>> findPseudoLinearSpeciesToAverage(double[] speciesTimescales) {
 		// First find a list of subnetworks that could be averaged
 		List<Set<SpeciesVertex>> averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
 		Set<SpeciesVertex> allSpecies = graph.vertexSet();
@@ -159,10 +156,13 @@ outerLoop_findSpeciesToAverage:
 			if (subSpecies.size() == getNumberOfSpecies() || subSpecies.isEmpty())
 				continue;
 			boolean subnetworkHasImportantSpecies = false;
-			double maxSubnetworkTimescale = 0.0;
-			boolean subnetworkIsIsolated = true;
 			HashSet<Integer> subnetworkReactions = new HashSet<Integer>();
-			double minOutsideTimescale = Double.POSITIVE_INFINITY;
+			double maxSubnetworkTimescale = computeMaxSubnetworkTimescale(subSpecies, speciesTimescales);
+			double minOutsideTimescale = computeMinOutsideTimescale(subSpecies, speciesTimescales);
+
+			if (Double.isNaN(minOutsideTimescale))
+				continue;
+
 			for (SpeciesVertex v : subSpecies) {
 				// Skip this subnetwork if it contains any important species
 				if (importantSpeciesVertices.contains(v)) {
@@ -170,31 +170,6 @@ outerLoop_findSpeciesToAverage:
 					break;
 				}
 				subnetworkReactions.addAll(getInvolvedReactions(v.getSpecies()));
-				if (speciesTimescales[v.getSpecies()] > maxSubnetworkTimescale)
-					maxSubnetworkTimescale = speciesTimescales[v.getSpecies()];
-				// Look at the timescale of all outgoing edges that have targets outside of the subnetwork
-				for (ReactionEdge edge : graph.outgoingEdgesOf(v)) {
-					SpeciesVertex v2 = edge.getTarget();
-					if (subSpecies.contains(v2))
-						continue;
-					subnetworkIsIsolated = false;
-					if (speciesTimescales[v2.getSpecies()] < minOutsideTimescale)
-						minOutsideTimescale = speciesTimescales[v2.getSpecies()];
-				}
-				// Look at the timescale of all incoming edges from outside of the subnetwork where the sources
-				// can be influenced by the subnetwork
-				for (ReactionEdge edge : graph.incomingEdgesOf(v)) {
-					SpeciesVertex v2 = edge.getSource();
-					if (subSpecies.contains(v2))
-						continue;
-					if (speciesTimescales[v2.getSpecies()] < minOutsideTimescale) {
-						for (SpeciesVertex v3 : subSpecies)
-							if (depGraph.containsEdge(v3, v2)) {
-								minOutsideTimescale = speciesTimescales[v2.getSpecies()];
-								break;
-							}
-					}
-				}
 				// Make sure that the subnetwork has only pseudo-linear reactions
 				for (int r : subnetworkReactions) {
 					int[] choiceIndices = getChoiceIndices(r);
@@ -209,15 +184,20 @@ outerLoop_findSpeciesToAverage:
 				}
 			}
 
-			if (subnetworkHasImportantSpecies || subnetworkIsIsolated)
+			if (subnetworkHasImportantSpecies)
 				continue;
 
-			double subnetworkTimescaleRatio = minOutsideTimescale / maxSubnetworkTimescale;
-//			if (subnetworkTimescaleRatio >= FastMath.pow(getN(), getDelta())) {
-			if (subnetworkTimescaleRatio >= theta) {
-				// Consider this subnetwork for averaging
+			if (checkAveragingConditions(maxSubnetworkTimescale, minOutsideTimescale)) {
 				averagingCandidates.add(subSpecies);
 			}
+
+//			double subnetworkTimescaleRatio = minOutsideTimescale / maxSubnetworkTimescale;
+////			if (subnetworkTimescaleRatio >= FastMath.pow(getN(), getDelta())) {
+//			if (subnetworkTimescaleRatio >= theta) {
+//				// Consider this subnetwork for averaging
+//				averagingCandidates.add(subSpecies);
+//			}
+
 		}
 
 		// Now always choose the candidate subnetworks with the maximum number of species
@@ -232,11 +212,67 @@ outerLoop_findSpeciesToAverage:
 		});
 		// Make the choices, going from larger to smaller candidate subnetworks.
 		HashSet<SpeciesVertex> speciesToAverage = new HashSet<SpeciesVertex>();
+		List<Set<SpeciesVertex>> subnetworksToAverage = new LinkedList<Set<SpeciesVertex>>();
 		for (Set<SpeciesVertex> candidate : averagingCandidates)
-			if (Sets.intersection(speciesToAverage, candidate).isEmpty())
+			if (Sets.intersection(speciesToAverage, candidate).isEmpty()) {
 				speciesToAverage.addAll(candidate);
-		// Return the set of species chosen for averaging
-		return speciesToAverage;
+				subnetworksToAverage.add(candidate);
+			}
+		// Return the set of subnetworks chosen for averaging
+		return subnetworksToAverage;
+	}
+
+	private boolean checkAveragingConditions(Set<SpeciesVertex> subnetwork, double[] speciesTimescales) {
+		double maxSubnetworkTimescale = computeMaxSubnetworkTimescale(subnetwork, speciesTimescales);
+		double minOutsideTimescale = computeMinOutsideTimescale(subnetwork, speciesTimescales);
+		return checkAveragingConditions(maxSubnetworkTimescale, minOutsideTimescale);
+	}
+
+	private boolean checkAveragingConditions(double maxSubnetworkTimescale, double minOutsideTimescale) {
+		double subnetworkTimescaleRatio = minOutsideTimescale / maxSubnetworkTimescale;
+		return subnetworkTimescaleRatio >= theta;
+	}
+
+	private double computeMinOutsideTimescale(Set<SpeciesVertex> subSpecies, double[] speciesTimescales) {
+		double minOutsideTimescale = Double.POSITIVE_INFINITY;
+		boolean subnetworkIsIsolated = true;
+		for (SpeciesVertex v : subSpecies) {
+			// Look at the timescale of all outgoing edges that have targets outside of the subnetwork
+			for (ReactionEdge edge : graph.outgoingEdgesOf(v)) {
+				SpeciesVertex v2 = edge.getTarget();
+				if (subSpecies.contains(v2))
+					continue;
+				subnetworkIsIsolated = false;
+				if (speciesTimescales[v2.getSpecies()] < minOutsideTimescale)
+					minOutsideTimescale = speciesTimescales[v2.getSpecies()];
+			}
+			// Look at the timescale of all incoming edges from outside of the subnetwork where the sources
+			// can be influenced by the subnetwork
+			for (ReactionEdge edge : graph.incomingEdgesOf(v)) {
+				SpeciesVertex v2 = edge.getSource();
+				if (subSpecies.contains(v2))
+					continue;
+				if (speciesTimescales[v2.getSpecies()] < minOutsideTimescale) {
+					for (SpeciesVertex v3 : subSpecies)
+						if (depGraph.containsEdge(v3, v2)) {
+							minOutsideTimescale = speciesTimescales[v2.getSpecies()];
+							break;
+						}
+				}
+			}
+		}
+		if (subnetworkIsIsolated)
+			return Double.NaN;
+		return minOutsideTimescale;
+	}
+
+	private double computeMaxSubnetworkTimescale(Set<SpeciesVertex> subSpecies, double[] speciesTimescales) {
+		double maxSubnetworkTimescale = 0.0;
+		for (SpeciesVertex v : subSpecies) {
+			if (speciesTimescales[v.getSpecies()] > maxSubnetworkTimescale)
+				maxSubnetworkTimescale = speciesTimescales[v.getSpecies()];
+		}
+		return maxSubnetworkTimescale;
 	}
 
 	public void adapt(double t, double[] x, double[] xDot, double[] propensities) {
@@ -252,6 +288,7 @@ outerLoop_findSpeciesToAverage:
 
 		// Compute new values for alpha and beta
 		findOptimalScaling(x);
+		invalidateReactionTermTypes();
 
 		// Round unscaled species copy numbers to the nearest integer value and adjust negative values to 0
 		for (int s=0; s < getNumberOfSpecies(); s++) {
@@ -292,18 +329,55 @@ outerLoop_findSpeciesToAverage:
 				System.out.println("  " + s + ": " + speciesTimescales[s]);
 		}
 
-		boolean performAveraging = true;
+		boolean performPseudoLinearAveraging = true;
+		boolean stopIfAveragingBecomesInvalid = false;
 
-		if (performAveraging) {
-			Set<SpeciesVertex> speciesToAverage = findSpeciesToAverage(speciesTimescales);
-			if (printMessages)
-				Utilities.printCollection(" Species to average", speciesToAverage);
-			for (SpeciesVertex vertex : speciesToAverage) {
-				overrideSpeciesType(vertex.getSpecies(), SpeciesType.CONTINUOUS);
-				for (int reaction : getInvolvedReactions(vertex.getSpecies())) {
-					overrideReactionType(reaction, ReactionType.DETERMINISTIC);
+		if (performPseudoLinearAveraging) {
+
+//			pseudoLinearSubnetworksToAverage = null;
+			// Only look for pseudo linear subnetworks once at the beginning of the simulation
+			if (pseudoLinearSubnetworksToAverage == null) {
+				pseudoLinearSubnetworksToAverage = findPseudoLinearSpeciesToAverage(speciesTimescales);
+				boolean[] pseudoLinearSpeciesToAverageMask = new boolean[getNumberOfSpecies()];
+				for (Set<SpeciesVertex> subnetwork : pseudoLinearSubnetworksToAverage) {
+					for (SpeciesVertex vertex : subnetwork) {
+						pseudoLinearSpeciesToAverageMask[vertex.getSpecies()] = true;
+					}
+				}
+				if (printMessages) {
+					HashSet<SpeciesVertex> speciesToAverage = new HashSet<SpeciesVertex>();
+					for (int s=0; s < getNumberOfSpecies(); s++)
+						if (pseudoLinearSpeciesToAverageMask[s])
+							speciesToAverage.add(graph.getSpeciesVertex(s));
+					Utilities.printCollection(" PseudoLinear species to average", speciesToAverage);
 				}
 			}
+
+			// Check whether the conditions for averaging of the pseudo linear subnetworks are still valid
+			for (Set<SpeciesVertex> subnetwork : pseudoLinearSubnetworksToAverage) {
+				boolean satisfied = checkAveragingConditions(subnetwork, speciesTimescales);
+				if (!satisfied) {
+					if (stopIfAveragingBecomesInvalid)
+						// TODO: Use custom exception type
+						throw new RuntimeException("Averaging of pseudo linear subnetwork switched to being invalid at t=" + t);
+					else
+						System.out.println("WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=" + t);
+				}
+			}
+
+			for (Set<SpeciesVertex> subnetwork : pseudoLinearSubnetworksToAverage) {
+				for (SpeciesVertex vertex : subnetwork) {
+					overrideSpeciesType(vertex.getSpecies(), SpeciesType.CONTINUOUS);
+				}
+			}
+			// Recompute the type of all reactions considered to be stochastic
+			for (int r=0; r < getNumberOfReactions(); r++)
+				if (getReactionType(r) == ReactionType.STOCHASTIC)
+					computeReactionTermType(r);
+//			for (SpeciesVertex vertex : speciesToAverage)
+//				for (int reaction : getInvolvedReactions(vertex.getSpecies()))
+//					overrideReactionType(reaction, ReactionType.DETERMINISTIC);
+
 		}
 
 		// Scale copy numbers with new species scale factors.
@@ -312,19 +386,6 @@ outerLoop_findSpeciesToAverage:
 		}
 
 		if (propensities != null) {
-
-			// Compute average waiting time for stochastic and deterministic reactions
-			double stochasticPropensitySum = 0.0;
-			double deterministicPropensitySum = 0.0;
-			for (int r=0; r < getNumberOfReactions(); r++) {
-				if (propensities[r] > 0) {
-					ReactionType rt = getReactionType(r);
-					if (rt == ReactionType.STOCHASTIC)
-						stochasticPropensitySum += propensities[r];
-					else if (rt == ReactionType.DETERMINISTIC)
-						deterministicPropensitySum += propensities[r];
-				}
-			}
 
 			if (printMessages) {
 				int cnt = 0;
@@ -347,24 +408,45 @@ outerLoop_findSpeciesToAverage:
 				}
 			}
 
-			// If the timescale-separation between stochastic and deterministic reactions is too small
-			// treat all reactions as stochastic
-			double stochasticToDeterministicAvgWaitingTimeRatio = Double.POSITIVE_INFINITY;
-			if (stochasticPropensitySum != 0.0)
-				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensitySum / stochasticPropensitySum;
-			if (stochasticToDeterministicAvgWaitingTimeRatio < getTheta()) {
-				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
-				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
-				overrideReactionTypes(reactionTypes);
-				if (printMessages)
-					System.out.println(" Overriding reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + "<" + getTheta());
-			}
-			else
-				if (printMessages)
-					System.out.println(" Keeping reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + getTheta());
+//			// Compute average waiting time for stochastic and deterministic reactions
+//			double stochasticPropensitySum = 0.0;
+//			double deterministicPropensitySum = 0.0;
+//			for (int r=0; r < getNumberOfReactions(); r++) {
+//				if (propensities[r] > 0) {
+//					ReactionType rt = getReactionType(r);
+//					if (rt == ReactionType.STOCHASTIC)
+//						stochasticPropensitySum += propensities[r];
+//					else if (rt == ReactionType.DETERMINISTIC)
+//						deterministicPropensitySum += propensities[r];
+//				}
+//			}
+//
+//			// If the timescale-separation between stochastic and deterministic reactions is too small
+//			// treat all reactions as stochastic
+//			double stochasticToDeterministicAvgWaitingTimeRatio = Double.POSITIVE_INFINITY;
+//			if (stochasticPropensitySum != 0.0)
+//				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensitySum / stochasticPropensitySum;
+//			if (stochasticToDeterministicAvgWaitingTimeRatio < getTheta()) {
+//				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
+//				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
+//				overrideReactionTypes(reactionTypes);
+//				if (printMessages)
+//					System.out.println(" Overriding reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + "<" + getTheta());
+//			}
+//			else
+//				if (printMessages)
+//					System.out.println(" Keeping reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + getTheta());
 		}
 
 	}
+
+//	@Override
+//	protected ReactionTermType computeReactionTermType(int species, int reaction) {
+//		ReactionTermType rtt = super.computeReactionTermType(species, reaction);
+//		if (rtt == ReactionTermType.STOCHASTIC && speciesToAverageMask[species])
+//			rtt = ReactionTermType.DETERMINISTIC;
+//		return rtt;
+//	}
 
 	// Solve a linear program to find alpha and beta
 	private void findOptimalScaling(double[] x) {
@@ -504,7 +586,6 @@ outerLoop_findSpeciesToAverage:
 		// Make sure that the internal state of the object is not violated
 		updateSpeciesScaleFactors();
 //		updateRateScaleFactors();
-		invalidateReactionTermTypes();
 	}
 
 }

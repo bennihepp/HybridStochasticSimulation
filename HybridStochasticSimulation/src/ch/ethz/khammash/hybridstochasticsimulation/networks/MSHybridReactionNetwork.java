@@ -8,7 +8,7 @@ import org.apache.commons.math3.util.FastMath;
 public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 
 	public enum SpeciesType {
-		DISCRETE, CONTINUOUS
+		DISCRETE, CONTINUOUS, UNDEFINED
 	}
 
 	public enum ReactionType {
@@ -38,12 +38,20 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 			int numOfSpecies, int numOfReactions, double N, double gamma, double[] alpha, double[] beta) {
 		super(numOfSpecies, numOfReactions);
 		checkArgument(N > 0, "Expected N > 0");
-		checkArgument(alpha.length == getNumberOfSpecies(), "Expected alpha.length == getNumberOfSpecies()");
-		checkArgument(beta.length == getNumberOfReactions(), "Expected beta.length == getNumberOfReactions()");
 		this.N = N;
 		this.gamma = gamma;
-		this.alpha = alpha.clone();
-		this.beta = beta.clone();
+		if (alpha == null)
+			this.alpha = new double[getNumberOfSpecies()];
+		else {
+			checkArgument(alpha.length == getNumberOfSpecies(), "Expected alpha.length == getNumberOfSpecies()");
+			this.alpha = alpha.clone();
+		}
+		if (beta == null)
+			this.beta = new double[getNumberOfReactions()];
+		else {
+			checkArgument(beta.length == getNumberOfReactions(), "Expected beta.length == getNumberOfReactions()");
+			this.beta = beta.clone();
+		}
 		speciesScaleFactors = new double[alpha.length];
 		inverseSpeciesScaleFactors = new double[alpha.length];
 //		rateScaleFactors = new double[beta.length];
@@ -288,45 +296,55 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		reactionTermTypesInvalid = false;
 	}
 
-	private void computeReactionTermTypes() {
+	protected void computeReactionTermTypes() {
 		// TODO
 //		int[] counter = { 0, 0, 0 };
 		for (int s=0; s < getNumberOfSpecies(); s++)
-			speciesTypes[s] = SpeciesType.CONTINUOUS;
+			speciesTypes[s] = SpeciesType.UNDEFINED;
 		for (int r=0; r < getNumberOfReactions(); r++) {
-			ReactionType reactionType = ReactionType.NONE;
-			for (int s=0; s < getNumberOfSpecies(); s++) {
-				ReactionTermType rtt = computeReactionTermType(s, r);
-				reactionTermTypes[r][s] = rtt;
-				if (rtt == ReactionTermType.EXPLODING) {
-					reactionType = ReactionType.EXPLODING;
-					break;
-				} else if (rtt == ReactionTermType.STOCHASTIC) {
-					reactionType = ReactionType.STOCHASTIC;
-					speciesTypes[s] = SpeciesType.DISCRETE;
-				}
-				else if (reactionType == ReactionType.NONE && rtt == ReactionTermType.DETERMINISTIC)
-					reactionType = ReactionType.DETERMINISTIC;
-			}
-			reactionTypes[r] = reactionType;
-//			if (reactionType == ReactionType.STOCHASTIC)
+			computeReactionTermType(r);
+//			if (reactionTypes[r] == ReactionType.STOCHASTIC)
 //				counter[0]++;
-//			else if (reactionType == ReactionType.DETERMINISTIC)
+//			else if (reactionTypes[r] == ReactionType.DETERMINISTIC)
 //				counter[1]++;
-//			else if (reactionType == ReactionType.EXPLODING)
+//			else if (reactionTypes[r] == ReactionType.EXPLODING)
 //				counter[2]++;
 		}
 //		System.out.println("Found " + counter[0] + " stochastic reactions, " + counter[1] + " deterministic reactions and " + counter[2] + " exploding reactions");
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			if (speciesTypes[s] == SpeciesType.UNDEFINED)
+				speciesTypes[s] = SpeciesType.CONTINUOUS;
 		reactionTermTypesInvalid = false;
 	}
 
-	private ReactionTermType computeReactionTermType(int species, int reaction) {
+	protected void computeReactionTermType(int reaction) {
+		ReactionType reactionType = ReactionType.NONE;
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			ReactionTermType rtt = computeReactionTermType(s, reaction);
+			reactionTermTypes[reaction][s] = rtt;
+			if (rtt == ReactionTermType.EXPLODING) {
+				reactionType = ReactionType.EXPLODING;
+				break;
+			} else if (rtt == ReactionTermType.STOCHASTIC) {
+				reactionType = ReactionType.STOCHASTIC;
+				if (speciesTypes[s] == SpeciesType.UNDEFINED)
+					speciesTypes[s] = SpeciesType.DISCRETE;
+			}
+			else if (reactionType == ReactionType.NONE && rtt == ReactionTermType.DETERMINISTIC)
+				reactionType = ReactionType.DETERMINISTIC;
+		}
+		reactionTypes[reaction] = reactionType;
+	}
+
+	protected ReactionTermType computeReactionTermType(int species, int reaction) {
 		if (getStochiometry(species, reaction) == 0)
 			return ReactionTermType.NONE;
 		double gammaPlusRho = gamma + beta[reaction];
 		for (int s2 = 0; s2 < alpha.length; s2++)
 			if (getConsumptionStochiometry(s2, reaction) > 0)
 				gammaPlusRho += getConsumptionStochiometry(s2, reaction) * alpha[s2];
+		if (speciesTypes[species] == SpeciesType.CONTINUOUS)
+			return ReactionTermType.DETERMINISTIC;
 		if (alpha[species] >= delta - tolerance) {
 			if (alpha[species] >= gammaPlusRho - tolerance)
 				// TODO: How to incorparate this in a good way

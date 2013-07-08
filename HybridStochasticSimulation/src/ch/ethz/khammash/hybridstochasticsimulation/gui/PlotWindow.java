@@ -273,7 +273,9 @@ public class PlotWindow extends ApplicationFrame {
 
 	public void exportToMatlabFile(File file) {
 		MatlabDataExporter mde = new MatlabDataExporter();
-		List<MLArray> matlabData = mde.buildMatlabData(plotDataList, rows, cols);
+		List<MLArray> matlabData = mde.buildMatlabPlotList(plotDataList);
+		matlabData.add(mde.buildDouble("rows", rows));
+		matlabData.add(mde.buildDouble("cols", cols));
 		try {
 			mde.writeMatlabDataToFile(file, matlabData);
 		} catch (IOException e1) {

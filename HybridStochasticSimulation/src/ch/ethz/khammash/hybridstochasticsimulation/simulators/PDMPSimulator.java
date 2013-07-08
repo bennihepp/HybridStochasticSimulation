@@ -15,12 +15,12 @@ import ch.ethz.khammash.hybridstochasticsimulation.simulators.ode.EventObserverA
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.ode.FiniteTimepointProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.ode.OdeAdapter;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.ode.StateObserverAdapter;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 import ch.ethz.khammash.ode.Solver;
 import ch.ethz.khammash.ode.lsodar.LsodarDirectSolver;
 
-public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, ContinuousTrajectoryRecorder<T>> {
+public class PDMPSimulator implements Simulator<PDMPModel> {
 
 	public static final double DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL = Double.POSITIVE_INFINITY;
 	public static final double DEFAULT_EVENT_HANDLER_CONVERGENCE = 1e-12;
@@ -28,7 +28,7 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 	public static final int DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT = 1000;
 
 	private RandomDataGenerator rdg;
-	private List<FiniteTrajectoryRecorder<T>> trajectoryRecorders;
+	private List<TrajectoryRecorder> trajectoryRecorders;
 	private Solver solver;
 
 	public PDMPSimulator() {
@@ -50,43 +50,49 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 		if (solver == null)
 			solver = LsodarDirectSolver.getInstance();
 		this.solver = solver;
-		trajectoryRecorders = new LinkedList<FiniteTrajectoryRecorder<T>>();
+		trajectoryRecorders = new LinkedList<TrajectoryRecorder>();
 	}
 
 	public int isIntegrating;
 	public int integratorCounter;
 	public int reactionCounter;
 
-	public double simulate(T model, final double t0, final double[] x0, double t1, double[] x1) {
-		rdg = new RandomDataGenerator();
-		rdg.reSeed(102L);
+	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
+//		rdg = new RandomDataGenerator();
+//		rdg.reSeed(102L);
 		boolean showProgress = false;
+
 		double t = t0;
-		for (FiniteTrajectoryRecorder<T> tr : trajectoryRecorders) {
-			tr.setSimulator(this);
-			tr.setModel(model);
-		}
-		StateObserverAdapter<T> stateObserver = new StateObserverAdapter<T>(trajectoryRecorders);
-		stateObserver.initialize(t0, x0, t1);
+		double[] x = new double[x0.length + 2];
+		for (int i=0; i < x0.length; i++)
+			x[i] = x0[i];
+		double[] xDot = new double[x.length];
+    	model.initialize(t, x);
+
+		StateObserverAdapter stateObserver = new StateObserverAdapter(model, trajectoryRecorders);
+		stateObserver.initialize(t, x, t1);
 		List<PDMPEventObserver> optionalEventObservers = model.getOptionalEventObservers();
 		List<PDMPEventObserver> eventObservers = new ArrayList<PDMPEventObserver>(1 + optionalEventObservers.size());
 		eventObservers.add(model.getJumpEventObserver());
 		eventObservers.addAll(optionalEventObservers);
-		OdeAdapter<T> ode = new OdeAdapter<T>(model);
+		OdeAdapter ode = new OdeAdapter(model);
 		EventObserverAdapter eventObserver = new EventObserverAdapter(eventObservers);
-		eventObserver.initialize(t0, x0, t1);
+		eventObserver.initialize(t, x, t1);
 		StochasticReactionNetworkModel rnm = model.getTransitionMeasure();
     	FirstOrderDifferentialEquations vectorField = model.getVectorField();
-    	FiniteTimepointProvider<T> timepointProvider;
-		if (trajectoryRecorders.size() > 0)
-    		timepointProvider = new FiniteTimepointProvider<T>(trajectoryRecorders.iterator().next());
-    	else
-    		timepointProvider = new FiniteTimepointProvider<T>(t0, t1);
-		double[] x = new double[x0.length + 2];
-		for (int i=0; i < x0.length; i++)
-			x[i] = x0[i];
-		double[] xDot = x.clone();
-    	model.initialize(t, x);
+
+    	FiniteTimepointProvider timepointProvider = null;
+		if (trajectoryRecorders.size() > 0) {
+			for (TrajectoryRecorder tr : trajectoryRecorders)
+				if (tr instanceof FiniteTrajectoryRecorder) {
+					FiniteTrajectoryRecorder ftr = (FiniteTrajectoryRecorder)tr; 
+					timepointProvider = new FiniteTimepointProvider(ftr);
+					break;
+				}
+		}
+		if (timepointProvider == null)
+			timepointProvider = new FiniteTimepointProvider(t0, t1);
+
 		double[] propVec = new double[rnm.getNumberOfReactions()];
     	double[] reactionCounterArray = new double[model.getNumberOfReactions()];
     	double msgDt = (t1 - t0) / 20.0;
@@ -211,16 +217,12 @@ public class PDMPSimulator<T extends PDMPModel> implements Simulator<T, Continuo
 	}
 
 	@Override
-	public void addTrajectoryRecorder(ContinuousTrajectoryRecorder<T> tr) {
-		if (tr instanceof FiniteTrajectoryRecorder<?>) {
-			@SuppressWarnings("unchecked")
-			FiniteTrajectoryRecorder<T> ftr = (FiniteTrajectoryRecorder<T>)tr;
-			trajectoryRecorders.add(ftr);
-		}
+	public void addTrajectoryRecorder(TrajectoryRecorder tr) {
+		trajectoryRecorders.add(tr);
 	}
 
 	@Override
-	public void removeTrajectoryRecorder(ContinuousTrajectoryRecorder<T> tr) {
+	public void removeTrajectoryRecorder(TrajectoryRecorder tr) {
 		trajectoryRecorders.remove(tr);
 	}
 

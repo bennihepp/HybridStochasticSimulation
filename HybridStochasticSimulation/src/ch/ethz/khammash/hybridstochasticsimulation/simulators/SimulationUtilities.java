@@ -11,17 +11,16 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.ode.nonstiff.EulerIntegrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
-
-import com.google.common.primitives.Doubles;
 
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationController;
+import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationControllerCommonsMath;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.StochasticSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfiguration;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.DefaultRandomDataGeneratorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.DormandPrince853IntegratorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.factories.PDMPModelFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.HybridModel;
@@ -36,20 +35,15 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryStochasticM
 import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ArrayFiniteAdaptiveMSHRNTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ArrayFiniteContinuousTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ArrayFiniteTrajectoryRecorder;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajectoryRecorder;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFinitePlotData;
 import ch.ethz.khammash.ode.cvode.CVodeSolver;
 import ch.ethz.khammash.ode.lsodar.LsodarDirectSolver;
-import ch.ethz.khammash.ode.nonstiff.AdaptiveEulerSolver;
-import ch.ethz.khammash.ode.nonstiff.AdaptiveRungeKutta4thOrderSolver;
 import ch.ethz.khammash.ode.nonstiff.EulerSolver;
-import ch.ethz.khammash.ode.nonstiff.RungeKutta4thOrderSolver;
 
 public class SimulationUtilities {
 
@@ -60,7 +54,7 @@ public class SimulationUtilities {
 		double[] x0 = nss.x0;
 		final double t0 = tSeries[0];
 		final double t1 = tSeries[tSeries.length - 1];
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>();
+		PDMPSimulationControllerCommonsMath ctrl = new PDMPSimulationControllerCommonsMath();
 		DormandPrince853IntegratorFactory iF = new DormandPrince853IntegratorFactory();
 		int maxEvaluations = (int)((t1 - t0) / iF.getMinStep());
 		iF.setMaxEvaluations(maxEvaluations);
@@ -69,7 +63,7 @@ public class SimulationUtilities {
 		if (printMessages)
 			System.out.println("PDMP: Evaluating trajectory at " + tSeries.length + " time points");
 
-		ArrayFiniteContinuousTrajectoryRecorder<PDMPModel> tr = new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+		ArrayFiniteContinuousTrajectoryRecorder tr = new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 		ctrl.simulateTrajectory(model, tr, t0, x0, t1);
 		double[][] xSeries = tr.getxSeries();
 
@@ -89,12 +83,12 @@ public class SimulationUtilities {
 		if (printMessages)
 			System.out.println("PDMP: Evaluating trajectory at " + tSeries.length + " time points");
 
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>(1);
-		SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>>() {
+		PDMPSimulationController ctrl = new PDMPSimulationController();
+		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
+			= new SimulatorFactory<Simulator<PDMPModel>>() {
 
 				@Override
-				public Simulator<PDMPModel, ContinuousTrajectoryRecorder<PDMPModel>> createSimulator(
+				public Simulator<PDMPModel> createSimulator(
 						RandomDataGenerator rdg) {
 					CVodeSolver solver = new CVodeSolver(1e-3, 1e-3);
 //					solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);
@@ -108,14 +102,14 @@ public class SimulationUtilities {
 //					EulerSolver solver = new EulerSolver(1e-5);
 //					RungeKutta4thOrderSolver solver = new RungeKutta4thOrderSolver(1e-4);
 //					AdaptiveRungeKutta4thOrderSolver solver = new AdaptiveRungeKutta4thOrderSolver(1e-8, 1e-8);
-					return new PDMPSimulator<PDMPModel>(solver, rdg);
+					return new PDMPSimulator(solver, rdg);
 				}
 
 		};
 		ctrl.setSimulatorFactory(simulatorFactory);
 		ctrl.setRandomDataGeneratorFactory(new DefaultRandomDataGeneratorFactory(nss.rng));
 
-		ArrayFiniteContinuousTrajectoryRecorder<PDMPModel> tr = new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+		ArrayFiniteContinuousTrajectoryRecorder tr = new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 		ctrl.simulateTrajectory(model, tr, t0, x0, t1);
 		double[][] xSeries = tr.getxSeries();
 
@@ -136,7 +130,7 @@ public class SimulationUtilities {
 		double[] z0 = hrn.scaleState(x0);
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>();
+		PDMPSimulationControllerCommonsMath ctrl = new PDMPSimulationControllerCommonsMath();
 		DormandPrince853IntegratorFactory iF = new DormandPrince853IntegratorFactory();
 //		iF.setMinStep(hrn.getInverseTimeScaleFactor() * iF.getMinStep());
 //		iF.setMaxStep(hrn.getInverseTimeScaleFactor() * iF.getMaxStep());
@@ -149,7 +143,7 @@ public class SimulationUtilities {
 			System.out.println("MSPDMP: Evaluating trajectory at " + tSeries.length + " time points");
 //		RealVector tauVector = tVector.mapMultiply(hrn.getTimeScaleFactor());
 
-		ArrayFiniteContinuousTrajectoryRecorder<PDMPModel> tr = new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+		ArrayFiniteContinuousTrajectoryRecorder tr = new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 		final long startTime = System.currentTimeMillis();
 		ctrl.simulateTrajectory(model, tr, t0, z0, t1);
 		double[][] zSeries = tr.getxSeries();
@@ -186,21 +180,20 @@ public class SimulationUtilities {
 			System.out.println("MSPDMP: Evaluating trajectory at " + tSeries.length + " time points");
 //		RealVector tauVector = tVector.mapMultiply(hrn.getTimeScaleFactor());
 
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>(1);
-		SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>>() {
+		PDMPSimulationController ctrl = new PDMPSimulationController();
+		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
+			= new SimulatorFactory<Simulator<PDMPModel>>() {
 
 				@Override
-				public Simulator<PDMPModel, ContinuousTrajectoryRecorder<PDMPModel>> createSimulator(
-						RandomDataGenerator rdg) {
+				public Simulator<PDMPModel> createSimulator(RandomDataGenerator rdg) {
 					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
-					return new PDMPSimulator<PDMPModel>(solver, rdg);
+					return new PDMPSimulator(solver, rdg);
 				}
 
 		};
 		ctrl.setSimulatorFactory(simulatorFactory);
 
-		ArrayFiniteContinuousTrajectoryRecorder<PDMPModel> tr = new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+		ArrayFiniteContinuousTrajectoryRecorder tr = new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 		final long startTime = System.currentTimeMillis();
 		ctrl.simulateTrajectory(model, tr, t0, z0, t1);
 		double[][] zSeries = tr.getxSeries();
@@ -234,11 +227,12 @@ public class SimulationUtilities {
 		hrn.setTolerance(nss.tolerance);
 		hrn.setTheta(nss.theta);
 		AdaptiveMSHRNModel model = new AdaptiveMSHRNModel(hrn);
+		model.setExposeOptionalState(completeTrajectory);
 		double[] x0 = nss.x0;
 		double[] z0 = hrn.scaleState(x0);
 		final double t0 = tSeries[0];
 		final double t1 = tSeries[tSeries.length - 1];
-		PDMPSimulationController<AdaptiveMSHRNModel> ctrl = new PDMPSimulationController<AdaptiveMSHRNModel>();
+		PDMPSimulationControllerCommonsMath ctrl = new PDMPSimulationControllerCommonsMath();
 		DormandPrince853IntegratorFactory iF = new DormandPrince853IntegratorFactory();
 		int maxEvaluations = (int)((t1 - t0) / iF.getMinStep());
 		iF.setMaxEvaluations(maxEvaluations);
@@ -249,24 +243,18 @@ public class SimulationUtilities {
 			System.out.println("AdaptiveMSPDMP: Evaluating trajectory at " + tSeries.length + " time points");
 		}
 
-		ctrl.setSimulatorFactory(new SimulatorFactory<Simulator<AdaptiveMSHRNModel,ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>>>() {
+		ctrl.setSimulatorFactory(new SimulatorFactory<Simulator<PDMPModel>>() {
 			@Override
-			public Simulator<AdaptiveMSHRNModel, ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>> createSimulator(
+			public Simulator<PDMPModel> createSimulator(
 					RandomDataGenerator rdg) {
 				EulerIntegrator integrator = new EulerIntegrator(1e-4);
 //				DormandPrince853Integrator integrator = new DormandPrince853Integrator(1e-8, (t1-t0)/100, 1e-3, 1e-3);
-				PDMPSimulatorCommonsMath<AdaptiveMSHRNModel> sim = new PDMPSimulatorCommonsMath<AdaptiveMSHRNModel>(integrator, null, rdg);
+				PDMPSimulatorCommonsMath sim = new PDMPSimulatorCommonsMath(integrator, null, rdg);
 				return sim;
 			}
 		});
 
-		CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder completeTr = null;
-		ArrayFiniteAdaptiveMSHRNTrajectoryRecorder tr;
-		if (completeTrajectory) {
-			completeTr = new CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder(tSeries);
-			tr = completeTr;
-		} else
-			tr = new ArrayFiniteAdaptiveMSHRNTrajectoryRecorder(tSeries);
+		ArrayFiniteTrajectoryRecorder tr = new ArrayFiniteTrajectoryRecorder(tSeries.length);
 		final long startTime = System.currentTimeMillis();
 		ctrl.simulateTrajectory(model, tr, t0, z0, t1);
 		double[][] xSeries = tr.getxSeries();
@@ -297,23 +285,24 @@ public class SimulationUtilities {
 		pd.setStateNames(nss.speciesNames);
 		pd.setPlotScales(nss.plotScales);
 		result.add(pd);
-		if (completeTr != null) {
-			pd = new VectorFinitePlotData(tSeries, completeTr.getAlphaTrajectory().getxSeries());
-			pd.setStateNames(alphaNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getRhoTrajectory().getxSeries());
-			pd.setStateNames(rhoNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getBetaTrajectory().getxSeries());
-			pd.setStateNames(betaNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getRttTrajectory().getxSeries());
-			pd.setStateNames(rttNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getScaledTrajectory().getxSeries());
-			pd.setStateNames(scaledNames);
-			result.add(pd);
-		}
+		// TODO
+//		if (completeTr != null) {
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getAlphaTrajectory().getxSeries());
+//			pd.setStateNames(alphaNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getRhoTrajectory().getxSeries());
+//			pd.setStateNames(rhoNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getBetaTrajectory().getxSeries());
+//			pd.setStateNames(betaNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getRttTrajectory().getxSeries());
+//			pd.setStateNames(rttNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getScaledTrajectory().getxSeries());
+//			pd.setStateNames(scaledNames);
+//			result.add(pd);
+//		}
 		return result;
 	}
 
@@ -329,18 +318,19 @@ public class SimulationUtilities {
 		hrn.setTolerance(nss.tolerance);
 		hrn.setTheta(nss.theta);
 		AdaptiveMSHRNModel model = new AdaptiveMSHRNModel(hrn);
+		model.setExposeOptionalState(completeTrajectory);
 		double[] x0 = nss.x0;
 		double[] z0 = hrn.scaleState(x0);
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
-		PDMPSimulationController<AdaptiveMSHRNModel> ctrl = new PDMPSimulationController<AdaptiveMSHRNModel>(1);
-		SimulatorFactory<Simulator<AdaptiveMSHRNModel,ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>>> simulatorFactory
-			= new SimulatorFactory<Simulator<AdaptiveMSHRNModel,ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>>>() {
+		PDMPSimulationController ctrl = new PDMPSimulationController();
+		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
+			= new SimulatorFactory<Simulator<PDMPModel>>() {
 
 				@Override
-				public Simulator<AdaptiveMSHRNModel, ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>> createSimulator(
+				public Simulator<PDMPModel> createSimulator(
 						RandomDataGenerator rdg) {
-					CVodeSolver solver = new CVodeSolver(1e-2, 1e-2);
+					CVodeSolver solver = new CVodeSolver(1e-6, 1e-3);
 //					solver.setMinStep(1e-3);
 //					solver.setMaxStep(1e-3);
 //					solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);
@@ -350,11 +340,11 @@ public class SimulationUtilities {
 //					solver.setAbsoluteTolerance(1e-1);
 //					solver.setRelativeTolerance(1e-1);
 //					ImplicitEulerSolver solver = new ImplicitEulerSolver(1e-4, 1e-4, 1e-4, 1e-4);
-//					AdaptiveEulerSolver solver = new AdaptiveEulerSolver(1e-3, 1e-8, 1e-8, 1e-4);
+//					AdaptiveEulerSolver solver = new AdaptiveEulerSolver(1e-3, 1e-2, 1e-2);
 //					EulerSolver solver = new EulerSolver(1e-4);
 //					RungeKutta4thOrderSolver solver = new RungeKutta4thOrderSolver(1e-3);
 //					AdaptiveRungeKutta4thOrderSolver solver = new AdaptiveRungeKutta4thOrderSolver(1e-8, 1e-8);
-					return new PDMPSimulator<AdaptiveMSHRNModel>(solver, rdg);
+					return new PDMPSimulator(solver, rdg);
 				}
 
 		};
@@ -365,13 +355,7 @@ public class SimulationUtilities {
 			System.out.println("AdaptiveMSPDMP: Evaluating trajectory at " + tSeries.length + " time points");
 		}
 
-		CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder completeTr = null;
-		ArrayFiniteAdaptiveMSHRNTrajectoryRecorder tr;
-		if (completeTrajectory) {
-			completeTr = new CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder(tSeries);
-			tr = completeTr;
-		} else
-			tr = new ArrayFiniteAdaptiveMSHRNTrajectoryRecorder(tSeries);
+		ArrayFiniteTrajectoryRecorder tr = new ArrayFiniteTrajectoryRecorder(tSeries.length);
 		final long startTime = System.currentTimeMillis();
 		ctrl.simulateTrajectory(model, tr, t0, z0, t1);
 		double[][] xSeries = tr.getxSeries();
@@ -381,58 +365,59 @@ public class SimulationUtilities {
 			System.out.println("Total execution time: " + (endTime - startTime));
 		}
 
-		String[] alphaNames = new String[hrn.getNumberOfSpecies()];
-		String[] rhoNames = new String[hrn.getNumberOfReactions()];
-		String[] betaNames = new String[hrn.getNumberOfReactions()];
-		String[] stNames = new String[hrn.getNumberOfSpecies()];
-		String[] rttNames = new String[hrn.getNumberOfReactions()];
-		String[] scaledNames = new String[hrn.getNumberOfSpecies()];
-		String[] integratorNames = { "IntState", "IntCount", "ReactionCount" };
-		for (int s=0; s < alphaNames.length; s++)
-			alphaNames[s] = "a_"+nss.speciesNames[s];
-		for (int r=0; r < rhoNames.length; r++)
-			rhoNames[r] = "rho"+r;
-		for (int r=0; r < betaNames.length; r++)
-			betaNames[r] = "beta"+r;
-		for (int s=0; s < stNames.length; s++)
-			stNames[s] = "st_"+nss.speciesNames[s];
-		for (int r=0; r < rttNames.length; r++)
-			rttNames[r] = "rtt"+r;
-		for (int s=0; s < scaledNames.length; s++)
-			scaledNames[s] = "z"+s;
+//		String[] alphaNames = new String[hrn.getNumberOfSpecies()];
+//		String[] rhoNames = new String[hrn.getNumberOfReactions()];
+//		String[] betaNames = new String[hrn.getNumberOfReactions()];
+//		String[] stNames = new String[hrn.getNumberOfSpecies()];
+//		String[] rttNames = new String[hrn.getNumberOfReactions()];
+//		String[] scaledNames = new String[hrn.getNumberOfSpecies()];
+//		String[] integratorNames = { "IntState", "IntCount", "ReactionCount" };
+//		for (int s=0; s < alphaNames.length; s++)
+//			alphaNames[s] = "a_"+nss.speciesNames[s];
+//		for (int r=0; r < rhoNames.length; r++)
+//			rhoNames[r] = "rho"+r;
+//		for (int r=0; r < betaNames.length; r++)
+//			betaNames[r] = "beta"+r;
+//		for (int s=0; s < stNames.length; s++)
+//			stNames[s] = "st_"+nss.speciesNames[s];
+//		for (int r=0; r < rttNames.length; r++)
+//			rttNames[r] = "rtt"+r;
+//		for (int s=0; s < scaledNames.length; s++)
+//			scaledNames[s] = "z"+s;
 
 		List<VectorFinitePlotData> result = new ArrayList<VectorFinitePlotData>(5);
 		VectorFinitePlotData pd = new VectorFinitePlotData(tSeries, xSeries);
 		pd.setStateNames(nss.speciesNames);
 		pd.setPlotScales(nss.plotScales);
 		result.add(pd);
-		if (completeTr != null) {
-			pd = new VectorFinitePlotData(tSeries, completeTr.getAlphaTrajectory().getxSeries());
-			pd.setStateNames(alphaNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getRhoTrajectory().getxSeries());
-			pd.setStateNames(rhoNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getBetaTrajectory().getxSeries());
-			pd.setStateNames(betaNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getStTrajectory().getxSeries());
-			pd.setStateNames(stNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getRttTrajectory().getxSeries());
-			pd.setStateNames(rttNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getScaledTrajectory().getxSeries());
-			pd.setStateNames(scaledNames);
-			result.add(pd);
-			pd = new VectorFinitePlotData(tSeries, completeTr.getIntegratorTrajectory().getxSeries());
-			double integratorCounterMax = -Doubles.min(completeTr.getIntegratorTrajectory().getxSeries()[1]);
-			double reactionCounterMax = -Doubles.min(completeTr.getIntegratorTrajectory().getxSeries()[2]);
-			pd.setPlotScale(0, 0.1 * integratorCounterMax);
-			pd.setPlotScale(2, integratorCounterMax / reactionCounterMax);
-			pd.setStateNames(integratorNames);
-			result.add(pd);
-		}
+		// TODO
+//		if (completeTr != null) {
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getAlphaTrajectory().getxSeries());
+//			pd.setStateNames(alphaNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getRhoTrajectory().getxSeries());
+//			pd.setStateNames(rhoNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getBetaTrajectory().getxSeries());
+//			pd.setStateNames(betaNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getStTrajectory().getxSeries());
+//			pd.setStateNames(stNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getRttTrajectory().getxSeries());
+//			pd.setStateNames(rttNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getScaledTrajectory().getxSeries());
+//			pd.setStateNames(scaledNames);
+//			result.add(pd);
+//			pd = new VectorFinitePlotData(tSeries, completeTr.getIntegratorTrajectory().getxSeries());
+//			double integratorCounterMax = -Doubles.min(completeTr.getIntegratorTrajectory().getxSeries()[1]);
+//			double reactionCounterMax = -Doubles.min(completeTr.getIntegratorTrajectory().getxSeries()[2]);
+//			pd.setPlotScale(0, 0.1 * integratorCounterMax);
+//			pd.setPlotScale(2, integratorCounterMax / reactionCounterMax);
+//			pd.setStateNames(integratorNames);
+//			result.add(pd);
+//		}
 		return result;
 	}
 
@@ -440,14 +425,14 @@ public class SimulationUtilities {
 		double[] x0 = nss.x0;
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>();
+		PDMPSimulationControllerCommonsMath ctrl = new PDMPSimulationControllerCommonsMath();
 		ctrl.setRandomDataGeneratorFactory(new DefaultRandomDataGeneratorFactory(nss.rng));
 		if (printMessages)
 			System.out.println("Deterministic: Evaluating trajectory");
 
 		UnaryBinaryDeterministicModel hybridModel = new UnaryBinaryDeterministicModel(nss.net);
 		PDMPModel model = new PDMPModelAdapter<HybridModel>(hybridModel);
-		ArrayFiniteContinuousTrajectoryRecorder<PDMPModel> tr = new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+		ArrayFiniteContinuousTrajectoryRecorder tr = new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 		final long startTime = System.currentTimeMillis();
 		ctrl.simulateTrajectory(model, tr, t0, x0, t1);
 		final long endTime = System.currentTimeMillis();
@@ -464,19 +449,19 @@ public class SimulationUtilities {
 		double[] x0 = nss.x0;
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>(1);
+		PDMPSimulationController ctrl = new PDMPSimulationController();
 		ctrl.setRandomDataGeneratorFactory(new DefaultRandomDataGeneratorFactory(nss.rng));
 		if (printMessages)
 			System.out.println("Deterministic: Evaluating trajectory");
 
-		SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>>() {
+		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
+			= new SimulatorFactory<Simulator<PDMPModel>>() {
 
 				@Override
-				public Simulator<PDMPModel, ContinuousTrajectoryRecorder<PDMPModel>> createSimulator(
+				public Simulator<PDMPModel> createSimulator(
 						RandomDataGenerator rdg) {
 					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
-					return new PDMPSimulator<PDMPModel>(solver, rdg);
+					return new PDMPSimulator(solver, rdg);
 				}
 
 		};
@@ -484,7 +469,7 @@ public class SimulationUtilities {
 
 		UnaryBinaryDeterministicModel hybridModel = new UnaryBinaryDeterministicModel(nss.net);
 		PDMPModel model = new PDMPModelAdapter<HybridModel>(hybridModel);
-		ArrayFiniteContinuousTrajectoryRecorder<PDMPModel> tr = new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+		ArrayFiniteContinuousTrajectoryRecorder tr = new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 		ctrl.simulateTrajectory(model, tr, t0, x0, t1);
 
 		VectorFinitePlotData pd = new VectorFinitePlotData(tSeries, tr.getxSeries());
@@ -504,7 +489,7 @@ public class SimulationUtilities {
 			System.out.println("Stochastic: Evaluating trajectory");
 
 		//StochasticTrajectoryRecorder<StochasticReactionNetworkModel> tr = new StochasticTrajectoryRecorder<StochasticReactionNetworkModel>();
-		ArrayFiniteTrajectoryRecorder<StochasticReactionNetworkModel> tr = new ArrayFiniteTrajectoryRecorder<StochasticReactionNetworkModel>(tSeries);
+		ArrayFiniteTrajectoryRecorder tr = new ArrayFiniteTrajectoryRecorder(tSeries.length);
 //		final long startTime = System.currentTimeMillis();
 		ctrl.simulateTrajectory(model, tr, nss.t0, x0, nss.t1);
 //		final long endTime = System.currentTimeMillis();
@@ -554,7 +539,7 @@ public class SimulationUtilities {
 		final long startTime = System.currentTimeMillis();
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
-		ArrayFiniteTrajectoryRecorder<StochasticReactionNetworkModel> tr = new ArrayFiniteTrajectoryRecorder<StochasticReactionNetworkModel>(tSeries);
+		ArrayFiniteTrajectoryRecorder tr = new ArrayFiniteTrajectoryRecorder(tSeries.length);
 		ctrl.simulateTrajectory(model, tr, t0, x0, t1);
 		final long endTime = System.currentTimeMillis();
 		if (printMessages)
@@ -567,19 +552,22 @@ public class SimulationUtilities {
 	}
 
 	public static VectorFiniteDistributionPlotData simulatePDMPDistributionCommonsMath(int runs, ExampleConfiguration nss,
-			double[] tSeries, boolean printMessages) {
+			final double[] tSeries, boolean printMessages) {
 		final HybridReactionNetwork hrn = new HybridReactionNetwork(nss.net, nss.deterministicReactions);
 		double[] x0 = nss.x0;
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>();
+		double t0 = tSeries[0];
+		double t1 = tSeries[tSeries.length - 1];
+		PDMPSimulationControllerCommonsMath ctrl = new PDMPSimulationControllerCommonsMath();
 		ctrl.setRandomDataGeneratorFactory(new DefaultRandomDataGeneratorFactory(nss.rng));
 		if (printMessages)
 			System.out.println("PDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
-		FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<PDMPModel>> trFactory
-				= new FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<PDMPModel>>() {
+		FiniteTrajectoryRecorderFactory trFactory
+				= new FiniteTrajectoryRecorderFactory() {
 			@Override
-			public ContinuousTrajectoryRecorder<PDMPModel> createTrajectoryRecorder(double[] tSeries) {
-				return new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+			public FiniteTrajectoryRecorder createTrajectoryRecorder() {
+//			public ContinuousTrajectoryRecorder<PDMPModel> createTrajectoryRecorder(double[] tSeries) {
+				return new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 			}
 		};
 		ModelFactory<PDMPModel> modelFactory = new ModelFactory<PDMPModel>() {
@@ -591,23 +579,13 @@ public class SimulationUtilities {
 		};
 		try {
 			final long startTime = System.currentTimeMillis();
-			StatisticalSummary[][] xSeriesStatistics = ctrl
-					.simulateTrajectoryDistribution(
-							runs, modelFactory, trFactory, tSeries, x0);
+			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, x0, t1);
 			final long endTime = System.currentTimeMillis();
 			if (printMessages)
 				System.out.println("Total execution time: " + (endTime - startTime));
 
-			RealMatrix xMeanMatrix = new Array2DRowRealMatrix(xSeriesStatistics[0].length, xSeriesStatistics.length);
-			RealMatrix xStdDevMatrix = xMeanMatrix.copy();
-			for (int i = 0; i < xSeriesStatistics.length; i++)
-				for (int s = 0; s < xSeriesStatistics[0].length; s++) {
-					double xMean = xSeriesStatistics[i][s].getMean();
-					double xStdDev = xSeriesStatistics[i][s].getStandardDeviation();
-					xMeanMatrix.setEntry(s, i, xMean);
-					xStdDevMatrix.setEntry(s, i, xStdDev);
-				}
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tSeries, xMeanMatrix.getData(), xStdDevMatrix.getData());
+			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
 			pd.setStateNames(nss.speciesNames);
 			pd.setPlotScales(nss.plotScales);
 			return pd;
@@ -623,10 +601,12 @@ public class SimulationUtilities {
 	}
 
 	public static VectorFiniteDistributionPlotData simulatePDMPDistribution(int runs, ExampleConfiguration nss,
-			double[] tSeries, boolean printMessages) {
+			final double[] tSeries, boolean printMessages) {
 		final HybridReactionNetwork hrn = new HybridReactionNetwork(nss.net, nss.deterministicReactions);
 		double[] x0 = nss.x0;
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>();
+		double t0 = tSeries[0];
+		double t1 = tSeries[tSeries.length - 1];
+		PDMPSimulationController ctrl = new PDMPSimulationController();
 		ctrl.setRandomDataGeneratorFactory(new DefaultRandomDataGeneratorFactory(nss.rng));
 		if (printMessages)
 			System.out.println("PDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
@@ -635,24 +615,25 @@ public class SimulationUtilities {
 		if (printMessages)
 			System.out.println("AdaptiveMSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
-		SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>>() {
+		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
+			= new SimulatorFactory<Simulator<PDMPModel>>() {
 
 				@Override
-				public Simulator<PDMPModel, ContinuousTrajectoryRecorder<PDMPModel>> createSimulator(
+				public Simulator<PDMPModel> createSimulator(
 						RandomDataGenerator rdg) {
 					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
-					return new PDMPSimulator<PDMPModel>(solver, rdg);
+					return new PDMPSimulator(solver, rdg);
 				}
 
 		};
 		ctrl.setSimulatorFactory(simulatorFactory);
 
-		FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<PDMPModel>> trFactory
-				= new FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<PDMPModel>>() {
+		FiniteTrajectoryRecorderFactory trFactory
+				= new FiniteTrajectoryRecorderFactory() {
 			@Override
-			public ContinuousTrajectoryRecorder<PDMPModel> createTrajectoryRecorder(double[] tSeries) {
-				return new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+			public FiniteTrajectoryRecorder createTrajectoryRecorder() {
+//			public ContinuousTrajectoryRecorder<PDMPModel> createTrajectoryRecorder(double[] tSeries) {
+				return new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 			}
 		};
 		ModelFactory<PDMPModel> modelFactory = new ModelFactory<PDMPModel>() {
@@ -664,23 +645,13 @@ public class SimulationUtilities {
 		};
 		try {
 			final long startTime = System.currentTimeMillis();
-			StatisticalSummary[][] zSeriesStatistics = ctrl
-					.simulateTrajectoryDistribution(
-							runs, modelFactory, trFactory, tSeries, x0);
+			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, x0, t1);
 			final long endTime = System.currentTimeMillis();
 			if (printMessages)
 				System.out.println("Total execution time: " + (endTime - startTime));
 
-			RealMatrix xMeanMatrix = new Array2DRowRealMatrix(zSeriesStatistics.length, zSeriesStatistics[0].length);
-			RealMatrix xStdDevMatrix = xMeanMatrix.copy();
-			for (int s = 0; s < zSeriesStatistics.length; s++)
-				for (int i = 0; i < zSeriesStatistics[0].length; i++) {
-					double xMean = zSeriesStatistics[s][i].getMean();
-					double xStdDev = zSeriesStatistics[s][i].getStandardDeviation();
-					xMeanMatrix.setEntry(s, i, xMean);
-					xStdDevMatrix.setEntry(s, i, xStdDev);
-				}
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tSeries, xMeanMatrix.getData(), xStdDevMatrix.getData());
+			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
 			pd.setStateNames(nss.speciesNames);
 			pd.setPlotScales(nss.plotScales);
 			return pd;
@@ -696,23 +667,26 @@ public class SimulationUtilities {
 	}
 
 	public static VectorFiniteDistributionPlotData simulateMSPDMPDistributionCommonsMath(int runs, ExampleConfiguration nss,
-			double[] tSeries, boolean printMessages) {
+			final double[] tSeries, boolean printMessages) {
 		final MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
 		hrn.setDelta(nss.delta);
 		hrn.setTolerance(nss.tolerance); 
 		double[] x0 = nss.x0;
 		double[] z0 = hrn.scaleState(x0);
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>();
+		double t0 = tSeries[0];
+		double t1 = tSeries[tSeries.length - 1];
+		PDMPSimulationControllerCommonsMath ctrl = new PDMPSimulationControllerCommonsMath();
 		ctrl.setRandomDataGeneratorFactory(new DefaultRandomDataGeneratorFactory(nss.rng));
 		if (printMessages)
 			System.out.println("MSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 //		RealVector tauVector = tVector.mapMultiply(hrn.getTimeScaleFactor());
 
-		FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<PDMPModel>> trFactory
-				= new FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<PDMPModel>>() {
+		FiniteTrajectoryRecorderFactory trFactory
+				= new FiniteTrajectoryRecorderFactory() {
 			@Override
-			public ContinuousTrajectoryRecorder<PDMPModel> createTrajectoryRecorder(double[] tSeries) {
-				return new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+			public FiniteTrajectoryRecorder createTrajectoryRecorder() {
+//			public ContinuousTrajectoryRecorder<PDMPModel> createTrajectoryRecorder(double[] tSeries) {
+				return new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 			}
 		};
 		ModelFactory<PDMPModel> modelFactory = new ModelFactory<PDMPModel>() {
@@ -724,25 +698,13 @@ public class SimulationUtilities {
 		};
 		try {
 			final long startTime = System.currentTimeMillis();
-			StatisticalSummary[][] zSeriesStatistics = ctrl
-					.simulateTrajectoryDistribution(
-							runs, modelFactory, trFactory, tSeries, z0);
+			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
 			final long endTime = System.currentTimeMillis();
 			if (printMessages)
 				System.out.println("Total execution time: " + (endTime - startTime));
 
-			RealMatrix xMeanMatrix = new Array2DRowRealMatrix(zSeriesStatistics[0].length, zSeriesStatistics.length);
-			RealMatrix xStdDevMatrix = xMeanMatrix.copy();
-			for (int i = 0; i < zSeriesStatistics.length; i++)
-				for (int s = 0; s < zSeriesStatistics[0].length; s++) {
-					double xMean = zSeriesStatistics[i][s].getMean();
-					xMean = hrn.recoverState(s, xMean);
-					double xStdDev = zSeriesStatistics[i][s].getStandardDeviation();
-					xStdDev = hrn.recoverState(s, xStdDev);
-					xMeanMatrix.setEntry(s, i, xMean);
-					xStdDevMatrix.setEntry(s, i, xStdDev);
-				}
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tSeries, xMeanMatrix.getData(), xStdDevMatrix.getData());
+			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
 			pd.setStateNames(nss.speciesNames);
 			pd.setPlotScales(nss.plotScales);
 			return pd;
@@ -758,13 +720,15 @@ public class SimulationUtilities {
 	}
 
 	public static VectorFiniteDistributionPlotData simulateMSPDMPDistribution(int runs, ExampleConfiguration nss,
-			double[] tSeries, boolean printMessages) {
+			final double[] tSeries, boolean printMessages) {
 		final MSHybridReactionNetwork hrn = new MSHybridReactionNetwork(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
 		hrn.setDelta(nss.delta);
 		hrn.setTolerance(nss.tolerance); 
 		double[] x0 = nss.x0;
 		double[] z0 = hrn.scaleState(x0);
-		PDMPSimulationController<PDMPModel> ctrl = new PDMPSimulationController<PDMPModel>(1);
+		double t0 = tSeries[0];
+		double t1 = tSeries[tSeries.length - 1];
+		PDMPSimulationController ctrl = new PDMPSimulationController();
 		ctrl.setRandomDataGeneratorFactory(new DefaultRandomDataGeneratorFactory(nss.rng));
 		if (printMessages)
 			System.out.println("MSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
@@ -774,24 +738,25 @@ public class SimulationUtilities {
 		if (printMessages)
 			System.out.println("AdaptiveMSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
-		SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel,ContinuousTrajectoryRecorder<PDMPModel>>>() {
+		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
+			= new SimulatorFactory<Simulator<PDMPModel>>() {
 
 				@Override
-				public Simulator<PDMPModel, ContinuousTrajectoryRecorder<PDMPModel>> createSimulator(
+				public Simulator<PDMPModel> createSimulator(
 						RandomDataGenerator rdg) {
 					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
-					return new PDMPSimulator<PDMPModel>(solver, rdg);
+					return new PDMPSimulator(solver, rdg);
 				}
 
 		};
 		ctrl.setSimulatorFactory(simulatorFactory);
 
-		FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<PDMPModel>> trFactory
-				= new FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<PDMPModel>>() {
+		FiniteTrajectoryRecorderFactory trFactory
+				= new FiniteTrajectoryRecorderFactory() {
 			@Override
-			public ContinuousTrajectoryRecorder<PDMPModel> createTrajectoryRecorder(double[] tSeries) {
-				return new ArrayFiniteContinuousTrajectoryRecorder<PDMPModel>(tSeries);
+			public FiniteTrajectoryRecorder createTrajectoryRecorder() {
+//			public ContinuousTrajectoryRecorder<PDMPModel> createTrajectoryRecorder(double[] tSeries) {
+				return new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 			}
 		};
 		ModelFactory<PDMPModel> modelFactory = new ModelFactory<PDMPModel>() {
@@ -803,25 +768,13 @@ public class SimulationUtilities {
 		};
 		try {
 			final long startTime = System.currentTimeMillis();
-			StatisticalSummary[][] zSeriesStatistics = ctrl
-					.simulateTrajectoryDistribution(
-							runs, modelFactory, trFactory, tSeries, z0);
+			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
 			final long endTime = System.currentTimeMillis();
 			if (printMessages)
 				System.out.println("Total execution time: " + (endTime - startTime));
 
-			RealMatrix xMeanMatrix = new Array2DRowRealMatrix(zSeriesStatistics.length, zSeriesStatistics[0].length);
-			RealMatrix xStdDevMatrix = xMeanMatrix.copy();
-			for (int s = 0; s < zSeriesStatistics.length; s++)
-				for (int i = 0; i < zSeriesStatistics[0].length; i++) {
-					double xMean = zSeriesStatistics[s][i].getMean();
-					xMean = hrn.recoverState(s, xMean);
-					double xStdDev = zSeriesStatistics[s][i].getStandardDeviation();
-					xStdDev = hrn.recoverState(s, xStdDev);
-					xMeanMatrix.setEntry(s, i, xMean);
-					xStdDevMatrix.setEntry(s, i, xStdDev);
-				}
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tSeries, xMeanMatrix.getData(), xStdDevMatrix.getData());
+			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
 			pd.setStateNames(nss.speciesNames);
 			pd.setPlotScales(nss.plotScales);
 			return pd;
@@ -851,7 +804,7 @@ public class SimulationUtilities {
 //		final RealVector tauVector = tVector.mapMultiply(hrn.getInverseTimeScaleFactor());
 //		double tau0 = tauVector.getEntry(0);
 //		double tau1 = tauVector.getEntry(tauVector.getDimension() - 1);
-		PDMPSimulationController<AdaptiveMSHRNModel> ctrl = new PDMPSimulationController<AdaptiveMSHRNModel>();
+		PDMPSimulationControllerCommonsMath ctrl = new PDMPSimulationControllerCommonsMath();
 		DormandPrince853IntegratorFactory iF = new DormandPrince853IntegratorFactory();
 //		iF.setMinStep(hrn.getInverseTimeScaleFactor() * iF.getMinStep());
 //		iF.setMaxStep(hrn.getInverseTimeScaleFactor() * iF.getMaxStep());
@@ -863,39 +816,30 @@ public class SimulationUtilities {
 		if (printMessages)
 			System.out.println("AdaptiveMSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
-		FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>> trFactory
-				= new FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>>() {
+		FiniteTrajectoryRecorderFactory trFactory
+				= new FiniteTrajectoryRecorderFactory() {
 			@Override
-			public ContinuousTrajectoryRecorder<AdaptiveMSHRNModel> createTrajectoryRecorder(double[] tSeries) {
-				return new CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder(tSeries);
+			public FiniteTrajectoryRecorder createTrajectoryRecorder() {
+//			public ContinuousTrajectoryRecorder<AdaptiveMSHRNModel> createTrajectoryRecorder(double[] tSeries) {
+				return new ArrayFiniteTrajectoryRecorder(tSeries.length);
 			}
 		};
-		ModelFactory<AdaptiveMSHRNModel> modelFactory = new ModelFactory<AdaptiveMSHRNModel>() {
+		PDMPModelFactory modelFactory = new PDMPModelFactory() {
 			@Override
-			public AdaptiveMSHRNModel createModel() {
+			public PDMPModel createModel() {
 				AdaptiveMSHRN hrnClone = new AdaptiveMSHRN(hrn);
 				return new AdaptiveMSHRNModel(hrnClone);
 			}
 		};
 		try {
 			final long startTime = System.currentTimeMillis();
-			StatisticalSummary[][] xSeriesStatistics = ctrl
-					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, tSeries, z0);
+			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
 			final long endTime = System.currentTimeMillis();
 			if (printMessages)
 				System.out.println("Total execution time: " + (endTime - startTime));
 
-			RealMatrix xMeanMatrix = new Array2DRowRealMatrix(xSeriesStatistics.length, xSeriesStatistics[0].length);
-			RealMatrix xStdDevMatrix = xMeanMatrix.copy();
-			for (int s = 0; s < xSeriesStatistics.length; s++)
-				for (int i = 0; i < xSeriesStatistics[0].length; i++) {
-					double xMean = xSeriesStatistics[s][i].getMean();
-					double xStdDev = xSeriesStatistics[s][i].getStandardDeviation();
-					xMeanMatrix.setEntry(s, i, xMean);
-					xStdDevMatrix.setEntry(s, i, xStdDev);
-				}
-
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tSeries, xMeanMatrix.getData(), xStdDevMatrix.getData());
+			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
 			pd.setStateNames(nss.speciesNames);
 			pd.setPlotScales(nss.plotScales);
 			return pd;
@@ -920,21 +864,21 @@ public class SimulationUtilities {
 		hrn.setTheta(nss.theta); 
 		double[] x0 = nss.x0;
 		double[] z0 = hrn.scaleState(x0);
-//		double t0 = tSeries[0];
-//		double t1 = tSeries[tSeries.length - 1];
+		double t0 = tSeries[0];
+		double t1 = tSeries[tSeries.length - 1];
 //		final RealVector tauVector = tVector.mapMultiply(hrn.getInverseTimeScaleFactor());
 //		double tau0 = tauVector.getEntry(0);
 //		double tau1 = tauVector.getEntry(tauVector.getDimension() - 1);
-		PDMPSimulationController<AdaptiveMSHRNModel> ctrl = new PDMPSimulationController<AdaptiveMSHRNModel>();
+		PDMPSimulationController ctrl = new PDMPSimulationController();
 		ctrl.setRandomDataGeneratorFactory(new DefaultRandomDataGeneratorFactory(nss.rng));
 		if (printMessages)
 			System.out.println("AdaptiveMSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
-		SimulatorFactory<Simulator<AdaptiveMSHRNModel,ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>>> simulatorFactory
-			= new SimulatorFactory<Simulator<AdaptiveMSHRNModel,ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>>>() {
+		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
+			= new SimulatorFactory<Simulator<PDMPModel>>() {
 
 				@Override
-				public Simulator<AdaptiveMSHRNModel, ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>> createSimulator(
+				public Simulator<PDMPModel> createSimulator(
 						RandomDataGenerator rdg) {
 //					CVodeSolver solver = new CVodeSolver(1e-2, 1e-2);
 //					solver.setMinStep(1e-3);
@@ -950,45 +894,37 @@ public class SimulationUtilities {
 					EulerSolver solver = new EulerSolver(1e-2);
 //					RungeKutta4thOrderSolver solver = new RungeKutta4thOrderSolver(1e-1);
 //					AdaptiveRungeKutta4thOrderSolver solver = new AdaptiveRungeKutta4thOrderSolver(1e-8, 1e-8);
-					return new PDMPSimulator<AdaptiveMSHRNModel>(solver, rdg);
+					return new PDMPSimulator(solver, rdg);
 				}
 
 		};
 		ctrl.setSimulatorFactory(simulatorFactory);
 
-		FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>> trFactory
-				= new FiniteTrajectoryRecorderFactory<ContinuousTrajectoryRecorder<AdaptiveMSHRNModel>>() {
+		FiniteTrajectoryRecorderFactory trFactory
+				= new FiniteTrajectoryRecorderFactory() {
 			@Override
-			public ContinuousTrajectoryRecorder<AdaptiveMSHRNModel> createTrajectoryRecorder(double[] tSeries) {
-				return new CompleteArrayFiniteAdaptiveMSHRNTrajectoryRecorder(tSeries);
+			public FiniteTrajectoryRecorder createTrajectoryRecorder() {
+//			public ContinuousTrajectoryRecorder<AdaptiveMSHRNModel> createTrajectoryRecorder(double[] tSeries) {
+				return new ArrayFiniteTrajectoryRecorder(tSeries.length);
 			}
 		};
-		ModelFactory<AdaptiveMSHRNModel> modelFactory = new ModelFactory<AdaptiveMSHRNModel>() {
+		PDMPModelFactory modelFactory = new PDMPModelFactory() {
+
 			@Override
-			public AdaptiveMSHRNModel createModel() {
+			public PDMPModel createModel() {
 				AdaptiveMSHRN hrnClone = new AdaptiveMSHRN(hrn);
 				return new AdaptiveMSHRNModel(hrnClone);
 			}
 		};
 		try {
 			final long startTime = System.currentTimeMillis();
-			StatisticalSummary[][] xSeriesStatistics = ctrl
-					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, tSeries, z0);
+			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
 			final long endTime = System.currentTimeMillis();
 			if (printMessages)
 				System.out.println("Total execution time: " + (endTime - startTime));
 
-			RealMatrix xMeanMatrix = new Array2DRowRealMatrix(xSeriesStatistics.length, xSeriesStatistics[0].length);
-			RealMatrix xStdDevMatrix = xMeanMatrix.copy();
-			for (int s = 0; s < xSeriesStatistics.length; s++)
-				for (int i = 0; i < xSeriesStatistics[0].length; i++) {
-					double xMean = xSeriesStatistics[s][i].getMean();
-					double xStdDev = xSeriesStatistics[s][i].getStandardDeviation();
-					xMeanMatrix.setEntry(s, i, xMean);
-					xStdDevMatrix.setEntry(s, i, xStdDev);
-				}
-
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tSeries, xMeanMatrix.getData(), xStdDevMatrix.getData());
+			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
 			pd.setStateNames(nss.speciesNames);
 			pd.setPlotScales(nss.plotScales);
 			return pd;
@@ -1004,18 +940,21 @@ public class SimulationUtilities {
 	}
 
 	public static VectorFiniteDistributionPlotData simulateStochasticDistribution(int runs, final ExampleConfiguration nss,
-			double[] tSeries, boolean printMessages) {
+			final double[] tSeries, boolean printMessages) {
 		double[] x0 = nss.x0;
+		double t0 = tSeries[0];
+		double t1 = tSeries[tSeries.length - 1];
 		StochasticSimulationController<StochasticReactionNetworkModel> ctrl = new StochasticSimulationController<StochasticReactionNetworkModel>();
 		ctrl.setRandomDataGeneratorFactory(new DefaultRandomDataGeneratorFactory(nss.rng));
 		if (printMessages)
 			System.out.println("Stochastic: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
-		FiniteTrajectoryRecorderFactory<TrajectoryRecorder<StochasticReactionNetworkModel>> trFactory
-				= new FiniteTrajectoryRecorderFactory<TrajectoryRecorder<StochasticReactionNetworkModel>>() {
+		FiniteTrajectoryRecorderFactory trFactory
+				= new FiniteTrajectoryRecorderFactory() {
 			@Override
-			public TrajectoryRecorder<StochasticReactionNetworkModel> createTrajectoryRecorder(double[] tSeries) {
-				return new ArrayFiniteTrajectoryRecorder<StochasticReactionNetworkModel>(tSeries);
+			public FiniteTrajectoryRecorder createTrajectoryRecorder() {
+//			public TrajectoryRecorder<StochasticReactionNetworkModel> createTrajectoryRecorder(double[] tSeries) {
+				return new ArrayFiniteTrajectoryRecorder(tSeries.length);
 			}
 		};
 		ModelFactory<StochasticReactionNetworkModel> modelFactory = new ModelFactory<StochasticReactionNetworkModel>() {
@@ -1026,23 +965,14 @@ public class SimulationUtilities {
 		};
 		try {
 			final long startTime = System.currentTimeMillis();
-			StatisticalSummary[][] xSeriesStatistics = ctrl.simulateTrajectoryDistribution(
-					runs, modelFactory, trFactory, tSeries, x0);
+			FiniteStatisticalSummaryTrajectory distributionTr = ctrl.simulateTrajectoryDistribution(
+					runs, modelFactory, trFactory, t0, x0, t1);
 			//public StatisticalSummary[][] simulateTrajectoryDistribution(int runs, ModelFactory<T> modelFactory, double[] tSeries, double[] x0)
 			final long endTime = System.currentTimeMillis();
 			if (printMessages)
 				System.out.println("Total execution time: " + (endTime - startTime));
 
-			RealMatrix xMeanMatrix = new Array2DRowRealMatrix(xSeriesStatistics.length, xSeriesStatistics[0].length);
-			RealMatrix xStdDevMatrix = xMeanMatrix.copy();
-			for (int s = 0; s < xSeriesStatistics.length; s++)
-				for (int i = 0; i < xSeriesStatistics[0].length; i++) {
-					double xMean = xSeriesStatistics[s][i].getMean();
-					double xStdDev = xSeriesStatistics[s][i].getStandardDeviation();
-					xMeanMatrix.setEntry(s, i, xMean);
-					xStdDevMatrix.setEntry(s, i, xStdDev);
-				}
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tSeries, xMeanMatrix.getData(), xStdDevMatrix.getData());
+			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
 			pd.setStateNames(nss.speciesNames);
 			pd.setPlotScales(nss.plotScales);
 			return pd;

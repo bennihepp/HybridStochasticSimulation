@@ -24,27 +24,27 @@ public class GUI {
 						@Override
 						public void run() {
 							window.getStatusBar().setText("Running simulation");
-//							List<FinitePlotData> plotDataList = Main.trivialNetwork();
+//							List<FinitePlotData> plotDataList = Examples.trivialNetwork();
 							// Maybe example
-//							List<FinitePlotData> plotDataList = Main.conversionCycleNetwork();
-//							List<FinitePlotData> plotDataList = Main.regulatedTranscriptionNetwork();
+//							List<FinitePlotData> plotDataList = Examples.conversionCycleNetwork();
+//							List<FinitePlotData> plotDataList = Examples.regulatedTranscriptionNetwork();
 							// Example 2
-//							List<FinitePlotData> plotDataList = Main.stochasticFocusingNetwork();
-//							List<FinitePlotData> plotDataList = Main.simpleCrystallizationNetwork();
-//							List<FinitePlotData> plotDataList = Main.birthDeathTunnelNetwork();
+//							List<FinitePlotData> plotDataList = Examples.stochasticFocusingNetwork();
+//							List<FinitePlotData> plotDataList = Examples.simpleCrystallizationNetwork();
+//							List<FinitePlotData> plotDataList = Examples.birthDeathTunnelNetwork();
 							// Example 1
-//							List<FinitePlotData> plotDataList = Main.haploinsufficiencyNetwork();
-//							List<FinitePlotData> plotDataList = Main.bacteriumOperatorSiteNetwork();
-//							List<FinitePlotData> plotDataList = Main.lambdaPhageToggleSwitchNetwork();
-//							List<FinitePlotData> plotDataList = Main.repressedBacteriumOperonNetwork();
+//							List<FinitePlotData> plotDataList = Examples.haploinsufficiencyNetwork();
+//							List<FinitePlotData> plotDataList = Examples.bacteriumOperatorSiteNetwork();
+//							List<FinitePlotData> plotDataList = Examples.lambdaPhageToggleSwitchNetwork();
+//							List<FinitePlotData> plotDataList = Examples.repressedBacteriumOperonNetwork();
 							// Example 3
-//							List<FinitePlotData> plotDataList = Main.heatShockResponseNetwork();
-							List<FinitePlotData> plotDataList = Main.vilarOscillatorNetwork();
-//							List<FinitePlotData> plotDataList = Main.bacteriophageT7Network();
-//							List<FinitePlotData> plotDataList = Main.fastIsomerization();
-//							List<FinitePlotData> plotDataList = Main.fastDimerization();
-//							List<FinitePlotData> plotDataList = Main.repressilator();
-//							List<FinitePlotData> plotDataList = Main.toggleSwitch();
+//							List<FinitePlotData> plotDataList = Examples.heatShockResponseNetwork();
+//							List<FinitePlotData> plotDataList = Examples.vilarOscillatorNetwork();
+							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
+//							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
+//							List<FinitePlotData> plotDataList = Examples.fastDimerization();
+//							List<FinitePlotData> plotDataList = Examples.repressilator();
+//							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
 							int rows;
 							int cols;
 							if (plotDataList.size() >= 3) {
@@ -67,7 +67,7 @@ public class GUI {
 						@Override
 						public void run() {
 							window.getStatusBar().setText("Running benchmark");
-							Main.vilarOscillatorNetwork();
+							Examples.vilarOscillatorNetwork();
 							window.getStatusBar().setText("Finished benchmark", 2000, true);
 						}
 					};

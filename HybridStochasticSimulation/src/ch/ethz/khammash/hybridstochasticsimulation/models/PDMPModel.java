@@ -28,4 +28,10 @@ public interface PDMPModel extends ReactionNetworkModel {
 
 	void handleOptionalEvent(double t, double[] x);
 
+	double[] computePrimaryState(double t, double[] x);
+
+	boolean hasOptionalState();
+
+	double[] computeOptionalState(double t, double[] x);
+
 }

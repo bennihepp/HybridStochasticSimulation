@@ -81,34 +81,15 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 				reactionChoiceIndices2[r] = choiceIndices[1];
 				break;
 			}
-			// TODO: necessary to separate?
-//			if (reactionType == ReactionType.DETERMINISTIC)
-//				modelRateParameters[r] = getNetwork().getRateParameter(r);
-//			else
-//				modelRateParameters[r] = insideScale * getNetwork().getRateParameter(r);
 			modelRateParameters[r] = insideScale * getNetwork().getRateParameter(r);
 			if (choiceIndices.length == 2 && choiceIndices[0] == choiceIndices[1])
 				modelRateParameters[r] /= 2.0;
 			List<Integer> speciesIndicesList = new ArrayList<Integer>(getNumberOfSpecies());
 			List<Double> indexedStochiometriesList = new ArrayList<Double>(getNumberOfSpecies());
 			for (int s = 0; s < getNetwork().getNumberOfSpecies(); s++) {
-//				double outsideScale = hrn.getInverseSpeciesScaleFactor(s);
-//				if (reactionType == ReactionType.DETERMINISTIC)
-//					reactionStochiometries[r][s] = insideScale * outsideScale * getNetwork().getStochiometry(s, r);
-//				else
-//					reactionStochiometries[r][s] = outsideScale * getNetwork().getStochiometry(s, r);
-				// TODO: How to seperate continuous and discrete species
-//				if (reactionType == ReactionType.STOCHASTIC && hrn.getSpeciesType(s) == SpeciesType.CONTINUOUS)
-//					continue;
 				if (getNetwork().getStochiometry(s, r) != 0) {
 					double outsideScale = hrn.getInverseSpeciesScaleFactor(s);
-					double v;
-					// TODO: necessary to separate?
-//					if (reactionType == ReactionType.DETERMINISTIC)
-//						v = insideScale * outsideScale * getNetwork().getStochiometry(s, r);
-//					else
-//						v = outsideScale * getNetwork().getStochiometry(s, r);
-					v = outsideScale * getNetwork().getStochiometry(s, r);
+					double v = outsideScale * getNetwork().getStochiometry(s, r);
 					speciesIndicesList.add(s);
 					indexedStochiometriesList.add(v);
 				}

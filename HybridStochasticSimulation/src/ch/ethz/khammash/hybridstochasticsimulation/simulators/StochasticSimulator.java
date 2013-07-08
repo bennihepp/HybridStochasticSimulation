@@ -13,10 +13,10 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecord
 
 
 public class StochasticSimulator<T extends StochasticReactionNetworkModel>
-		implements Simulator<T, TrajectoryRecorder<T>> {
+		implements Simulator<T> {
 
 	private RandomDataGenerator rdg;
-	private List<TrajectoryRecorder<T>> trajectoryRecorders;
+	private List<TrajectoryRecorder> trajectoryRecorders;
 
 	public StochasticSimulator() {
 		this(null);
@@ -26,7 +26,7 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 		if (rdg == null)
 			rdg = new RandomDataGenerator();
 		this.rdg = rdg;
-		trajectoryRecorders = new LinkedList<TrajectoryRecorder<T>>();
+		trajectoryRecorders = new LinkedList<TrajectoryRecorder>();
 	}
 
 	public double simulate(T model, double t0, double[] x0, double t1, double[] x1) {
@@ -38,9 +38,8 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 			x[i] = x0[i];
 		double t = t0;
 		double[] propVec = new double[model.getNumberOfReactions()];
-    	for (TrajectoryRecorder<T> handler : trajectoryRecorders) {
-    		handler.setModel(model);
-    		handler.setInitialState(t0, x0);
+    	for (TrajectoryRecorder handler : trajectoryRecorders) {
+    		handler.beginRecording(t0, x0, t1);
     	}
     	long reactionCounter = 0;
     	double[] reactionCounterArray = new double[model.getNumberOfReactions()];
@@ -82,8 +81,8 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 	        if (reaction >= 0) {
 	        	reactionCounter++;
 	        	reactionCounterArray[reaction]++;
-	        	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
-	        		handler.reportState(t, x);
+	        	for (TrajectoryRecorder handler : trajectoryRecorders)
+	        		handler.record(t, x);
 	        }
 		}
 		final long endTime = System.currentTimeMillis();
@@ -95,18 +94,18 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 		Utilities.printArray("Relative reaction counts", reactionCounterArray);
 		for (int i=0; i < x1.length; i++)
 			x1[i] = x[i];
-    	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
-    		handler.setFinalState(t1, x1);
+    	for (TrajectoryRecorder handler : trajectoryRecorders)
+    		handler.endRecording(x1);
 		return t;
 	}
 
 	@Override
-	public void addTrajectoryRecorder(TrajectoryRecorder<T> tr) {
+	public void addTrajectoryRecorder(TrajectoryRecorder tr) {
 		trajectoryRecorders.add(tr);
 	}
 
 	@Override
-	public void removeTrajectoryRecorder(TrajectoryRecorder<T> tr) {
+	public void removeTrajectoryRecorder(TrajectoryRecorder tr) {
 		trajectoryRecorders.remove(tr);
 	}
 

@@ -4,20 +4,20 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
-public class DefaultSimulationWorker<T extends ReactionNetworkModel, E extends TrajectoryRecorder<T>>
-		implements SimulationWorker<T, E> {
+public class DefaultSimulationWorker<T extends ReactionNetworkModel>
+	implements SimulationWorker {
 
-	private Simulator<T, E> simulator;
+	private Simulator<T> simulator;
 	private T model;
-	private E tr;
+	private TrajectoryRecorder tr;
 	private double t0;
 	private double[] x0;
 	private double t1;
 
 	public DefaultSimulationWorker(
-			Simulator<T, E> simulator,
+			Simulator<T> simulator,
 			T model,
-			E tr,
+			TrajectoryRecorder tr,
 			double t0, double[] x0, double t1) {
 		this.simulator = simulator;
 		this.model = model;
@@ -28,7 +28,7 @@ public class DefaultSimulationWorker<T extends ReactionNetworkModel, E extends T
 	}
 
 	@Override
-	public E simulate() {
+	public TrajectoryRecorder simulate() {
 		double[] x1 = new double[x0.length];
 		simulator.addTrajectoryRecorder(tr);
 		simulator.simulate(model, t0, x0, t1, x1);
@@ -42,7 +42,7 @@ public class DefaultSimulationWorker<T extends ReactionNetworkModel, E extends T
 	}
 
 	@Override
-	public E call() {
+	public TrajectoryRecorder call() {
 		return simulate();
 	}
 

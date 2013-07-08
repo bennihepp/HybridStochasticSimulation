@@ -1,35 +1,30 @@
 package ch.ethz.khammash.hybridstochasticsimulation.controllers;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
 
-public class DefaultDistributionSimulationWorker<T extends ReactionNetworkModel, E extends TrajectoryRecorder<T>>
-		implements DistributionSimulationWorker {
+public class DefaultDistributionSimulationWorker implements DistributionSimulationWorker {
 
-	private SimulationWorker<T, E> worker;
+	private FiniteSimulationWorker worker;
 	private double[] tSeries;
 	private SynchronizedSummaryStatistics[][] xSeriesStatistics;
 
-	DefaultDistributionSimulationWorker(SimulationWorker<T, E> worker,
-			SynchronizedSummaryStatistics[][] xSeriesStatistics, double[] tSeries, double[] x0) {
-		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
-		checkArgument(x0.length == xSeriesStatistics.length, "Expected x0.length == xStatistics.length");
-		checkArgument(tSeries.length == xSeriesStatistics[0].length, "Expected tSeries.length == xStatistics[0].length");
+	DefaultDistributionSimulationWorker(FiniteSimulationWorker worker,
+			double[] tSeries, SynchronizedSummaryStatistics[][] xSeriesStatistics) {
 		this.worker = worker;
-		this.xSeriesStatistics = xSeriesStatistics;
 		this.tSeries = tSeries;
+		this.xSeriesStatistics = xSeriesStatistics;
 	}
 
 	@Override
 	public void run() {
-		E tr = worker.simulate();
+		FiniteTrajectoryRecorder tr = worker.simulate();
+		double[] tSeries = tr.gettSeries();
 		for (int i = 0; i < tSeries.length; i++) {
+			this.tSeries[i] = tSeries[i];
 			double[] x = tr.getInterpolatedState(tSeries[i]);
-			for (int s = 0; s < x.length; s++) {
+			for (int s = 0; s < tr.getNumberOfStates(); s++) {
 				xSeriesStatistics[s][i].addValue(x[s]);
 			}
 		}

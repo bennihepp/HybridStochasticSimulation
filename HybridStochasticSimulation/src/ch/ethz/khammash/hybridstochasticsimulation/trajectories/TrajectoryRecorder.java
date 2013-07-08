@@ -1,22 +1,18 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
-import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 
-public interface TrajectoryRecorder<T extends ReactionNetworkModel> extends Trajectory {
+public interface TrajectoryRecorder extends Trajectory {
 
-	void setSimulator(Simulator<T, ? extends TrajectoryRecorder<T>> simulator);
+	void beginRecording(double t0, double[] x0, double t1);
 
-	void setModel(T model);
+	void endRecording(double[] x1);
 
-	void setInitialState(double t0, double[] x0);
+//	void setInitialState(double t0, double[] x0);
 
-	void setInitialState(double t0, double[] x0, int numOfStates);
+//	void setInitialState(double t0, double[] x0, int numOfStates);
 
-	void setFinalState(double t1, double[] x1);
+//	void setFinalState(double t1, double[] x1);
 
-	void reportState(double t, double[] x);
-
-//	void handleReactionEvent(int reaction, double t, double[] newX);
+	void record(double t, double[] x);
 
 }

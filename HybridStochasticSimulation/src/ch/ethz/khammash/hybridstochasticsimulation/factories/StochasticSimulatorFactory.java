@@ -5,10 +5,9 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.StochasticSimulator;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
 public class StochasticSimulatorFactory<T extends StochasticReactionNetworkModel>
-		implements SimulatorFactory<Simulator<T, TrajectoryRecorder<T>>> {
+		implements SimulatorFactory<Simulator<T>> {
 
 	@Override
 	public StochasticSimulator<T> createSimulator(RandomDataGenerator rdg) {

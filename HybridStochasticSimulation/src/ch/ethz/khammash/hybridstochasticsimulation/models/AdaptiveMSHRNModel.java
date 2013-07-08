@@ -10,6 +10,8 @@ import org.apache.commons.math3.util.FastMath;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.StateBoundObserver.BoundType;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.SpeciesType;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserver;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserverCollector;
 
@@ -24,6 +26,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 	private double[] tmpPropensities;
 	private double[] tmpxDot;
 	private int numberOfAdapations;
+	private double[] optionalState;
 
 	public AdaptiveMSHRNModel(AdaptiveMSHRN hrn) {
 		super(hrn);
@@ -39,7 +42,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		optionalEventObserverList.add(observerCollector);
 		tmpPropensities = new double[getNumberOfReactions()];
 		tmpxDot = new double[getNumberOfSpecies()];
-		this.numberOfAdapations = 0;
+		numberOfAdapations = 0;
 	}
 
 	public AdaptiveMSHRNModel(AdaptiveMSHRNModel model) {
@@ -140,6 +143,55 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 	public void stateBoundEventOccured(double t, double[] x) {
 		hasOptionalEventOccured = true;
 //		optionalEventSpeciesIndex = -1;
+	}
+
+	@Override
+	public double[] computeOptionalState(double t, double[] x) {
+		double[] tmp = super.computeOptionalState(t, x);
+		if (optionalState == null)
+			optionalState = new double[getNumberOfSpecies() + getNumberOfReactions() + tmp.length];
+		int i = 0;
+		for (int j=0; j < tmp.length; j++)
+			optionalState[i++] = tmp[j];
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			optionalState[i++] = computeSpeciesType(s);
+		for (int r=0; r < getNumberOfReactions(); r++)
+			optionalState[i++] = computeReactionType(r);
+		// TODO: Integration information
+//		q[0] = simulator.isIntegrating;
+//		q[1] = -simulator.integratorCounter;
+//		q[2] = -simulator.reactionCounter;
+		return optionalState;
+	}
+
+	private double computeReactionType(int reaction) {
+		ReactionType reactionType = hrn.getReactionType(reaction);
+		switch (reactionType) {
+		case NONE:
+			return 0.0;
+		case STOCHASTIC:
+			return -(reaction + 1);
+		case DETERMINISTIC:
+			return +(reaction + 1);
+		case EXPLODING:
+			return (reaction + 1) + getNumberOfReactions();
+		default:
+			return Double.NaN;
+		}
+	}
+
+	private double computeSpeciesType(int species) {
+		SpeciesType speciesType = hrn.getSpeciesType(species);
+		switch (speciesType) {
+		case CONTINUOUS:
+			return +(species + 1);
+		case DISCRETE:
+			return -(species + 1);
+		case UNDEFINED:
+			return 0;
+		default:
+			return Double.NaN;
+		}
 	}
 
 }

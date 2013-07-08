@@ -18,7 +18,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajec
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
 
-public class PDMPSimulatorCommonsMath<T extends PDMPModel> implements Simulator<T, ContinuousTrajectoryRecorder<T>> {
+public class PDMPSimulatorCommonsMath implements Simulator<PDMPModel> {
 
 	public static final double DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL = Double.POSITIVE_INFINITY;
 	public static final double DEFAULT_EVENT_HANDLER_CONVERGENCE = 1e-12;
@@ -26,7 +26,7 @@ public class PDMPSimulatorCommonsMath<T extends PDMPModel> implements Simulator<
 	public static final int DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT = 1000;
 
 	private RandomDataGenerator rdg;
-	private List<ContinuousTrajectoryRecorder<T>> trajectoryRecorders;
+	private List<TrajectoryRecorder> trajectoryRecorders;
 	private AbstractIntegrator integrator;
 	private double ehMaxCheckInterval;
 	private double ehConvergence;
@@ -60,7 +60,7 @@ public class PDMPSimulatorCommonsMath<T extends PDMPModel> implements Simulator<
 		this.integrator = integrator;
 		this.univariateSolver = univariateSolver;
 		this.rdg = rdg;
-		trajectoryRecorders = new LinkedList<ContinuousTrajectoryRecorder<T>>();
+		trajectoryRecorders = new LinkedList<TrajectoryRecorder>();
 	}
 
 	public double getEventHandlerMaxCheckInterval() {
@@ -99,7 +99,7 @@ public class PDMPSimulatorCommonsMath<T extends PDMPModel> implements Simulator<
 		this.ehMaxIterationCount = maxIterationCount;
 	}
 
-	public double simulate(T model, final double t0, final double[] x0, double t1, double[] x1) {
+	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
 		boolean showProgress = false;
 		integrator.clearEventHandlers();
 		integrator.clearStepHandlers();
@@ -118,10 +118,11 @@ public class PDMPSimulatorCommonsMath<T extends PDMPModel> implements Simulator<
 		double t = t0;
     	model.initialize(t, x);
 		double[] propVec = new double[rnm.getNumberOfReactions()];
-		for (ContinuousTrajectoryRecorder<T> tr : trajectoryRecorders) {
-			tr.setModel(model);
-			tr.setInitialState(t, x, x0.length);
-			integrator.addStepHandler(tr);
+		for (TrajectoryRecorder tr : trajectoryRecorders) {
+			// TODO
+			ContinuousTrajectoryRecorder ctr = (ContinuousTrajectoryRecorder)tr;
+			ctr.beginRecording(t0, x0, t1);
+			integrator.addStepHandler(ctr);
 		}
 		double conv = Double.isNaN(ehConvergenceFactor) ? ehConvergence : ehConvergenceFactor * (t1 - t0);
 		if (Double.isNaN(conv))
@@ -217,8 +218,8 @@ public class PDMPSimulatorCommonsMath<T extends PDMPModel> implements Simulator<
 	        if (reaction >= 0) {
 	        	reactionCounter++;
 	        	reactionCounterArray[reaction]++;
-	        	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
-	        		handler.reportState(t, x);
+	        	for (TrajectoryRecorder handler : trajectoryRecorders)
+	        		handler.record(t, x);
 	        	// TODO
 	        	if (j > 100)
 	        		model.checkAndHandleOptionalEvent(t, x);
@@ -237,18 +238,18 @@ public class PDMPSimulatorCommonsMath<T extends PDMPModel> implements Simulator<
 		integrator.clearStepHandlers();
 		for (int i=0; i < x1.length; i++)
 			x1[i] = x[i];
-    	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
-    		handler.setFinalState(t1, x1);
+    	for (TrajectoryRecorder handler : trajectoryRecorders)
+    		handler.endRecording(x1);
 		return t;
 	}
 
 	@Override
-	public void addTrajectoryRecorder(ContinuousTrajectoryRecorder<T> tr) {
+	public void addTrajectoryRecorder(TrajectoryRecorder tr) {
 		trajectoryRecorders.add(tr);
 	}
 
 	@Override
-	public void removeTrajectoryRecorder(ContinuousTrajectoryRecorder<T> tr) {
+	public void removeTrajectoryRecorder(TrajectoryRecorder tr) {
 		trajectoryRecorders.remove(tr);
 	}
 

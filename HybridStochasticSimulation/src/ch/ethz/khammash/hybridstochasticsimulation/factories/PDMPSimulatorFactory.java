@@ -1,91 +1,30 @@
 package ch.ethz.khammash.hybridstochasticsimulation.factories;
 
-import org.apache.commons.math3.analysis.solvers.UnivariateSolver;
-import org.apache.commons.math3.ode.AbstractIntegrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulatorCommonsMath;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulator;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajectoryRecorder;
+import ch.ethz.khammash.ode.Solver;
 
-public class PDMPSimulatorFactory<T extends PDMPModel>
-		implements SimulatorFactory<Simulator<T, ContinuousTrajectoryRecorder<T>>> {
+public class PDMPSimulatorFactory
+		implements SimulatorFactory<Simulator<PDMPModel>> {
 
-	private IntegratorFactory integratorFactory;
-	private double ehMaxCheckInterval;
-	private double ehConvergence;
-	private double ehConvergenceFactor;
-	private int ehMaxIterationCount;
-	private UnivariateSolverFactory univariateSolverFactory;
+	private SolverFactory solverFactory;
 
-	public PDMPSimulatorFactory(IntegratorFactory integratorFactory) {
-		this(integratorFactory, new BracketingNthOrderBrentSolverFactory());
+	public PDMPSimulatorFactory(SolverFactory solverFactory) {
+		this.solverFactory = solverFactory;
 	}
 
-	public PDMPSimulatorFactory(IntegratorFactory integratorFactory, UnivariateSolverFactory univariateSolverFactory) {
-		this.integratorFactory = integratorFactory;
-		ehMaxCheckInterval = PDMPSimulatorCommonsMath.DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL;
-		ehConvergence = PDMPSimulatorCommonsMath.DEFAULT_EVENT_HANDLER_CONVERGENCE;
-		ehConvergenceFactor = PDMPSimulatorCommonsMath.DEFAULT_EVENT_HANDLER_CONVERGENCE_FACTOR;
-		ehMaxIterationCount = PDMPSimulatorCommonsMath.DEFAULT_EVENT_HANDLER_MAX_ITERATION_COUNT;
-		this.univariateSolverFactory = univariateSolverFactory;
-	}
-
-	public void setIntegratorFactory(IntegratorFactory integratorFactory) {
-		this.integratorFactory = integratorFactory;
-	}
-
-	public void setUnivariateSolverFactory(UnivariateSolverFactory univariateSolverFactory) {
-		this.univariateSolverFactory = univariateSolverFactory;
+	public void setSolverFactory(SolverFactory solverFactory) {
+		this.solverFactory = solverFactory;
 	}
 
 	@Override
-	public PDMPSimulatorCommonsMath<T> createSimulator(RandomDataGenerator rdg) {
-		AbstractIntegrator integrator = integratorFactory.createIntegrator();
-		UnivariateSolver univariateSolver = univariateSolverFactory.createUnivariateSolver();
-		PDMPSimulatorCommonsMath<T> sim = new PDMPSimulatorCommonsMath<T>(integrator, univariateSolver, rdg);
-		sim.setEventHandlerConvergence(getEventHandlerConvergence());
-		sim.setEventHandlerConvergenceFactor(getEventHandlerConvergenceFactor());
-		sim.setEventHandlerMaxCheckInterval(getEventHandlerMaxCheckInterval());
-		sim.setEventHandlerMaxIterationCount(getEventHandlerMaxIterationCount());
+	public PDMPSimulator createSimulator(RandomDataGenerator rdg) {
+		Solver solver = solverFactory.createSolver();
+		PDMPSimulator sim = new PDMPSimulator(solver, rdg);
 		return sim;
-	}
-
-	public double getEventHandlerConvergence() {
-		return ehConvergence;
-	}
-
-	public void setEventHandlerConvergence(double convergence) {
-		this.ehConvergence = convergence;
-		if (!Double.isNaN(convergence))
-			this.ehConvergenceFactor = Double.NaN;
-	}
-
-	public double getEventHandlerConvergenceFactor() {
-		return ehConvergenceFactor;
-	}
-
-	public void setEventHandlerConvergenceFactor(double convergenceFactor) {
-		this.ehConvergenceFactor = convergenceFactor;
-		if (!Double.isNaN(convergenceFactor))
-			this.ehConvergence = Double.NaN;
-	}
-
-	public double getEventHandlerMaxCheckInterval() {
-		return ehMaxCheckInterval;
-	}
-
-	public void setEventHandlerMaxCheckInterval(double maxCheckInterval) {
-		this.ehMaxCheckInterval = maxCheckInterval;
-	}
-
-	public int getEventHandlerMaxIterationCount() {
-		return ehMaxIterationCount;
-	}
-
-	public void setEventHandlerMaxIterationCount(int maxIterationCount) {
-		this.ehMaxIterationCount = maxIterationCount;
 	}
 
 }

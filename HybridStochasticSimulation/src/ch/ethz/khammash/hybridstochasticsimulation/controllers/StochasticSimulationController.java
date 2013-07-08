@@ -4,11 +4,9 @@ import java.util.concurrent.ExecutorService;
 
 import ch.ethz.khammash.hybridstochasticsimulation.factories.StochasticSimulatorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
 
-public class StochasticSimulationController<T extends StochasticReactionNetworkModel>
-		extends AbstractSimulationController<T, TrajectoryRecorder<T>> {
+public class StochasticSimulationController<T extends StochasticReactionNetworkModel> extends AbstractSimulationController<T> {
 
     public StochasticSimulationController() {
     	super();

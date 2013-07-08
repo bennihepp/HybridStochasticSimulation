@@ -1,9 +1,9 @@
 package ch.ethz.khammash.hybridstochasticsimulation.factories;
 
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
 
-public interface FiniteTrajectoryRecorderFactory<E extends TrajectoryRecorder<?>> {
+public interface FiniteTrajectoryRecorderFactory extends TrajectoryRecorderFactory {
 
-	E createTrajectoryRecorder(double[] tSeries);
+	FiniteTrajectoryRecorder createTrajectoryRecorder();
 
 }

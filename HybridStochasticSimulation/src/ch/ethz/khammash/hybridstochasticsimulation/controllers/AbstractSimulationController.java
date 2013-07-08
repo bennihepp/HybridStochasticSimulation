@@ -9,28 +9,29 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.random.RandomDataGenerator;
-import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
 
 import ch.ethz.khammash.hybridstochasticsimulation.factories.DefaultRandomDataGeneratorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.TrajectoryRecorderFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.RandomDataGeneratorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteStatisticalSummaryPlotData;
 
 import com.google.common.base.Optional;
 
-public abstract class AbstractSimulationController<T extends ReactionNetworkModel, E extends TrajectoryRecorder<T>>
-		implements SimulationController<T, E> {
+public abstract class AbstractSimulationController<T extends ReactionNetworkModel>
+		implements SimulationController<T> {
 
 	public final static int DEFAULT_NUMBER_OF_THREADS = 4;
 
 	private ExecutorService executor;
-	private Optional<SimulatorFactory<Simulator<T, E>>> simulatorFactoryOptional;
+	private Optional<SimulatorFactory<Simulator<T>>> simulatorFactoryOptional;
 //	private Optional<TrajectoryRecorderFactory<E>> trajectoryRecorderFactoryOptional;
 	private Optional<RandomDataGeneratorFactory> rdgFactoryOptional;
 
@@ -49,18 +50,22 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		rdgFactoryOptional = Optional.<RandomDataGeneratorFactory>of(new DefaultRandomDataGeneratorFactory());
 	}
 
-	protected SimulationWorker<T, E> createSimulationWorker(T model, E tr, double t0, double[] x0, double t1) {
-		Simulator<T, E> simulator = createSimulator();
-		return new DefaultSimulationWorker<T, E>(simulator, model, tr, t0, x0, t1);
+	protected SimulationWorker createSimulationWorker(T model, TrajectoryRecorder tr, double t0, double[] x0, double t1) {
+		Simulator<T> simulator = createSimulator();
+		return new DefaultSimulationWorker<T>(simulator, model, tr, t0, x0, t1);
+	}
+
+	protected FiniteSimulationWorker createFiniteSimulationWorker(T model, FiniteTrajectoryRecorder tr, double t0, double[] x0, double t1) {
+		Simulator<T> simulator = createSimulator();
+		return new DefaultFiniteSimulationWorker<T>(simulator, model, tr, t0, x0, t1);
 	}
 
 	protected DistributionSimulationWorker createDistributionSimulationWorker(
-			T model, E tr, SynchronizedSummaryStatistics[][] xSeriesStatistics, double[] tSeries, double[] x0) {
-		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
-		double t0 = tSeries[0];
-		double t1 = tSeries[tSeries.length - 1];
-        SimulationWorker<T, E> worker = createSimulationWorker(model, tr, t0, x0, t1);
-		return new DefaultDistributionSimulationWorker<T, E>(worker, xSeriesStatistics, tSeries, x0);
+			T model, FiniteTrajectoryRecorder tr, double[] tSeries, SynchronizedSummaryStatistics[][] xSeriesStatistics,
+			double t0, double[] x0, double t1) {
+//		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
+        FiniteSimulationWorker worker = createFiniteSimulationWorker(model, tr, t0, x0, t1);
+		return new DefaultDistributionSimulationWorker(worker, tSeries, xSeriesStatistics);
 	}
 
 	@Override
@@ -68,13 +73,12 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		this.executor = executor;
 	}
 
-	protected Optional<SimulatorFactory<Simulator<T,E>>> getSimulatorFactoryOptional() {
+	protected Optional<SimulatorFactory<Simulator<T>>> getSimulatorFactoryOptional() {
 		return simulatorFactoryOptional;
 	}
 
 	@Override
-	final public void setSimulatorFactory(
-			SimulatorFactory<Simulator<T, E>> simulatorFactory) {
+	final public void setSimulatorFactory(SimulatorFactory<Simulator<T>> simulatorFactory) {
 		simulatorFactoryOptional = Optional.of(simulatorFactory);
 	}
 
@@ -89,7 +93,7 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		rdgFactoryOptional = Optional.of(rdgFactory);
 	}
 
-	protected Simulator<T, E> createSimulator() {
+	protected Simulator<T> createSimulator() {
         // We want to have different random number sequences for each run
 		if (simulatorFactoryOptional.isPresent())
 			return simulatorFactoryOptional.get().createSimulator(createRandomDataGenerator());
@@ -126,41 +130,31 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 //	}
 
 	@Override
-	public void simulateTrajectory(T model, E tr, double t0, double[] x0, double t1) {
-		SimulationWorker<T, E> sw = createSimulationWorker(model, tr, t0, x0, t1);
+	public void simulateTrajectory(T model, TrajectoryRecorder tr, double t0, double[] x0, double t1) {
+		SimulationWorker sw = createSimulationWorker(model, tr, t0, x0, t1);
 		sw.simulate();
 	}
 
 	@Override
-	public StatisticalSummary[][] simulateTrajectoryDistribution(
-			int runs, ModelFactory<T> modelFactory, final TrajectoryRecorderFactory<E> trFactory,
-			double[] tSeries, double[] x0)
-			throws InterruptedException, CancellationException, ExecutionException {
-		FiniteTrajectoryRecorderFactory<E> finiteTrFactory = new FiniteTrajectoryRecorderFactory<E>() {
-			@Override
-			public E createTrajectoryRecorder(
-					double[] tSeries) {
-				return trFactory.createTrajectoryRecorder();
-			}
-		};
-		return simulateTrajectoryDistribution(runs, modelFactory, finiteTrFactory, tSeries, x0);
-	}
-
-	@Override
-	public StatisticalSummary[][] simulateTrajectoryDistribution(
-			int runs, ModelFactory<T> modelFactory, FiniteTrajectoryRecorderFactory<E> trFactory,
-			double[] tSeries, double[] x0)
+	public FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
+			int runs, ModelFactory<T> modelFactory, FiniteTrajectoryRecorderFactory trFactory,
+			double t0, double[] x0, double t1)
 			throws InterruptedException, CancellationException, ExecutionException {
 		checkArgument(runs > 0, "Expected runs > 0");
-		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
-		SynchronizedSummaryStatistics[][] xSeriesStatistics = new SynchronizedSummaryStatistics[x0.length][tSeries.length];
-        for (int s=0; s < x0.length; s++)
-        	for (int i=0; i < tSeries.length; i++)
-				xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
+//		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
+		SynchronizedSummaryStatistics[][] xSeriesStatistics = null;
+		double[] tSeries = null;
         for (int k=0; k < runs; k++) {
     		T model = modelFactory.createModel();
-    		E tr = trFactory.createTrajectoryRecorder(tSeries);
-            Runnable r = createDistributionSimulationWorker(model, tr, xSeriesStatistics, tSeries, x0);
+    		FiniteTrajectoryRecorder tr = trFactory.createTrajectoryRecorder();
+    		if (xSeriesStatistics == null) {
+    			tSeries = new double[tr.getNumberOfTimePoints()];
+    			xSeriesStatistics = new SynchronizedSummaryStatistics[x0.length][tr.getNumberOfTimePoints()];
+    	        for (int s=0; s < x0.length; s++)
+    	        	for (int i=0; i < tr.getNumberOfTimePoints(); i++)
+    					xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
+    		}
+            Runnable r = createDistributionSimulationWorker(model, tr, tSeries, xSeriesStatistics, t0, x0, t1);
             executor.execute(r);
         }
         executor.shutdown();
@@ -169,7 +163,7 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
         		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 	        } catch (InterruptedException e) { }
         } while (!executor.isTerminated());
-        return xSeriesStatistics;
+        return VectorFiniteStatisticalSummaryPlotData.createFromStatisticalSummary(tSeries, xSeriesStatistics);
 	}
 
 }

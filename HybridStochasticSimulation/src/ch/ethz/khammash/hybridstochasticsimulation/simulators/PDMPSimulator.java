@@ -60,6 +60,7 @@ public class PDMPSimulator implements Simulator<PDMPModel> {
 	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
 //		rdg = new RandomDataGenerator();
 //		rdg.reSeed(102L);
+		boolean printMessages = false;
 		boolean showProgress = false;
 
 		double t = t0;
@@ -196,16 +197,18 @@ public class PDMPSimulator implements Simulator<PDMPModel> {
 		        	j++;
 		        }
 			}
-			System.out.println("Integrator invocations: " + integratorCounter);
-			System.out.println("Observed " + eventObserver.getEventCount() + " events");
-			final long endTime = System.currentTimeMillis();
-			System.out.println("Execution time: " + (endTime - startTime));
-	    	long evaluationCounter = ode.getEvaluations();
-			System.out.println("Total of " + evaluationCounter + " evaluations and " + reactionCounter + " reactions performed");
-			Utilities.printArray("Total reaction counts", reactionCounterArray);
-			for (int r=0; r < reactionCounterArray.length; r++)
-				reactionCounterArray[r] /= reactionCounter;
-			Utilities.printArray("Relative reaction counts", reactionCounterArray);
+			if (printMessages) {
+				System.out.println("Integrator invocations: " + integratorCounter);
+				System.out.println("Observed " + eventObserver.getEventCount() + " events");
+				final long endTime = System.currentTimeMillis();
+				System.out.println("Execution time: " + (endTime - startTime));
+		    	long evaluationCounter = ode.getEvaluations();
+				System.out.println("Total of " + evaluationCounter + " evaluations and " + reactionCounter + " reactions performed");
+				Utilities.printArray("Total reaction counts", reactionCounterArray);
+				for (int r=0; r < reactionCounterArray.length; r++)
+					reactionCounterArray[r] /= reactionCounter;
+				Utilities.printArray("Relative reaction counts", reactionCounterArray);
+			}
 			for (int i=0; i < x1.length; i++)
 				x1[i] = x[i];
 //	    	for (TrajectoryRecorder<T> handler : trajectoryRecorders)

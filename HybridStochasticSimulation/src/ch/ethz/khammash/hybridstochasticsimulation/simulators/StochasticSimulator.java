@@ -30,6 +30,7 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 	}
 
 	public double simulate(T model, double t0, double[] x0, double t1, double[] x1) {
+		boolean printMessages = false;
 		boolean showProgress = false;
 		checkArgument(x0.length == x1.length, "Expected x0.length == x1.length");
 		checkArgument(x0.length == model.getNumberOfSpecies(), "Expected x0.length == model.getNumberOfSpecies()");
@@ -86,12 +87,14 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 	        }
 		}
 		final long endTime = System.currentTimeMillis();
-		System.out.println("Execution time: " + (endTime - startTime));
-		System.out.println("Total of " + reactionCounter + " reactions performed");
-		Utilities.printArray("Total reaction counts", reactionCounterArray);
-		for (int r=0; r < reactionCounterArray.length; r++)
-			reactionCounterArray[r] /= reactionCounter;
-		Utilities.printArray("Relative reaction counts", reactionCounterArray);
+		if (printMessages) {
+			System.out.println("Execution time: " + (endTime - startTime));
+			System.out.println("Total of " + reactionCounter + " reactions performed");
+			Utilities.printArray("Total reaction counts", reactionCounterArray);
+			for (int r=0; r < reactionCounterArray.length; r++)
+				reactionCounterArray[r] /= reactionCounter;
+			Utilities.printArray("Relative reaction counts", reactionCounterArray);
+		}
 		for (int i=0; i < x1.length; i++)
 			x1[i] = x[i];
     	for (TrajectoryRecorder handler : trajectoryRecorders)

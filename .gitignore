@@ -5,6 +5,7 @@
 *.so
 *.so.*
 *.la
+*.lai
 *.a
 #*.jar
 *.zip

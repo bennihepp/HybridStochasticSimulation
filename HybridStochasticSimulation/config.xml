@@ -3,11 +3,24 @@
 <configuration>
 	<networks>
 		<network name="fiAdaptiveNet" type="AdaptiveMSHRN">
-			<importantSpecies></importantSpecies>
+			<averagingProvider>zdAveraging</averagingProvider>
+			<averagingProviders>
+				<averagingProvider name="combiningAveraging" type="CombiningAveragingProvider">
+					<averagingProvider name="zdAveraging" type="ZeroDeficiencyAveragingProvider">
+						<theta>10.0</theta>
+						<network>fiNet</network>
+						<importantSpecies>2</importantSpecies>
+					</averagingProvider>
+					<averagingProvider name="plAveraging" type="PseudoLinearAveragingProvider">
+						<theta>10.0</theta>
+						<network>fiNet</network>
+						<importantSpecies>2</importantSpecies>
+					</averagingProvider>
+				</averagingProvider>
+			</averagingProviders>
 			<delta>1.0</delta>
 			<xi>1.0</xi>
 			<eta>0.5</eta>
-			<theta>10</theta>
 			<!--  <network name="fiMSNet" example="BacteriophageT7" type="MSHybridReactionNetwork" /> -->
 		<!-- <network name="fiNet" example="BacteriophageT7" type="DefaultUnaryBinaryReactionNetwork" /> -->
 			<network name="fiMSNet" type="MSHybridReactionNetwork">

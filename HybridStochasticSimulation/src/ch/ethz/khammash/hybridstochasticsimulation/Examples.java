@@ -1400,12 +1400,12 @@ public class Examples {
 		boolean printMessages = true;
 
 		// Set 1
-		nss.N = 10000;
+		nss.N = 1000;
 		nss.delta = 1;
 		nss.xi = 1;
 		nss.epsilon = 0.5;
 		nss.gamma = 0;
-		nss.theta = 100;
+		nss.theta = 10;
 		nss.t1 = 20000;
 
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);

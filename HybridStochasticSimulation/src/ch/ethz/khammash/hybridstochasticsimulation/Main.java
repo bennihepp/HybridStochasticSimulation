@@ -37,6 +37,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.factories.CVodeSolverFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.PDMPSimulatorFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.factories.RandomDataGeneratorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.SolverFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.StochasticSimulatorFactory;
@@ -83,6 +84,7 @@ public class Main {
 	}
 
 	private RandomDataGenerator rdg;
+	private RandomDataGeneratorFactory rdgFactory;
 	private Map<String, ReactionNetwork> networkMap;
 	private Map<String, ModelFactory<?>> modelFactoryMap;
 	private Map<String, FiniteTrajectoryRecorderFactory> trajectoryRecorderFactoryMap;
@@ -95,6 +97,15 @@ public class Main {
 
 	public Main(XMLConfiguration config) throws IOException {
 		rdg = new RandomDataGenerator();
+		rdgFactory = new RandomDataGeneratorFactory() {
+
+			@Override
+			public RandomDataGenerator createRandomDataGenerator() {
+				RandomDataGenerator _rdg = new RandomDataGenerator();
+				_rdg.reSeed(rdg.nextLong(Long.MIN_VALUE, Long.MAX_VALUE));
+				return _rdg;
+			}
+		};
 		networkMap = new HashMap<String,ReactionNetwork>();
 		modelFactoryMap = new HashMap<String,ModelFactory<?>>();
 		trajectoryRecorderFactoryMap = new HashMap<String,FiniteTrajectoryRecorderFactory>();
@@ -113,8 +124,6 @@ public class Main {
 		parseTrajectoryRecorders(config.configurationAt("trajectoryRecorders"));
 		if (config.getMaxIndex("solvers") >= 0)
 			parseSolvers(config.configurationAt("solvers"));
-		if (config.getMaxIndex("averagingProviders") >= 0)
-			parseAveragingProviders(config.configurationAt("averagingProviders"));
 		parseSimulators(config.configurationAt("simulators"));
 		parseSimulationControllers(config.configurationAt("simulationControllers"));
 		parseOutputs(config.configurationAt("outputs"));
@@ -219,6 +228,13 @@ public class Main {
 				hrn.setXi(dataConfig.getDouble("xi"));
 			if (dataConfig.containsKey("eta"))
 				hrn.setEpsilon(dataConfig.getDouble("eta"));
+			if (config.getMaxIndex("averagingProviders") >= 0)
+				parseAveragingProviders(config.configurationAt("averagingProviders"));
+			String averagingProviderName = config.getString("averagingProvider", null);
+			if (averagingProviderName != null) {
+				AveragingProvider averagingProvider = averagingProviderMap.get(averagingProviderName).createAveragingProvider();
+				hrn.setAveragingProvider(averagingProvider);
+			}
 			return hrn;
 		}
 		// TODO:
@@ -358,47 +374,50 @@ public class Main {
 	}
 
 	private AveragingProviderFactory createZeroDeficiencyAveragingProviderFactory(HierarchicalConfiguration config) {
-		final double theta = config.getDouble("theta");
-		final boolean printMessages = config.getBoolean("printMessages", false);
+		double theta = config.getDouble("theta");
+		boolean printMessages = config.getBoolean("printMessages", false);
 		String networkName = config.getString("network");
 		ReactionNetwork network = networkMap.get(networkName);
-		final UnaryBinaryReactionNetwork unaryBinaryNetwork = (UnaryBinaryReactionNetwork)network;
-		final ReactionNetworkGraph graph = new ReactionNetworkGraph(unaryBinaryNetwork);
+		UnaryBinaryReactionNetwork unaryBinaryNetwork = (UnaryBinaryReactionNetwork)network;
+		ReactionNetworkGraph graph = new ReactionNetworkGraph(unaryBinaryNetwork);
 		DataConfiguration dataConfig = new DataConfiguration(config);
 		int[] importantSpecies = dataConfig.getIntArray("importantSpecies", new int[0]);
-		final Set<SpeciesVertex> importantSpeciesVertices = new HashSet<>();
+		Set<SpeciesVertex> importantSpeciesVertices = new HashSet<>();
 		for (int species : importantSpecies)
 			importantSpeciesVertices.add(graph.getSpeciesVertex(species));
+		final ZeroDeficiencyAveragingProvider averagingProvider
+			= new ZeroDeficiencyAveragingProvider(theta, unaryBinaryNetwork, graph, importantSpeciesVertices, rdg, printMessages);
 		return new AveragingProviderFactory() {
 
 			@Override
 			public AveragingProvider createAveragingProvider() {
-				return new ZeroDeficiencyAveragingProvider(theta, unaryBinaryNetwork, graph, importantSpeciesVertices, rdg, printMessages);
+				return ZeroDeficiencyAveragingProvider.createCopy(averagingProvider, rdg);
 			}
 		};
 	}
 
 	private AveragingProviderFactory createPseudoLinearAveragingProviderFactory(HierarchicalConfiguration config) {
-		final double theta = config.getDouble("theta");
-		final boolean stopIfAveragingBecomesInvalid = config.getBoolean("stopIfAveragingBecomesInvalid", true);
-		final boolean warnIfAveragingBecomesInvalid = config.getBoolean("warnIfAveragingBecomesInvalid", true);
+		double theta = config.getDouble("theta");
+		boolean stopIfAveragingBecomesInvalid = config.getBoolean("stopIfAveragingBecomesInvalid", true);
+		boolean warnIfAveragingBecomesInvalid = config.getBoolean("warnIfAveragingBecomesInvalid", true);
 		String networkName = config.getString("network");
 		ReactionNetwork network = networkMap.get(networkName);
-		final UnaryBinaryReactionNetwork unaryBinaryNetwork = (UnaryBinaryReactionNetwork)network;
-		final ReactionNetworkGraph graph = new ReactionNetworkGraph(unaryBinaryNetwork);
+		UnaryBinaryReactionNetwork unaryBinaryNetwork = (UnaryBinaryReactionNetwork)network;
+		ReactionNetworkGraph graph = new ReactionNetworkGraph(unaryBinaryNetwork);
 		DataConfiguration dataConfig = new DataConfiguration(config);
 		int[] importantSpecies = dataConfig.getIntArray("importantSpecies");
-		final Set<SpeciesVertex> importantSpeciesVertices = new HashSet<>();
+		Set<SpeciesVertex> importantSpeciesVertices = new HashSet<>();
 		for (int species : importantSpecies)
 			importantSpeciesVertices.add(graph.getSpeciesVertex(species));
+		final PseudoLinearAveragingProvider averagingProvider
+			= new PseudoLinearAveragingProvider(theta, unaryBinaryNetwork, graph, importantSpeciesVertices);
+		averagingProvider.stopIfAveragingBecomesInvalid(stopIfAveragingBecomesInvalid);
+		averagingProvider.warnIfAveragingBecomesInvalid(warnIfAveragingBecomesInvalid);
 		return new AveragingProviderFactory() {
 
 			@Override
 			public AveragingProvider createAveragingProvider() {
-				PseudoLinearAveragingProvider ap = new PseudoLinearAveragingProvider(theta, unaryBinaryNetwork, graph, importantSpeciesVertices);
-				ap.stopIfAveragingBecomesInvalid(stopIfAveragingBecomesInvalid);
-				ap.warnIfAveragingBecomesInvalid(warnIfAveragingBecomesInvalid);
-				return ap;
+				return PseudoLinearAveragingProvider.createCopy(averagingProvider);
 			}
 		};
 	}
@@ -493,6 +512,7 @@ public class Main {
 			default:
 				throw new RuntimeException("Invalid simulationController type");
 			}
+			simulationController.setRandomDataGeneratorFactory(rdgFactory);
 			if (simulatorFactory != null)
 				((SimulationController)simulationController).setSimulatorFactory(simulatorFactory);
 			simulationControllerMap.put(name, simulationController);

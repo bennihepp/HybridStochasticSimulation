@@ -21,9 +21,23 @@ public class PseudoLinearAveragingProvider extends AbstractAveragingProvider {
 	private boolean _warnIfAveragingBecomesInvalid = true;
 	private boolean _performPseudoLinearAveragingOnlyOnce = true;
 
+	public static PseudoLinearAveragingProvider createCopy(PseudoLinearAveragingProvider provider) {
+		PseudoLinearAveragingProvider copy = new PseudoLinearAveragingProvider();
+		copy.copyFrom(provider);
+		copy.pseudoLinearSubnetworks = provider.pseudoLinearSubnetworks;
+		copy._stopIfAveragingBecomesInvalid = provider._stopIfAveragingBecomesInvalid;
+		copy._warnIfAveragingBecomesInvalid = provider._warnIfAveragingBecomesInvalid;
+		copy._performPseudoLinearAveragingOnlyOnce = provider._performPseudoLinearAveragingOnlyOnce;
+		return copy;
+	}
+
 	public PseudoLinearAveragingProvider(double theta, UnaryBinaryReactionNetwork network, ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies) {
 		super(theta, network, graph, importantSpecies);
 		this.pseudoLinearSubnetworks = findPseudoLinearSubnetworks();
+	}
+
+	protected PseudoLinearAveragingProvider() {
+		super();
 	}
 
 	public void stopIfAveragingBecomesInvalid(boolean stop) {
@@ -83,6 +97,8 @@ public class PseudoLinearAveragingProvider extends AbstractAveragingProvider {
 
 	@Override
 	public void reset() {
+		averagingCandidates = null;
+		averagingInvalid = false;
 	}
 
 	@Override

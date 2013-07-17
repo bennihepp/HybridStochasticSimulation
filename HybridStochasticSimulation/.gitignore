@@ -1,4 +1,5 @@
 /lib
 /matlab/data/*
 /matlab/plots/*
+*.mat
 

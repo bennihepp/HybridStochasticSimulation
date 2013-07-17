@@ -34,7 +34,19 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 	private ReactionType[] reactionTypes;
 	private boolean reactionTermTypesInvalid;
 
-	public MSHybridReactionNetwork(
+	public static MSHybridReactionNetwork create(int numOfSpecies, int numOfReactions, double N, double gamma, double[] alpha, double[] beta) {
+		return new MSHybridReactionNetwork(numOfSpecies, numOfReactions, N, gamma, alpha, beta);
+	}
+
+	public static MSHybridReactionNetwork createFrom(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
+		return new MSHybridReactionNetwork(net, N, gamma, alpha, beta);
+	}
+
+	public static MSHybridReactionNetwork createCopy(MSHybridReactionNetwork hrn) {
+		return new MSHybridReactionNetwork(hrn);
+	}
+
+	protected MSHybridReactionNetwork(
 			int numOfSpecies, int numOfReactions, double N, double gamma, double[] alpha, double[] beta) {
 		super(numOfSpecies, numOfReactions);
 		checkArgument(N > 0, "Expected N > 0");
@@ -62,13 +74,13 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		updateScaleFactors();
 	}
 
-	public MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
+	protected MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
 		this(net.getNumberOfSpecies(), net.getNumberOfReactions(), N, gamma, alpha, beta);
 		setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
 		setRateParameters(net.getRateParameters());
 	}
 
-	public MSHybridReactionNetwork(MSHybridReactionNetwork hrn) {
+	protected MSHybridReactionNetwork(MSHybridReactionNetwork hrn) {
 		this(hrn, hrn.getN(), hrn.getGamma(), hrn.getAlpha(), hrn.getBeta());
 		setDelta(hrn.getDelta());
 		setTolerance(hrn.getTolerance());

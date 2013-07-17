@@ -19,7 +19,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //  R1:  S1 -> S0   [2.0]
 //  R2:  S1 -> S2   [5e-5]
 
-public class FastIsomerization extends ExampleConfiguration {
+public class FastIsomerization extends SimulationConfiguration {
 
 	public FastIsomerization() {
 
@@ -64,6 +64,7 @@ public class FastIsomerization extends ExampleConfiguration {
 		};
 		double[] plotScales = new double[x0.length];
 		Arrays.fill(plotScales, 1.0);
+		int[] importantSpecies = { 2 };
 
 		this.net = net;
 		this.N = N;
@@ -75,6 +76,7 @@ public class FastIsomerization extends ExampleConfiguration {
 		this.x0 = x0;
 		this.plotScales = plotScales;
 		this.speciesNames = speciesNames;
+		this.importantSpecies = importantSpecies;
 		this.rng = new MersenneTwister();
 		this.rdg = new RandomDataGenerator(this.rng);
 	}

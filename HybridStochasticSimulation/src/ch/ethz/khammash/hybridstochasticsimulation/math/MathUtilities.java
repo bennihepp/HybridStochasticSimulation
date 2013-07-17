@@ -1,5 +1,9 @@
-package ch.ethz.khammash.hybridstochasticsimulation;
+package ch.ethz.khammash.hybridstochasticsimulation.math;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.FastMath;
@@ -87,6 +91,36 @@ public class MathUtilities {
 		for (int i=0; i < data.length; i++)
 			v += data[i];
 		return v;
+	}
+
+	public static double sum(List<Double> data) {
+		double v = 0.0;
+		for (int i=0; i < data.size(); i++)
+			v += data.get(i);
+		return v;
+	}
+
+	public static List<Integer> intRangeList(int from, int to) {
+		return intRangeList(from, to, 1);
+	}
+
+	public static List<Integer> intRangeList(int from, int to, int step) {
+		int[] range = intRange(from, to, step);
+		return Arrays.asList(ArrayUtils.toObject(range));
+	}
+
+	public static int[] intRange(int from, int to) {
+		return intRange(from, to, 1);
+	}
+
+	public static int[] intRange(int from, int to, int step) {
+		int[] result = new int[(to - from) / step];
+		int j = from;
+		for (int i=0; i < result.length; i++) {
+			result[i] = j;
+			j += step;
+		}
+		return result;
 	}
 
 }

@@ -12,6 +12,7 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 	private T hybridModel;
 	private StochasticReactionNetworkModel transitionMeasure;
 	private FirstOrderDifferentialEquations vectorField;
+	private double[] primaryState;
 //	private double[] propVector;
 
 	public PDMPModelAdapter(PDMPModelAdapter<T> model) {
@@ -26,10 +27,11 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 		return hybridModel;
 	}
 
-	public void setHybridModel(T hybridModel) {
+	final public void setHybridModel(T hybridModel) {
 		transitionMeasure = hybridModel.getTransitionMeasure();
 		vectorField = hybridModel.getVectorField();
 		this.hybridModel = hybridModel;
+		primaryState = new double[hybridModel.getNumberOfSpecies()];
 //		propVector = new double[transitionMeasure.getNumberOfReactions()];
 	}
 
@@ -95,7 +97,7 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 
 	@Override
 	public int getDimension() {
-		return vectorField.getDimension() + 2;
+		return vectorField.getDimension() + 1;
 	}
 
 	@Override
@@ -112,8 +114,7 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 //		for (int i = 0; i < propVector.length; i++)
 //			xDot[xDot.length - 2] += propVector[i];
 		double propSum = hybridModel.computeDerivativesAndPropensitiesSum(t, x, xDot);
-		xDot[xDot.length - 2] = propSum;
-		xDot[xDot.length - 1] = 0.0;
+		xDot[xDot.length - 1] = propSum;
 	}
 
 	@Override
@@ -122,7 +123,7 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 
 	@Override
 	public double g(double t, double[] x) {
-		return x[x.length - 1] - x[x.length - 2];
+		return x[x.length - 1];
 	}
 
 	@Override
@@ -136,7 +137,9 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 
 	@Override
 	public double[] computePrimaryState(double t, double[] x) {
-		return x;
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			primaryState[s] = x[s];
+		return primaryState;
 	}
 
 	@Override

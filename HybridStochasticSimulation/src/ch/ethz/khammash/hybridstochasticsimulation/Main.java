@@ -1,12 +1,12 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,12 +19,20 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.DataConfiguration;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.math3.random.RandomDataGenerator;
 
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.CombiningAveragingProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.PseudoLinearAveragingProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.ZeroDeficiencyAveragingProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.DefaultSimulationJob;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.StochasticSimulationController;
-import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfiguration;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfigurationFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.examples.SimulationConfiguration;
+import ch.ethz.khammash.hybridstochasticsimulation.factories.AveragingProviderFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.CVodeSolverFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
@@ -32,6 +40,8 @@ import ch.ethz.khammash.hybridstochasticsimulation.factories.PDMPSimulatorFactor
 import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.SolverFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.StochasticSimulatorFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.matlab.MatlabDataExporter;
 import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
@@ -72,24 +82,28 @@ public class Main {
 		}
 	}
 
+	private RandomDataGenerator rdg;
 	private Map<String, ReactionNetwork> networkMap;
 	private Map<String, ModelFactory<?>> modelFactoryMap;
 	private Map<String, FiniteTrajectoryRecorderFactory> trajectoryRecorderFactoryMap;
 	private Map<String, SolverFactory> solverMap;
+	private Map<String, AveragingProviderFactory> averagingProviderMap;
 	private Map<String, SimulatorFactory<?>> simulatorMap;
 	private Map<String, SimulationController<?>> simulationControllerMap;
 	private Map<String, SimulationOutput> outputMap;
-	private Map<String, Simulation> simulationMap;
+	private Map<String, DefaultSimulationJob<?>> simulationMap;
 
 	public Main(XMLConfiguration config) throws IOException {
+		rdg = new RandomDataGenerator();
 		networkMap = new HashMap<String,ReactionNetwork>();
 		modelFactoryMap = new HashMap<String,ModelFactory<?>>();
 		trajectoryRecorderFactoryMap = new HashMap<String,FiniteTrajectoryRecorderFactory>();
 		solverMap = new HashMap<String,SolverFactory>();
+		averagingProviderMap = new HashMap<String,AveragingProviderFactory>();
 		simulatorMap = new HashMap<String,SimulatorFactory<?>>();
 		simulationControllerMap = new HashMap<String,SimulationController<?>>();
 		outputMap = new HashMap<String, SimulationOutput>();
-		simulationMap = new HashMap<String,Simulation>();
+		simulationMap = new HashMap<String,DefaultSimulationJob<?>>();
 		parseConfiguration(config);
 	}
 
@@ -97,7 +111,10 @@ public class Main {
 		parseNetworks(config.configurationAt("networks"));
 		parseModels(config.configurationAt("models"));
 		parseTrajectoryRecorders(config.configurationAt("trajectoryRecorders"));
-		parseSolvers(config.configurationAt("solvers"));
+		if (config.getMaxIndex("solvers") >= 0)
+			parseSolvers(config.configurationAt("solvers"));
+		if (config.getMaxIndex("averagingProviders") >= 0)
+			parseAveragingProviders(config.configurationAt("averagingProviders"));
 		parseSimulators(config.configurationAt("simulators"));
 		parseSimulationControllers(config.configurationAt("simulationControllers"));
 		parseOutputs(config.configurationAt("outputs"));
@@ -121,7 +138,7 @@ public class Main {
 			}
 			if (base != null)
 				baseNetwork = networkMap.get(base);
-			ExampleConfiguration exampleConfiguration = null;
+			SimulationConfiguration exampleConfiguration = null;
 			if (example != null)
 				exampleConfiguration = ExampleConfigurationFactory.getInstance().createExampleConfiguration(example);
 			ReactionNetwork network;
@@ -142,7 +159,7 @@ public class Main {
 	}
 
 	private ReactionNetwork createUnaryBinaryReactionNetwork(
-			HierarchicalConfiguration config, ExampleConfiguration exampleConfiguration) {
+			HierarchicalConfiguration config, SimulationConfiguration exampleConfiguration) {
 		if (exampleConfiguration != null) {
 			return exampleConfiguration.net;
 		}
@@ -152,7 +169,7 @@ public class Main {
 
 	private ReactionNetwork createMSHybridReactionNetwork(
 			HierarchicalConfiguration config, ReactionNetwork baseNetwork,
-			ExampleConfiguration exampleConfiguration) {
+			SimulationConfiguration exampleConfiguration) {
 		DataConfiguration dataConfig = new DataConfiguration(config);
 		double N = Double.NaN;
 		double gamma = Double.NaN;
@@ -173,9 +190,9 @@ public class Main {
 		if (baseNetwork != null) {
 			MSHybridReactionNetwork hrn = null;
 			if (MSHybridReactionNetwork.class.isAssignableFrom(baseNetwork.getClass()))
-				hrn = new MSHybridReactionNetwork((MSHybridReactionNetwork)baseNetwork);
+				hrn = MSHybridReactionNetwork.createCopy((MSHybridReactionNetwork)baseNetwork);
 			else if (UnaryBinaryReactionNetwork.class.isAssignableFrom(baseNetwork.getClass()))
-				hrn = new MSHybridReactionNetwork((UnaryBinaryReactionNetwork)baseNetwork, N, gamma, alpha, beta);
+				hrn =  MSHybridReactionNetwork.createFrom((UnaryBinaryReactionNetwork)baseNetwork, N, gamma, alpha, beta);
 			else
 				throw new RuntimeException("Invalid base network for MSHybridReactionNetwork");
 			if (dataConfig.containsKey("delta"))
@@ -188,23 +205,20 @@ public class Main {
 
 	private ReactionNetwork createAdaptiveMSHRN(
 			HierarchicalConfiguration config, ReactionNetwork baseNetwork,
-			ExampleConfiguration exampleConfiguration) {
+			SimulationConfiguration exampleConfiguration) {
 		DataConfiguration dataConfig = new DataConfiguration(config);
-		int[] importantSpecies = dataConfig.getIntArray("importantSpecies", new int[0]);
 		if (baseNetwork != null) {
 			AdaptiveMSHRN hrn = null;
 			if (MSHybridReactionNetwork.class.isAssignableFrom(baseNetwork.getClass()))
-				hrn = new AdaptiveMSHRN((MSHybridReactionNetwork)baseNetwork, importantSpecies);
+				hrn = AdaptiveMSHRN.createFrom((MSHybridReactionNetwork)baseNetwork);
 			else if (AdaptiveMSHRN.class.isAssignableFrom(baseNetwork.getClass()))
-				hrn =  new AdaptiveMSHRN((AdaptiveMSHRN)baseNetwork);
+				hrn =  AdaptiveMSHRN.createCopy((AdaptiveMSHRN)baseNetwork);
 			if (dataConfig.containsKey("delta"))
 				hrn.setDelta(dataConfig.getDouble("delta"));
 			if (dataConfig.containsKey("xi"))
 				hrn.setXi(dataConfig.getDouble("xi"));
 			if (dataConfig.containsKey("eta"))
 				hrn.setEpsilon(dataConfig.getDouble("eta"));
-			if (dataConfig.containsKey("theta"))
-				hrn.setTheta(dataConfig.getDouble("theta"));
 			return hrn;
 		}
 		// TODO:
@@ -257,7 +271,7 @@ public class Main {
 
 			@Override
 			public AdaptiveMSHRNModel createModel() {
-				AdaptiveMSHRN networkCopy = new AdaptiveMSHRN(network);
+				AdaptiveMSHRN networkCopy = AdaptiveMSHRN.createCopy(network);
 				return new AdaptiveMSHRNModel(networkCopy);
 			}
 
@@ -318,6 +332,96 @@ public class Main {
 		}
 	}
 
+	private void parseAveragingProviders(HierarchicalConfiguration config) {
+		for (int i=0; i <= config.getMaxIndex("averagingProvider"); i++) {
+			String key = "averagingProvider(" + i + ")";
+			HierarchicalConfiguration sub = config.configurationAt(key);
+			parseAveragingProviders(sub);
+			String name = config.getString(makeAttributeKey(key, "name"));
+			String type = config.getString(makeAttributeKey(key, "type"));
+			AveragingProviderFactory averagingProviderFactory;
+			switch (type) {
+			case "ZeroDeficiencyAveragingProvider":
+				averagingProviderFactory = createZeroDeficiencyAveragingProviderFactory(sub);
+				break;
+			case "PseudoLinearAveragingProvider":
+				averagingProviderFactory = createPseudoLinearAveragingProviderFactory(sub);
+				break;
+			case "CombiningAveragingProvider":
+				averagingProviderFactory = createCombiningAveragingProviderFactory(sub);
+				break;
+			default:
+				throw new RuntimeException("Invalid averaging provider type");
+			}
+			averagingProviderMap.put(name, averagingProviderFactory);
+		}
+	}
+
+	private AveragingProviderFactory createZeroDeficiencyAveragingProviderFactory(HierarchicalConfiguration config) {
+		final double theta = config.getDouble("theta");
+		final boolean printMessages = config.getBoolean("printMessages", false);
+		String networkName = config.getString("network");
+		ReactionNetwork network = networkMap.get(networkName);
+		final UnaryBinaryReactionNetwork unaryBinaryNetwork = (UnaryBinaryReactionNetwork)network;
+		final ReactionNetworkGraph graph = new ReactionNetworkGraph(unaryBinaryNetwork);
+		DataConfiguration dataConfig = new DataConfiguration(config);
+		int[] importantSpecies = dataConfig.getIntArray("importantSpecies", new int[0]);
+		final Set<SpeciesVertex> importantSpeciesVertices = new HashSet<>();
+		for (int species : importantSpecies)
+			importantSpeciesVertices.add(graph.getSpeciesVertex(species));
+		return new AveragingProviderFactory() {
+
+			@Override
+			public AveragingProvider createAveragingProvider() {
+				return new ZeroDeficiencyAveragingProvider(theta, unaryBinaryNetwork, graph, importantSpeciesVertices, rdg, printMessages);
+			}
+		};
+	}
+
+	private AveragingProviderFactory createPseudoLinearAveragingProviderFactory(HierarchicalConfiguration config) {
+		final double theta = config.getDouble("theta");
+		final boolean stopIfAveragingBecomesInvalid = config.getBoolean("stopIfAveragingBecomesInvalid", true);
+		final boolean warnIfAveragingBecomesInvalid = config.getBoolean("warnIfAveragingBecomesInvalid", true);
+		String networkName = config.getString("network");
+		ReactionNetwork network = networkMap.get(networkName);
+		final UnaryBinaryReactionNetwork unaryBinaryNetwork = (UnaryBinaryReactionNetwork)network;
+		final ReactionNetworkGraph graph = new ReactionNetworkGraph(unaryBinaryNetwork);
+		DataConfiguration dataConfig = new DataConfiguration(config);
+		int[] importantSpecies = dataConfig.getIntArray("importantSpecies");
+		final Set<SpeciesVertex> importantSpeciesVertices = new HashSet<>();
+		for (int species : importantSpecies)
+			importantSpeciesVertices.add(graph.getSpeciesVertex(species));
+		return new AveragingProviderFactory() {
+
+			@Override
+			public AveragingProvider createAveragingProvider() {
+				PseudoLinearAveragingProvider ap = new PseudoLinearAveragingProvider(theta, unaryBinaryNetwork, graph, importantSpeciesVertices);
+				ap.stopIfAveragingBecomesInvalid(stopIfAveragingBecomesInvalid);
+				ap.warnIfAveragingBecomesInvalid(warnIfAveragingBecomesInvalid);
+				return ap;
+			}
+		};
+	}
+
+	private AveragingProviderFactory createCombiningAveragingProviderFactory(final HierarchicalConfiguration config) {
+		return new AveragingProviderFactory() {
+
+			@Override
+			public AveragingProvider createAveragingProvider() {
+				CombiningAveragingProvider ap = new CombiningAveragingProvider();
+				for (int i=0; i <= config.getMaxIndex("averagingProvider"); i++) {
+					String key = "averagingProvider(" + i + ")";
+					String name = config.getString(makeAttributeKey(key, "name"));
+					AveragingProviderFactory subApFactory = averagingProviderMap.get(name);
+					AveragingProvider subAp = subApFactory.createAveragingProvider();
+					ap.addAveragingProvider(subAp);
+				}
+				return ap;
+			}
+
+		};
+	}
+
 	private SolverFactory createEulerSolverFactory(HierarchicalConfiguration config) {
 		final double step = config.getDouble(makeAttributeKey("step"));
 		return new SolverFactory() {
@@ -359,7 +463,7 @@ public class Main {
 
 	private SimulatorFactory<?> createStochasticSimulatorFactory(
 			HierarchicalConfiguration config) {
-		return new StochasticSimulatorFactory<>();
+		return new StochasticSimulatorFactory();
 	}
 
 	private PDMPSimulatorFactory createPDMPSimulatorFactory(HierarchicalConfiguration config) {
@@ -398,11 +502,11 @@ public class Main {
 	private SimulationController<?> createStochasticSimulationController(
 			HierarchicalConfiguration config) {
 		String numOfThreadsKey = makeAttributeKey("numOfThreads");
-		StochasticSimulationController<?> simCtrl;
+		StochasticSimulationController simCtrl;
 		if (config.containsKey(numOfThreadsKey))
-			simCtrl = new StochasticSimulationController<>(config.getInt(numOfThreadsKey));
+			simCtrl = new StochasticSimulationController(config.getInt(numOfThreadsKey));
 		else
-			simCtrl = new StochasticSimulationController<>();
+			simCtrl = new StochasticSimulationController();
 		return simCtrl;
 	}
 
@@ -442,6 +546,7 @@ public class Main {
 		}
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void parseSimulations(HierarchicalConfiguration config) {
 		for (int i=0; i <= config.getMaxIndex("simulation"); i++) {
 			String key = "simulation(" + i + ")";
@@ -468,17 +573,17 @@ public class Main {
 			if (dataConfig.containsKey(outputsKey))
 				for (String s : dataConfig.getStringArray(outputsKey))
 					outputNames.add(s);
-			ModelFactory<?> modelFactory = modelFactoryMap.get(modelName);
 			FiniteTrajectoryRecorderFactory trajectoryRecorderFactory = trajectoryRecorderFactoryMap.get(trajectoryRecorderName);
-			SimulationController<?> simCtrl = simulationControllerMap.get(simulationControllerName);
-			Simulation simulation;
+			DefaultSimulationJob simulation;
+			ModelFactory modelFactory = modelFactoryMap.get(modelName);
+			SimulationController simCtrl = simulationControllerMap.get(simulationControllerName);
 			switch (type) {
 			case "trajectory":
-				simulation = Simulation.createTrajectorySimulation(
+				simulation = DefaultSimulationJob.createTrajectorySimulation(
 						modelFactory, trajectoryRecorderFactory, simCtrl, t0, t1, x0, runs);
 				break;
 			case "distribution":
-				simulation = Simulation.createDistributionSimulation(
+				simulation = DefaultSimulationJob.createDistributionSimulation(
 						modelFactory, trajectoryRecorderFactory, simCtrl, t0, t1, x0, runs);
 				break;
 			default:
@@ -502,12 +607,12 @@ public class Main {
 		return key + "[@" + attribute + "]";
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void run() {
 		Set<SimulationOutput> usedOutputs = new LinkedHashSet<>();
 		for (String name : simulationMap.keySet()) {
 			long startTime = System.currentTimeMillis();
-			Simulation sim = simulationMap.get(name);
+			DefaultSimulationJob sim = simulationMap.get(name);
 			List<FinitePlotData> plotDataList = new LinkedList<>();
 			System.out.println("Running simulation " + name + " [" + sim.getSimulationType() + "] (" + sim.getRuns() + ")");
 			switch (sim.getSimulationType()) {
@@ -551,7 +656,8 @@ public class Main {
 				}
 				break;
 			}
-			for (SimulationOutput output : sim.getOutputs()) {
+			List<SimulationOutput> outputs = sim.getOutputs();
+			for (SimulationOutput output : outputs) {
 				output.addAll(name, plotDataList);
 				usedOutputs.add(output);
 			}
@@ -566,12 +672,6 @@ public class Main {
 				e.printStackTrace();
 				System.err.println();
 			}
-	}
-
-	private static interface SimulationOutput {
-		void add(String simulationName, FinitePlotData plotData);
-		void addAll(String simulationName, List<FinitePlotData> plotDataList);
-		void write() throws IOException;
 	}
 
 	private static class MatlabOutput implements SimulationOutput {
@@ -645,122 +745,6 @@ public class Main {
 
 		public void setCols(int cols) {
 			this.cols = cols;
-		}
-
-	}
-
-	private static class Simulation {
-
-		public enum Type {
-			TRAJECTORY, DISTRIBUTION
-		}
-
-		private List<SimulationOutput> outputs;
-		private ModelFactory<?> modelFactory;
-		private FiniteTrajectoryRecorderFactory trajectoryRecorderFactory;
-		private SimulationController<?> simulationController;
-		private double t0;
-		private double t1;
-		private double[] x0;
-		private int runs;
-		private String[] labels;
-		private double[] plotScales;
-		private Type simulationType;
-
-		public static Simulation createTrajectorySimulation(
-				ModelFactory<?> modelFactory, FiniteTrajectoryRecorderFactory trajectoryRecorderFactory,
-				SimulationController<?> simulationController,
-				double t0, double t1, double[] x0, int runs) {
-			return new Simulation(modelFactory, trajectoryRecorderFactory, simulationController, t0, t1, x0, runs, Type.TRAJECTORY);
-		}
-
-		public static Simulation createDistributionSimulation(
-				ModelFactory<?> modelFactory, FiniteTrajectoryRecorderFactory trajectoryRecorderFactory,
-				SimulationController<?> simulationController,
-				double t0, double t1, double[] x0, int runs) {
-			return new Simulation(modelFactory, trajectoryRecorderFactory, simulationController, t0, t1, x0, runs, Type.DISTRIBUTION);
-		}
-
-		public Simulation(ModelFactory<?> modelFactory, FiniteTrajectoryRecorderFactory trajectoryRecorderFactory,
-				SimulationController<?> simulationController,
-				double t0, double t1, double[] x0, int runs, Type simulationType) {
-			checkNotNull(modelFactory);
-			checkNotNull(trajectoryRecorderFactory);
-			checkNotNull(simulationController);
-			outputs = new LinkedList<>();
-			this.modelFactory = modelFactory;
-			this.trajectoryRecorderFactory = trajectoryRecorderFactory;
-			this.simulationController = simulationController;
-			this.t0 = t0;
-			this.t1 = t1;
-			this.x0 = x0;
-			this.runs = runs;
-			this.simulationType = simulationType;
-		}
-
-		public List<SimulationOutput> getOutputs() {
-			return outputs;
-		}
-
-		public void addOutput(SimulationOutput output) {
-			outputs.add(output);
-		}
-
-		@SuppressWarnings("rawtypes")
-		public SimulationController getSimulationController() {
-			return simulationController;
-		}
-
-		public ReactionNetworkModel createModel() {
-			return modelFactory.createModel();
-		}
-
-		public ModelFactory<?> getModelFactory() {
-			return modelFactory;
-		}
-
-		public FiniteTrajectoryRecorder createTrajectory() {
-			return trajectoryRecorderFactory.createTrajectoryRecorder();
-		}
-
-		public FiniteTrajectoryRecorderFactory getTrajectoryFactory() {
-			return trajectoryRecorderFactory;
-		}
-
-		public double gett0() {
-			return t0;
-		}
-
-		public double gett1() {
-			return t1;
-		}
-
-		public double[] getx0() {
-			return x0;
-		}
-
-		public int getRuns() {
-			return runs;
-		}
-
-		public double[] getPlotScales() {
-			return plotScales;
-		}
-
-		public void setPlotScales(double[] plotScales) {
-			this.plotScales = plotScales;
-		}
-
-		public String[] getLabels() {
-			return labels;
-		}
-
-		public void setLabels(String[] labels) {
-			this.labels = labels;
-		}
-
-		public Type getSimulationType() {
-			return simulationType;
 		}
 
 	}

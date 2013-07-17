@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.sandbox;
+package ch.ethz.khammash.hybridstochasticsimulation.graphs;
 
 import org.jgrapht.EdgeFactory;
 

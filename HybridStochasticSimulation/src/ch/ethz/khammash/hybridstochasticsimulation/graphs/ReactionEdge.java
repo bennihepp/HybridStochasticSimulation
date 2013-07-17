@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.sandbox;
+package ch.ethz.khammash.hybridstochasticsimulation.graphs;
 
 public class ReactionEdge {
 
@@ -7,27 +7,19 @@ public class ReactionEdge {
 	private int reaction;
 	private double kappa;
 
-	public ReactionEdge(SpeciesVertex v1, SpeciesVertex v2) {
-		this(-1, Double.NaN, v1, v2);
+	public ReactionEdge(SpeciesVertex source, SpeciesVertex target) {
+		this(-1, Double.NaN, source, target);
 	}
 
-	public ReactionEdge(int reaction, SpeciesVertex v1, SpeciesVertex v2) {
-		this(reaction, Double.NaN, v1, v2);
+	public ReactionEdge(int reaction, SpeciesVertex source, SpeciesVertex target) {
+		this(reaction, Double.NaN, source, target);
 	}
 
 	public ReactionEdge(int reaction, double kappa, SpeciesVertex source, SpeciesVertex target) {
 		this.reaction = reaction;
+		this.setKappa(kappa);
 		this.source = source;
 		this.target = target;
-		this.setKappa(kappa);
-	}
-
-	public SpeciesVertex getSource() {
-		return source;
-	}
-
-	public SpeciesVertex getTarget() {
-		return target;
 	}
 
 	public int getReaction() {
@@ -44,6 +36,14 @@ public class ReactionEdge {
 
 	public void setKappa(double kappa) {
 		this.kappa = kappa;
+	}
+
+	public SpeciesVertex getSource() {
+		return source;
+	}
+
+	public SpeciesVertex getTarget() {
+		return target;
 	}
 
 	@Override

@@ -7,7 +7,7 @@ import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
-import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDifferentialEquations, StochasticReactionNetworkModel {
 
@@ -18,7 +18,7 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 	private double[][] reactionStochiometries;
 	private double[] propTmpVector;
 
-	public UnaryBinaryDeterministicModel(DefaultUnaryBinaryReactionNetwork net) {
+	public UnaryBinaryDeterministicModel(UnaryBinaryReactionNetwork net) {
 		dimension = net.getNumberOfSpecies();
 		rateParameters = new double[net.getNumberOfReactions()];
 		reactionChoiceIndices1 = new int[net.getNumberOfReactions()];
@@ -28,7 +28,7 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 		init(net);
 	}
 
-	final private void init(DefaultUnaryBinaryReactionNetwork net) {
+	final private void init(UnaryBinaryReactionNetwork net) {
 		List<int[]> choiceIndicesList = net.getChoiceIndicesList();
 		for (int r = 0; r < net.getNumberOfReactions(); r++) {
 			int[] choiceIndices = choiceIndicesList.get(r);

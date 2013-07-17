@@ -4,7 +4,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkElementIndex;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /*
@@ -23,10 +27,64 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 	private int[][] stochiometry;
 	private double[] rateParameters;
 	private List<int[]> choiceIndicesList;
+	private List<List<Integer>> involvedSpecies;
+	private List<List<Integer>> involvedReactions;
+
+	public static DefaultUnaryBinaryReactionNetwork createFromNetwork(UnaryBinaryReactionNetwork net) {
+		DefaultUnaryBinaryReactionNetwork newNet = new DefaultUnaryBinaryReactionNetwork(net.getNumberOfSpecies(), net.getNumberOfReactions());
+		newNet.setRateParameters(net.getRateParameters());
+		newNet.setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
+		return newNet;
+	}
+
+	public static DefaultUnaryBinaryReactionNetwork createSubnetwork(UnaryBinaryReactionNetwork net, Set<Integer> subnetworkSpecies) {
+		Map<Integer, Integer> subspeciesMap = new HashMap<>(subnetworkSpecies.size());
+		int i = 0;
+		for (int species : subnetworkSpecies) {
+			subspeciesMap.put(i, species);
+			i++;
+		}
+		Map<Integer, Integer> subReactions = new HashMap<>(net.getNumberOfReactions());
+		int j = 0;
+		for (int reaction=0; reaction < net.getNumberOfReactions(); reaction++) {
+			boolean interactsWithOutsideSpecies = false;
+			List<Integer> involvedSpecies = net.getInvolvedSpecies(reaction);
+			for (int species : involvedSpecies)
+				if (!subnetworkSpecies.contains(species)) {
+					interactsWithOutsideSpecies = true;
+					break;
+				}
+			if (interactsWithOutsideSpecies)
+				continue;
+			for (int species : subnetworkSpecies) {
+				if (net.getStochiometry(species, reaction) != 0) {
+					subReactions.put(j, reaction);
+					j++;
+					break;
+				}
+			}
+		}
+		int[][] subProductionStochiometries = new int[subReactions.size()][subnetworkSpecies.size()];
+		int[][] subConsumptionStochiometries = new int[subReactions.size()][subnetworkSpecies.size()];
+		DefaultUnaryBinaryReactionNetwork subNetwork = new DefaultUnaryBinaryReactionNetwork(subnetworkSpecies.size(), subReactions.size());
+		for (Map.Entry<Integer, Integer> entry : subReactions.entrySet()) {
+			int subReaction = entry.getKey();
+			double rateParameter = net.getRateParameter(entry.getValue());
+			subNetwork.setRateParameter(subReaction, rateParameter);
+			int[] productionStochiometries = net.getProductionStochiometries(entry.getValue());
+			int[] consumptionStochiometries = net.getConsumptionStochiometries(entry.getValue());;
+			for (int k=0; k < subNetwork.getNumberOfSpecies(); k++) {
+				subProductionStochiometries[subReaction][k] = productionStochiometries[subspeciesMap.get(k)];
+				subConsumptionStochiometries[subReaction][k] = consumptionStochiometries[subspeciesMap.get(k)];
+			}
+		}
+		subNetwork.setStochiometries(subProductionStochiometries, subConsumptionStochiometries);
+		return subNetwork;
+	}
 
 	public DefaultUnaryBinaryReactionNetwork(int numOfSpecies, int numOfReactions) {
 		checkArgument(numOfSpecies > 0, "Expected numOfSpecies > 0");
-		checkArgument(numOfReactions > 0, "Expected numOfReactions > 0");
+		checkArgument(numOfReactions >= 0, "Expected numOfReactions > 0");
 		this.numOfSpecies = numOfSpecies;
 		this.numOfReactions = numOfReactions;
 		productionStochiometry = new int[numOfReactions][numOfSpecies];
@@ -47,6 +105,8 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 
 	final protected void invalidate() {
 		choiceIndicesList = null;
+		involvedSpecies = null;
+		involvedReactions = null;
 	}
 
 	public void setStochiometry(int species, int reaction, int production, int consumption) {
@@ -60,9 +120,31 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 		invalidate();
 	}
 
+	public void setProductionStochiometry(int species, int reaction, int production) {
+		checkElementIndex(species, getNumberOfSpecies(), "Expected 0<=species<getNumberOfSpecies()");
+		checkElementIndex(reaction, getNumberOfReactions(), "Expected 0<=species<getNumberOfSpecies()");
+		checkArgument(production >= 0, "Expected production >= 0");
+		productionStochiometry[reaction][species] = production;
+		int consumption = consumptionStochiometry[reaction][species];
+		stochiometry[reaction][species] = production - consumption;
+		invalidate();
+	}
+
+	public void setConsumptionStochiometry(int species, int reaction, int consumption) {
+		checkElementIndex(species, getNumberOfSpecies(), "Expected 0<=species<getNumberOfSpecies()");
+		checkElementIndex(reaction, getNumberOfReactions(), "Expected 0<=species<getNumberOfSpecies()");
+		checkArgument(consumption >= 0, "Expected consumption >= 0");
+		int production = productionStochiometry[reaction][species];
+		consumptionStochiometry[reaction][species] = consumption;
+		stochiometry[reaction][species] = production - consumption;
+		invalidate();
+	}
+
 	public void setStochiometries(int[][] productionStoch, int[][] consumptionStoch) {
 		checkArgument(productionStoch.length == getNumberOfReactions());
 		checkArgument(consumptionStoch.length == getNumberOfReactions());
+		if (getNumberOfReactions() == 0)
+			return;
 		checkArgument(productionStoch[0].length == getNumberOfSpecies());
 		checkArgument(consumptionStoch[0].length == getNumberOfSpecies());
 		for (int r=0; r < getNumberOfReactions(); r++) {
@@ -161,9 +243,8 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 
 	@Override
 	public List<int[]> getChoiceIndicesList() {
-		if (choiceIndicesList == null) {
+		if (choiceIndicesList == null)
 			computeChoiceIndices();
-		}
 		return choiceIndicesList;
 	}
 
@@ -209,6 +290,42 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 				choiceIndices = new int[0];
 			}
 			choiceIndicesList.add(choiceIndices);
+		}
+	}
+
+	@Override
+	public List<Integer> getInvolvedSpecies(int reaction) {
+		if (involvedSpecies == null)
+			updateInvolvedSpecies();
+		return involvedSpecies.get(reaction);
+	}
+
+	@Override
+	public List<Integer> getInvolvedReactions(int species) {
+		if (involvedReactions == null)
+			updateInvolvedReactions();
+		return involvedReactions.get(species);
+	}
+
+	private void updateInvolvedSpecies() {
+		involvedSpecies = new ArrayList<List<Integer>>(getNumberOfReactions());
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			ArrayList<Integer> is = new ArrayList<Integer>();
+			for (int s=0; s < getNumberOfSpecies(); s++)
+				if (getProductionStochiometry(s, r) != 0 || getConsumptionStochiometry(s, r) != 0)
+					is.add(s);
+			involvedSpecies.add(Collections.unmodifiableList(is));
+		}
+	}
+
+	private void updateInvolvedReactions() {
+		involvedReactions = new ArrayList<List<Integer>>(getNumberOfSpecies());
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			ArrayList<Integer> ir = new ArrayList<Integer>();
+			for (int r=0; r < getNumberOfReactions(); r++)
+				if (getProductionStochiometry(s, r) != 0 || getConsumptionStochiometry(s, r) != 0)
+					ir.add(r);
+			involvedReactions.add(Collections.unmodifiableList(ir));
 		}
 	}
 

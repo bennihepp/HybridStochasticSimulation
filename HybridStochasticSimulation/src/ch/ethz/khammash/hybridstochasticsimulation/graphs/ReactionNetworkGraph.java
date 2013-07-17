@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.sandbox;
+package ch.ethz.khammash.hybridstochasticsimulation.graphs;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,7 +11,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DirectedSubgraph;
 import org.jgrapht.traverse.BreadthFirstIterator;
 
-import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 
 public class ReactionNetworkGraph extends DefaultDirectedGraph<SpeciesVertex, ReactionEdge> {
@@ -22,12 +22,16 @@ public class ReactionNetworkGraph extends DefaultDirectedGraph<SpeciesVertex, Re
 	private ArrayList<LinkedList<ReactionEdge>> edgeLists;
 	private StrongConnectivityInspector<SpeciesVertex, ReactionEdge> si;
 
-	public ReactionNetworkGraph(DefaultUnaryBinaryReactionNetwork net) {
+	public ReactionNetworkGraph(UnaryBinaryReactionNetwork net) {
 		super(new ReactionEdgeFactory());
 		init(net);
 	}
 
-    final private void init(DefaultUnaryBinaryReactionNetwork net) {
+	private ReactionEdge createReactionEdge(int reaction, double kappa, SpeciesVertex source, SpeciesVertex target) {
+		return new ReactionEdge(reaction, kappa, source, target);
+	}
+
+    final private void init(UnaryBinaryReactionNetwork net) {
 		vertices = new ArrayList<SpeciesVertex>(net.getNumberOfSpecies());
 		edgeLists = new ArrayList<LinkedList<ReactionEdge>>(net.getNumberOfReactions());
 		for (int s=0; s < net.getNumberOfSpecies(); s++) {
@@ -45,7 +49,7 @@ public class ReactionNetworkGraph extends DefaultDirectedGraph<SpeciesVertex, Re
     	    		for (int s2=0; s2 < net.getNumberOfSpecies(); s2++) {
             			SpeciesVertex v2 = vertices.get(s2);
     	    			if (net.getProductionStochiometry(s2, r) > 0) {
-    	    				ReactionEdge edge = new ReactionEdge(r, net.getRateParameter(r), v1, v2);
+    	    				ReactionEdge edge = createReactionEdge(r, net.getRateParameter(r), v1, v2);
     	    				edgeList.add(edge);
     	    				addEdge(v1, v2, edge);
     	    			}

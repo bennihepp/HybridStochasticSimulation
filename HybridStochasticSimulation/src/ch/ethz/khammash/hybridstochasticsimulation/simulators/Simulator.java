@@ -13,4 +13,8 @@ public interface Simulator<T extends ReactionNetworkModel> {
 
 	void clearTrajectoryRecorders();
 
+	void setPrintMessages(boolean printMessages);
+
+	void setShowProgress(boolean showProgress);
+
 }

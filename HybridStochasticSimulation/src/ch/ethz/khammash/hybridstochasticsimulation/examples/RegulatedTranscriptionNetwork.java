@@ -7,7 +7,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class RegulatedTranscriptionNetwork extends ExampleConfiguration {
+public class RegulatedTranscriptionNetwork extends SimulationConfiguration {
 
 	public RegulatedTranscriptionNetwork() {
 		int[] deterministicReactions = { };

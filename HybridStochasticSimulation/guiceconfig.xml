@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<GuiceConfig>
+	<SimulationJob name="BacteriophageT7 SSA" simulationType="trajectory" modelType="stochastic">
+		<t0>0.0</t0>
+		<t1>200.0</t1>
+		<x0> 1, 0, 0, 0 </x0>
+		<runs>2</runs>
+		<numOfThreads>4</numOfThreads>
+		<labels> tem, gen, struc, virus </labels>
+		<plotScales> 1.0, 1.0, 1.0, 1.0 </plotScales>
+		<outputs>
+			<output name="matOut" type="Matlab" overwrite="true" filename="matlab/data/simulationBacteriophageT7.mat" />
+		</outputs>
+		<network example="BacteriophageT7" />
+		<importantSpecies></importantSpecies>
+		<N>100.0</N>
+		<gamma>0.0</gamma>
+		<delta>1.0</delta>
+		<xi>1.0</xi>
+		<eta>0.5</eta>
+		<theta>10</theta>
+		<numOfTimePoints>1001</numOfTimePoints>
+		<solver name="solv" type="CVodeSolver" relTolerance="1e-3" absTolerance="1e-3" />
+	</SimulationJob>
+	<ModelParameters>
+		<example>FastIsomerization</example>
+		<N>100</N>
+		<gamma>0</gamma>
+		<alpha>0, 0, 0</alpha>
+		<beta>0, 0, 0</beta>
+		<delta>1.0</delta>
+		<xi>1.0</xi>
+		<eta>0.5</eta>
+		<theta>10</theta>
+	</ModelParameters>
+</GuiceConfig>

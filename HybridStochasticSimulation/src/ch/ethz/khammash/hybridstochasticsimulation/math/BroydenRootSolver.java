@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.sandbox;
+package ch.ethz.khammash.hybridstochasticsimulation.math;
 
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.ops.CommonOps;
@@ -43,6 +43,7 @@ public class BroydenRootSolver {
 		tmpV = new DenseMatrix64F(dimension, 1);
 	}
 
+	// TODO: Add maximum number of iterations to prevent getting stuck
 	public double[] findRoot(double[] startingPoint) {
 		double[] x = startingPoint;
 		xV.setData(x);
@@ -65,7 +66,8 @@ public class BroydenRootSolver {
 
 			CommonOps.mult(B, dyV, tmpV);
 			CommonOps.sub(dqV, tmpV, tmpV);
-			CommonOps.multTransB(1 / SpecializedOps.elementSumSq(dyV), tmpV, dyV, tmpM);
+			double inverseElementSumOfDyV = 1 / SpecializedOps.elementSumSq(dyV);
+			CommonOps.multTransB(inverseElementSumOfDyV, tmpV, dyV, tmpM);
 			CommonOps.add(B, tmpM, B);
 
 			DenseMatrix64F yTmp = y1V;

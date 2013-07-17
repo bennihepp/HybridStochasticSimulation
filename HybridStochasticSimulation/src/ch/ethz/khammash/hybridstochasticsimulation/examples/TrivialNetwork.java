@@ -5,7 +5,7 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
-public class TrivialNetwork extends ExampleConfiguration {
+public class TrivialNetwork extends SimulationConfiguration {
 
 	public TrivialNetwork() {
 		int[] deterministicReactions = { };

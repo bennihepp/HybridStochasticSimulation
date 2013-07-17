@@ -39,7 +39,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //R17: S6 -> ~             (k17) [J degradation]
 //R18: S4 -> ~             (k18) [FtsH degradation]
 
-public class HeatShockResponseNetwork extends ExampleConfiguration {
+public class HeatShockResponseNetwork extends SimulationConfiguration {
 
 	public HeatShockResponseNetwork() {
 

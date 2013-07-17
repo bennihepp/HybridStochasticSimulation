@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.networks;
+package ch.ethz.khammash.hybridstochasticsimulation.averaging;
 
 public class AveragingException extends RuntimeException {
 

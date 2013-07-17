@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
+import ch.ethz.khammash.hybridstochasticsimulation.math.MathUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserver;
 
@@ -72,7 +73,7 @@ public class PDMPMSHRNModel extends MSHybridReactionNetworkModel implements PDMP
 
 	@Override
 	public int getDimension() {
-		return getNumberOfSpecies() + 2;
+		return getNumberOfSpecies() + 1;
 	}
 
 	@Override
@@ -83,8 +84,7 @@ public class PDMPMSHRNModel extends MSHybridReactionNetworkModel implements PDMP
 //		for (int i = 0; i < propVector.length; i++)
 //			xDot[xDot.length - 2] += propVector[i];
 		double propSum = computeDerivativesAndPropensitiesSum(t, x, xDot);
-		xDot[xDot.length - 2] = propSum;
-		xDot[xDot.length - 1] = 0.0;
+		xDot[xDot.length - 1] = propSum;
 	}
 
 //	@Override
@@ -132,7 +132,7 @@ public class PDMPMSHRNModel extends MSHybridReactionNetworkModel implements PDMP
 
 	@Override
 	public double g(double t, double[] x) {
-		return x[x.length - 1] - x[x.length - 2];
+		return x[x.length - 1];
 	}
 
 	@Override
@@ -149,6 +149,10 @@ public class PDMPMSHRNModel extends MSHybridReactionNetworkModel implements PDMP
 		for (int s=0; s < getNumberOfSpecies(); s++)
 			primaryState[s] = x[s] * getNetwork().getSpeciesScaleFactor(s);
 		return primaryState;
+	}
+
+	public List<Integer> getPrimaryStateIndices() {
+		return MathUtilities.intRangeList(0, getNumberOfSpecies());
 	}
 
 	@Override
@@ -168,6 +172,30 @@ public class PDMPMSHRNModel extends MSHybridReactionNetworkModel implements PDMP
 		for (int s=0; s < getNumberOfSpecies(); s++)
 			optionalState[i++] = x[s];
 		return optionalState;
+	}
+
+	public List<Integer> getAlphaStateIndices() {
+		int from = 0;
+		int to = from + getNumberOfSpecies();
+		return MathUtilities.intRangeList(from, to);
+	}
+
+	public List<Integer> getRhoStateIndices() {
+		int from = getNumberOfSpecies();
+		int to = from + getNumberOfReactions();
+		return MathUtilities.intRangeList(from, to);
+	}
+
+	public List<Integer> getBetaStateIndices() {
+		int from = getNumberOfSpecies() + getNumberOfReactions();
+		int to = from + getNumberOfReactions();
+		return MathUtilities.intRangeList(from, to);
+	}
+
+	public List<Integer> getScaledStateIndices() {
+		int from = getNumberOfSpecies() + getNumberOfReactions() + getNumberOfReactions();
+		int to = from + getNumberOfSpecies();
+		return MathUtilities.intRangeList(from, to);
 	}
 
 }

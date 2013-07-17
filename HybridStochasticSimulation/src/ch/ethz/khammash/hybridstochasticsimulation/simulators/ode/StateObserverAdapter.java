@@ -10,45 +10,44 @@ public class StateObserverAdapter implements StateObserver {
 
 	private PDMPModel model;
 	private List<TrajectoryRecorder> trajectoryRecorders;
-	private int lengthOfPrimaryState;
-	private double[] completeState;
+	private List<TrajectoryRecorder> optionalTrajectoryRecorders;
 
-	public StateObserverAdapter(PDMPModel model, List<TrajectoryRecorder> trajectoryRecorders) {
+	public StateObserverAdapter(PDMPModel model, List<TrajectoryRecorder> trajectoryRecorders, List<TrajectoryRecorder> optionalTrajectoryRecorders) {
 		this.model = model;
 		this.trajectoryRecorders = trajectoryRecorders;
+		this.optionalTrajectoryRecorders = optionalTrajectoryRecorders;
 	}
 
 	@Override
 	public void initialize(double t0, double[] x0, double t1) {
-		double[] primaryState = model.computePrimaryState(t0, x0);
-		lengthOfPrimaryState = primaryState.length;
-		if (model.hasOptionalState()) {
-			double[] optionalState = model.computeOptionalState(t0, x0);
-			completeState = new double[lengthOfPrimaryState + optionalState.length];
-			copyToFullState(primaryState, optionalState);
-		} else
-			completeState = primaryState;
+		double[] primaryState = computePrimaryState(t0, x0);
 		for (TrajectoryRecorder tr : trajectoryRecorders)
-			tr.beginRecording(t0, completeState, t1);
+			tr.beginRecording(t0, primaryState, t1);
+		if (model.hasOptionalState()) {
+			double[] optionalState = computeOptionalState(t0, x0);
+			for (TrajectoryRecorder tr : optionalTrajectoryRecorders)
+				tr.beginRecording(t0, optionalState, t1);
+		}
 	}
 
 	@Override
 	public void report(double t, double[] x) {
-		double[] primaryState = model.computePrimaryState(t, x);
-		if (model.hasOptionalState())
-			copyToFullState(primaryState, model.computeOptionalState(t, x));
-		else
-			completeState = primaryState;
+		double[] primaryState = computePrimaryState(t, x);
 		for (TrajectoryRecorder tr : trajectoryRecorders)
-			tr.record(t, completeState);
+			tr.record(t, primaryState);
+		if (model.hasOptionalState()) {
+			double[] optionalState = computeOptionalState(t, x);
+			for (TrajectoryRecorder tr : optionalTrajectoryRecorders)
+				tr.record(t, optionalState);
+		}
 	}
 
-	public void copyToFullState(double[] primaryState, double[] optionalState) {
-		int i = 0;
-		for (int s=0; s < lengthOfPrimaryState; s++)
-			completeState[i++] = primaryState[s];
-		for (int j=0; j < optionalState.length; j++)
-			completeState[i++] = optionalState[j];
+	protected double[] computePrimaryState(double t, double[] x) {
+		return model.computePrimaryState(t, x);
+	}
+
+	protected double[] computeOptionalState(double t, double[] x) {
+		return model.computeOptionalState(t, x);
 	}
 
 }

@@ -1,5 +1,5 @@
-inputfilepath = 'data/';
-inputfilename = 'simulationBacteriophageT7';
+inputfilepath = '../jobs/';
+inputfilename = 'simulationBacteriophageT7_100000';
 outputfilepath = 'plots/';
 outputfilename = inputfilename;
 useTransparency = true;

@@ -2,6 +2,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.controllers;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -24,13 +25,18 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecord
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteStatisticalSummaryPlotData;
 
 import com.google.common.base.Optional;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
 public abstract class AbstractSimulationController<T extends ReactionNetworkModel>
 		implements SimulationController<T> {
 
 	public final static int DEFAULT_NUMBER_OF_THREADS = 4;
 
-	private ExecutorService executor;
+	private ListeningExecutorService executor;
 	private Optional<SimulatorFactory<Simulator<T>>> simulatorFactoryOptional;
 //	private Optional<TrajectoryRecorderFactory<E>> trajectoryRecorderFactoryOptional;
 	private Optional<RandomDataGeneratorFactory> rdgFactoryOptional;
@@ -44,7 +50,7 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	}
 
 	public AbstractSimulationController(ExecutorService executor) {
-		this.executor = executor;
+		this.executor = MoreExecutors.listeningDecorator(executor);
 		simulatorFactoryOptional = Optional.absent();
 //		trajectoryRecorderFactoryOptional = Optional.absent();
 		rdgFactoryOptional = Optional.<RandomDataGeneratorFactory>of(new DefaultRandomDataGeneratorFactory());
@@ -70,7 +76,7 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 
 	@Override
 	final public void setExecutorService(ExecutorService executor) {
-		this.executor = executor;
+		this.executor = MoreExecutors.listeningDecorator(executor);
 	}
 
 	protected Optional<SimulatorFactory<Simulator<T>>> getSimulatorFactoryOptional() {
@@ -142,20 +148,41 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 			throws InterruptedException, CancellationException, ExecutionException {
 		checkArgument(runs > 0, "Expected runs > 0");
 //		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
-		SynchronizedSummaryStatistics[][] xSeriesStatistics = null;
-		double[] tSeries = null;
+
+		FiniteTrajectoryRecorder dummyTr = trFactory.createTrajectoryRecorder();
+		dummyTr.beginRecording(t0, x0, t1);
+		int numOfStates = dummyTr.getNumberOfStates();
+		int numOfTimePoints = dummyTr.getNumberOfTimePoints();
+		double[] tSeries = dummyTr.gettSeries();
+		final SynchronizedSummaryStatistics[][] xSeriesStatistics = new SynchronizedSummaryStatistics[numOfStates][numOfTimePoints];
+        for (int s=0; s < numOfStates; s++)
+        	for (int i=0; i < dummyTr.getNumberOfTimePoints(); i++)
+				xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
+
         for (int k=0; k < runs; k++) {
     		T model = modelFactory.createModel();
     		FiniteTrajectoryRecorder tr = trFactory.createTrajectoryRecorder();
-    		if (xSeriesStatistics == null) {
-    			tSeries = new double[tr.getNumberOfTimePoints()];
-    			xSeriesStatistics = new SynchronizedSummaryStatistics[x0.length][tr.getNumberOfTimePoints()];
-    	        for (int s=0; s < x0.length; s++)
-    	        	for (int i=0; i < tr.getNumberOfTimePoints(); i++)
-    					xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
-    		}
-            Runnable r = createDistributionSimulationWorker(model, tr, tSeries, xSeriesStatistics, t0, x0, t1);
-            executor.execute(r);
+    		Callable<TrajectoryRecorder> sw = createSimulationWorker(model, tr, t0, x0, t1);
+    		ListenableFuture<TrajectoryRecorder> completion = executor.submit(sw);
+    		Futures.addCallback(completion, new FutureCallback<TrajectoryRecorder>() {
+
+				@Override
+				public void onFailure(Throwable t) {
+					throw new RuntimeException(t);
+				}
+
+				@Override
+				public void onSuccess(TrajectoryRecorder tr) {
+					FiniteTrajectoryRecorder ftr = (FiniteTrajectoryRecorder)tr;
+					double[][] xSeries = ftr.getxSeries();
+					for (int s = 0; s < ftr.getNumberOfStates(); s++) {
+						for (int i = 0; i < ftr.getNumberOfTimePoints(); i++) {
+							xSeriesStatistics[s][i].addValue(xSeries[s][i]);
+						}
+					}
+				}
+
+    		});
         }
         executor.shutdown();
         do {

@@ -8,12 +8,13 @@ import java.util.List;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
+import ch.ethz.khammash.hybridstochasticsimulation.math.RandomDataUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
 
-public class StochasticSimulator<T extends StochasticReactionNetworkModel>
-		implements Simulator<T> {
+public class StochasticSimulator
+		extends AbstractSimulator<StochasticReactionNetworkModel> {
 
 	private RandomDataGenerator rdg;
 	private List<TrajectoryRecorder> trajectoryRecorders;
@@ -29,9 +30,7 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 		trajectoryRecorders = new LinkedList<TrajectoryRecorder>();
 	}
 
-	public double simulate(T model, double t0, double[] x0, double t1, double[] x1) {
-		boolean printMessages = false;
-		boolean showProgress = false;
+	public double simulate(StochasticReactionNetworkModel model, double t0, double[] x0, double t1, double[] x1) {
 		checkArgument(x0.length == x1.length, "Expected x0.length == x1.length");
 		checkArgument(x0.length == model.getNumberOfSpecies(), "Expected x0.length == model.getNumberOfSpecies()");
 		double[] x = new double[x0.length];
@@ -68,17 +67,19 @@ public class StochasticSimulator<T extends StochasticReactionNetworkModel>
 	        if (t >= t1)
 	        	break;
 	        // Determine which reaction fired and update state
-	        double u = rdg.nextUniform(0.0, 1.0);
-	        double w = 0.0;
-	        int reaction = -1;
-	        for (int l=0; l < propVec.length; l++) {
-	        	w = w + propVec[l] / propSum;
-	        	if (u < w) {
-	        		reaction = l;
-	        		model.changeState(reaction, t, x);
-	        		break;
-	        	}
-	        }
+	        int reaction = RandomDataUtilities.sampleFromProbabilityMassFunction(rdg, propVec);
+    		model.changeState(reaction, t, x);
+//	        double u = rdg.nextUniform(0.0, 1.0);
+//	        double w = 0.0;
+//	        int reaction = -1;
+//	        for (int l=0; l < propVec.length; l++) {
+//	        	w = w + propVec[l] / propSum;
+//	        	if (u < w) {
+//	        		reaction = l;
+//	        		model.changeState(reaction, t, x);
+//	        		break;
+//	        	}
+//	        }
 	        if (reaction >= 0) {
 	        	reactionCounter++;
 	        	reactionCounterArray[reaction]++;

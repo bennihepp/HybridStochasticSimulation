@@ -7,7 +7,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class BirthDeathTunnelNetwork extends ExampleConfiguration {
+public class BirthDeathTunnelNetwork extends SimulationConfiguration {
 
 	public BirthDeathTunnelNetwork() {
 		// See Kang & Kurtz 2011 (3.2 Collective species balance)

@@ -38,7 +38,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //  R14: mRNA_r -> ~                   [0.5]
 //  R15: A_R    -> R                   [1.0]
 
-public class VilarOscillator extends ExampleConfiguration {
+public class VilarOscillator extends SimulationConfiguration {
 
 	public VilarOscillator() {
 		this(false);

@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.networks;
+package ch.ethz.khammash.hybridstochasticsimulation.averaging;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -7,10 +7,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.DependencyGraph;
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.ReactionEdge;
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.ReactionNetworkGraph;
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.SpeciesVertex;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.DependencyGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionEdge;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 import com.google.common.collect.Sets;
 
@@ -21,19 +22,48 @@ public abstract class AbstractAveragingProvider implements AveragingProvider {
 	protected ReactionNetworkGraph graph;
 	protected Set<SpeciesVertex> importantSpecies;
 	protected DependencyGraph depGraph;
+	private List<Set<SpeciesVertex>> previousSubnetworksToAverage;
 
-	@Override
-	public void init(double theta, UnaryBinaryReactionNetwork network, ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies) {
+	public AbstractAveragingProvider(double theta, UnaryBinaryReactionNetwork network, ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies) {
+		DependencyGraph depGraph = new DependencyGraph(graph);
+		init(theta, network, graph, importantSpecies, depGraph); 
+	}
+
+	protected AbstractAveragingProvider() {}
+
+	final private void init(double theta, UnaryBinaryReactionNetwork network, ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies, DependencyGraph depGraph) {
 		this.theta = theta;
 		this.network = network;
 		this.graph = graph;
 		this.importantSpecies = importantSpecies;
-		this.depGraph = new DependencyGraph(graph);
+		this.depGraph = depGraph;
+		this.previousSubnetworksToAverage = null;
 	}
 
-	protected boolean checkAveragingConditions(Set<SpeciesVertex> subnetwork, double[] speciesTimescales) {
-		double maxSubnetworkTimescale = computeMaxSubnetworkTimescale(subnetwork, speciesTimescales);
-		double minOutsideTimescale = computeMinOutsideTimescale(subnetwork, speciesTimescales);
+	protected void copyFrom(AbstractAveragingProvider provider) {
+		init(provider.theta, provider.network, provider.graph, provider.importantSpecies, provider.depGraph);
+	}
+
+	@Override
+	public void reset() {
+		previousSubnetworksToAverage = null;
+	}
+
+	@Override
+	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales) {
+		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(t, x, reactionTimescales);
+		List<Set<SpeciesVertex>> subnetworksToAverage = greedySelectSubnetworksToAverage(averagingCandidates);
+
+		if (previousSubnetworksToAverage != null)
+			resamplePreviouslyAveragedSubnetworks(t, x, subnetworksToAverage, previousSubnetworksToAverage);
+
+		previousSubnetworksToAverage = subnetworksToAverage;
+		return subnetworksToAverage;
+	}
+
+	protected boolean checkAveragingConditions(Set<SpeciesVertex> subnetworkSpecies, double[] reactionTimescales) {
+		double maxSubnetworkTimescale = computeMaxSubnetworkTimescale(subnetworkSpecies, reactionTimescales);
+		double minOutsideTimescale = computeMinBorderTimescale(subnetworkSpecies, reactionTimescales);
 		return checkAveragingConditions(maxSubnetworkTimescale, minOutsideTimescale);
 	}
 
@@ -45,44 +75,46 @@ public abstract class AbstractAveragingProvider implements AveragingProvider {
 		return subnetworkTimescaleRatio >= theta;
 	}
 
-	protected double computeMinOutsideTimescale(Set<SpeciesVertex> subSpecies, double[] speciesTimescales) {
-		double minOutsideTimescale = Double.POSITIVE_INFINITY;
-		boolean subnetworkIsIsolated = true;
-		for (SpeciesVertex v : subSpecies) {
-			// Look at the timescale of all outgoing edges that have targets outside of the subnetwork
-			for (ReactionEdge edge : graph.outgoingEdgesOf(v)) {
-				SpeciesVertex v2 = graph.getEdgeTarget(edge);
-				if (subSpecies.contains(v2))
-					continue;
-				subnetworkIsIsolated = false;
-				if (speciesTimescales[v2.getSpecies()] < minOutsideTimescale)
-					minOutsideTimescale = speciesTimescales[v2.getSpecies()];
+	protected double computeMinBorderTimescale(Set<SpeciesVertex> subnetworkSpecies, double[] reactionTimescales) {
+		Set<ReactionEdge> borderEdges = new HashSet<ReactionEdge>();
+		for (SpeciesVertex v : subnetworkSpecies) {
+			for (ReactionEdge e : graph.incomingEdgesOf(v)) {
+				if (!subnetworkSpecies.contains(e.getSource()) && !borderEdges.contains(e))
+					borderEdges.add(e);
 			}
-			// Look at the timescale of all incoming edges from outside of the subnetwork where the sources
-			// can be influenced by the subnetwork
-			for (ReactionEdge edge : graph.incomingEdgesOf(v)) {
-				SpeciesVertex v2 = graph.getEdgeSource(edge);
-				if (subSpecies.contains(v2))
-					continue;
-				if (speciesTimescales[v2.getSpecies()] < minOutsideTimescale) {
-					for (SpeciesVertex v3 : subSpecies)
-						if (depGraph.containsEdge(v3, v2)) {
-							minOutsideTimescale = speciesTimescales[v2.getSpecies()];
-							break;
-						}
-				}
+			for (ReactionEdge e : graph.outgoingEdgesOf(v)) {
+				if (!subnetworkSpecies.contains(e.getTarget()) && !borderEdges.contains(e))
+					borderEdges.add(e);
 			}
 		}
-		if (subnetworkIsIsolated)
-			return Double.NaN;
-		return minOutsideTimescale;
+		double minBorderTimescale = Double.POSITIVE_INFINITY;;
+		for (ReactionEdge e : borderEdges) {
+			double timescale = reactionTimescales[e.getReaction()];
+			if (timescale < minBorderTimescale)
+				minBorderTimescale = timescale;
+		}
+		return minBorderTimescale;
 	}
 
-	protected double computeMaxSubnetworkTimescale(Set<SpeciesVertex> subSpecies, double[] speciesTimescales) {
+	protected double computeMaxSubnetworkTimescale(Set<SpeciesVertex> subnetworkSpecies, double[] reactionTimescales) {
+		Set<ReactionEdge> subnetworkEdges = new HashSet<ReactionEdge>();
+		for (SpeciesVertex v : subnetworkSpecies) {
+			for (ReactionEdge e : graph.incomingEdgesOf(v)) {
+				if (subnetworkSpecies.contains(e.getSource()) && !subnetworkEdges.contains(e))
+					subnetworkEdges.add(e);
+			}
+			for (ReactionEdge e : graph.outgoingEdgesOf(v)) {
+				if (subnetworkSpecies.contains(e.getTarget()) && !subnetworkEdges.contains(e))
+					subnetworkEdges.add(e);
+			}
+		}
+		if (subnetworkEdges.size() == 0)
+			return Double.POSITIVE_INFINITY;
 		double maxSubnetworkTimescale = 0.0;
-		for (SpeciesVertex v : subSpecies) {
-			if (speciesTimescales[v.getSpecies()] > maxSubnetworkTimescale)
-				maxSubnetworkTimescale = speciesTimescales[v.getSpecies()];
+		for (ReactionEdge e : subnetworkEdges) {
+			double timescale = reactionTimescales[e.getReaction()];
+			if (timescale > maxSubnetworkTimescale)
+				maxSubnetworkTimescale = timescale;
 		}
 		return maxSubnetworkTimescale;
 	}
@@ -110,17 +142,15 @@ public abstract class AbstractAveragingProvider implements AveragingProvider {
 		return subnetworksToAverage;
 	}
 
-	protected void resamplePreviouslyAveragedSubnetworks(double[] x,
+	public void resamplePreviouslyAveragedSubnetworks(double t, double[] x,
 			List<Set<SpeciesVertex>> subnetworksToAverage, List<Set<SpeciesVertex>> previousSubnetworksToAverage) {
 		// Resample states that have been averaged before but are no longer averaged
 		Set<SpeciesVertex> allAveragingSpecies = new HashSet<SpeciesVertex>();
 		for (Set<SpeciesVertex> subnetwork : subnetworksToAverage)
 			allAveragingSpecies.addAll(subnetwork);
-		for (Set<SpeciesVertex> subnetwork : previousSubnetworksToAverage)
-			if (!allAveragingSpecies.containsAll(subnetwork))
-				resampleFromSteadyStateDistribution(x, subnetwork);
+		for (Set<SpeciesVertex> subnetworkSpecies : previousSubnetworksToAverage)
+			if (!allAveragingSpecies.containsAll(subnetworkSpecies))
+				resampleFromSteadyStateDistribution(t, x, subnetworkSpecies);
 	}
-
-	protected void resampleFromSteadyStateDistribution(double[] x, Set<SpeciesVertex> subnetwork) {}
 
 }

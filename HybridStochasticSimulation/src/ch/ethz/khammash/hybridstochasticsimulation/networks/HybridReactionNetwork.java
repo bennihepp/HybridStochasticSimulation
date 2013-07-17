@@ -22,11 +22,11 @@ public class HybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		this.setDeterministicReactions(deterministicReactions);
 	}
 
-	public HybridReactionNetwork(DefaultUnaryBinaryReactionNetwork net) {
+	public HybridReactionNetwork(UnaryBinaryReactionNetwork net) {
 		this(net, new int[0]);
 	}
 
-	public HybridReactionNetwork(DefaultUnaryBinaryReactionNetwork net, int[] deterministicReactions) {
+	public HybridReactionNetwork(UnaryBinaryReactionNetwork net, int[] deterministicReactions) {
 		super(net.getNumberOfSpecies(), net.getNumberOfReactions());
 		setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
 		setRateParameters(net.getRateParameters());

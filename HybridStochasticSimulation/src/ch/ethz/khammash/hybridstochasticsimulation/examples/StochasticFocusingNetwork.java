@@ -7,7 +7,7 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
-public class StochasticFocusingNetwork extends ExampleConfiguration {
+public class StochasticFocusingNetwork extends SimulationConfiguration {
 
 	public StochasticFocusingNetwork() {
 		// See Paulsson et al. PNAS 2000

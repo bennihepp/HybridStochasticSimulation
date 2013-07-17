@@ -24,10 +24,13 @@ public class DefaultRandomDataGeneratorFactory implements RandomDataGeneratorFac
 	@Override
 	public RandomDataGenerator createRandomDataGenerator() {
 		RandomDataGenerator rdg = new RandomDataGenerator();
-		if (baseRandomGenerator != null)
-			rdg.reSeed(baseRandomGenerator.nextLong());
-		else if (baseRandomDataGenerator != null)
-			rdg.reSeed(baseRandomDataGenerator.nextLong(Long.MIN_VALUE, Long.MAX_VALUE));
+		if (baseRandomGenerator != null) {
+			long seed = baseRandomGenerator.nextLong();
+			rdg.reSeed(seed);
+		} else if (baseRandomDataGenerator != null) {
+			long seed = baseRandomDataGenerator.nextLong(Long.MIN_VALUE, Long.MAX_VALUE);
+			rdg.reSeed(seed);
+		}
 		return rdg;
 	}
 

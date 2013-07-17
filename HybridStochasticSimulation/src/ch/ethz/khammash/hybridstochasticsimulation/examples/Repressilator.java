@@ -34,7 +34,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //  R13: mC + pA -> pA
 //  R14: pC      -> -
 
-public class Repressilator extends ExampleConfiguration {
+public class Repressilator extends SimulationConfiguration {
 
 	public Repressilator() {
 

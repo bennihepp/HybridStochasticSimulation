@@ -12,13 +12,14 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.util.FastMath;
 
 import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
+import ch.ethz.khammash.hybridstochasticsimulation.math.RandomDataUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ContinuousTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
 
-public class PDMPSimulatorCommonsMath implements Simulator<PDMPModel> {
+public class PDMPSimulatorCommonsMath extends AbstractSimulator<PDMPModel> {
 
 	public static final double DEFAULT_EVENT_HANDLER_MAX_CHECK_INTERVAL = Double.POSITIVE_INFINITY;
 	public static final double DEFAULT_EVENT_HANDLER_CONVERGENCE = 1e-12;
@@ -100,7 +101,7 @@ public class PDMPSimulatorCommonsMath implements Simulator<PDMPModel> {
 	}
 
 	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
-		boolean showProgress = false;
+		showProgress = false;
 		integrator.clearEventHandlers();
 		integrator.clearStepHandlers();
 //		integrator = new DormandPrince853Integrator(1e-1, 100, 1e-1, 1e-1);
@@ -204,17 +205,19 @@ public class PDMPSimulatorCommonsMath implements Simulator<PDMPModel> {
 		        for (int i=0; i < propVec.length; i++)
 		        	propSum += propVec[i];
 	        }
-	        double u = rdg.nextUniform(0.0, 1.0);
-	        double w = 0.0;
-	        int reaction = -1;
-	        for (int l=0; l < propVec.length; l++) {
-	        	w = w + propVec[l] / propSum;
-	        	if (u < w) {
-	        		reaction = l;
-	        		rnm.changeState(reaction, t, x);
-	        		break;
-	        	}
-	        }
+	        int reaction = RandomDataUtilities.sampleFromProbabilityMassFunction(rdg, propVec);
+    		rnm.changeState(reaction, t, x);
+//	        double u = rdg.nextUniform(0.0, 1.0);
+//	        double w = 0.0;
+//	        int reaction = -1;
+//	        for (int l=0; l < propVec.length; l++) {
+//	        	w = w + propVec[l] / propSum;
+//	        	if (u < w) {
+//	        		reaction = l;
+//	        		rnm.changeState(reaction, t, x);
+//	        		break;
+//	        	}
+//	        }
 	        if (reaction >= 0) {
 	        	reactionCounter++;
 	        	reactionCounterArray[reaction]++;

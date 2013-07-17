@@ -24,7 +24,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //  R4:  tem         -> tem + struc    [1000.0]
 //  R5:  struc       -> -              [1.99]
 
-public class BacteriophageT7 extends ExampleConfiguration {
+public class BacteriophageT7 extends SimulationConfiguration {
 
 	public BacteriophageT7() {
 

@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.sandbox;
+package ch.ethz.khammash.hybridstochasticsimulation.io;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,12 +16,19 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import ch.ethz.khammash.hybridstochasticsimulation.examples.SimulationConfiguration;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 public class StochKitNetworkReader {
 
+	private StochKitNetworkReader() {}
+
 	public static UnaryBinaryReactionNetwork readUnaryBinaryNetworkFromFile(File inputFile) throws ParserConfigurationException, SAXException, IOException {
+		return readSimulationConfiguration(inputFile).net;
+	}
+
+	public static SimulationConfiguration readSimulationConfiguration(File inputFile) throws ParserConfigurationException, SAXException, IOException {
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 	    DocumentBuilder builder = factory.newDocumentBuilder();
 	    Document document = builder.parse(inputFile);
@@ -50,7 +57,21 @@ public class StochKitNetworkReader {
 	    for (int i=0; i < nodeList.getLength(); i++)
 	    	parseReactions(net, speciesMap, parameterMap, (Element)nodeList.item(i));
 
-	    return net;
+	    double[] x0 = new double[net.getNumberOfSpecies()];
+	    String[] labels = new String[net.getNumberOfSpecies()];
+	    for (Map.Entry<String, Integer> entry : speciesMap.entrySet()) {
+	    	int species = entry.getValue();
+	    	double value = initialPopulationMap.get(entry.getKey());
+	    	x0[species] = value;
+	    	labels[species] = entry.getKey();
+	    }
+
+	    SimulationConfiguration nss = new SimulationConfiguration();
+	    nss.net = net;
+	    nss.reset();
+	    nss.x0 = x0;
+	    nss.speciesNames = labels;
+	    return nss;
 	}
 
 	private static void parseReactions(DefaultUnaryBinaryReactionNetwork net,
@@ -60,7 +81,7 @@ public class StochKitNetworkReader {
 			Element childElement = (Element)nodeList.item(reaction);
 //			String id = childElement.getElementsByTagName("Id").item(0).getTextContent();
 			String type = childElement.getElementsByTagName("Type").item(0).getTextContent();
-			if (type != "mass-action")
+			if (!type.equals("mass-action"))
 				// TODO: Custom exception type
 				throw new RuntimeException("Unsupported reaction type: " + type);
 			String rateString = childElement.getElementsByTagName("Rate").item(0).getTextContent();
@@ -83,8 +104,11 @@ public class StochKitNetworkReader {
 
 	private static Map<String, Integer> readProducts(Element element) {
 		HashMap<String, Integer> productMap = new HashMap<String, Integer>();
-		element = (Element)element.getElementsByTagName("Products").item(0);
-		NodeList nodeList = element.getElementsByTagName("SpeciesReference");
+		NodeList nodeList = element.getElementsByTagName("Products");
+		if (nodeList.getLength() <= 0)
+			return productMap;
+		Element productsElement = (Element)nodeList.item(0);
+		nodeList = productsElement.getElementsByTagName("SpeciesReference");
 		for (int i=0; i < nodeList.getLength(); i++) {
 			Element childElement = (Element)nodeList.item(i);
 			String id = childElement.getAttribute("id");
@@ -96,8 +120,11 @@ public class StochKitNetworkReader {
 
 	private static Map<String, Integer> readReactants(Element element) {
 		HashMap<String, Integer> reactantMap = new HashMap<String, Integer>();
-		element = (Element)element.getElementsByTagName("Reactants").item(0);
-		NodeList nodeList = element.getElementsByTagName("SpeciesReference");
+		NodeList nodeList = element.getElementsByTagName("Reactants");
+		if (nodeList.getLength() <= 0)
+			return reactantMap;
+		Element reactantsElement = (Element)nodeList.item(0);
+		nodeList = reactantsElement.getElementsByTagName("SpeciesReference");
 		for (int i=0; i < nodeList.getLength(); i++) {
 			Element childElement = (Element)nodeList.item(i);
 			String id = childElement.getAttribute("id");

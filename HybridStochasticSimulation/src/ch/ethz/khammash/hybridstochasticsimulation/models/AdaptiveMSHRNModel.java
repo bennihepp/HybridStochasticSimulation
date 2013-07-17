@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.commons.math3.ode.events.EventHandler;
 import org.apache.commons.math3.util.FastMath;
 
+import ch.ethz.khammash.hybridstochasticsimulation.math.MathUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StateBoundObserver.BoundType;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
@@ -27,6 +28,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 	private double[] tmpxDot;
 	private int numberOfAdapations;
 	private double[] optionalState;
+	private int parentOptionalStateSize;
 
 	public AdaptiveMSHRNModel(AdaptiveMSHRN hrn) {
 		super(hrn);
@@ -45,9 +47,9 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		numberOfAdapations = 0;
 	}
 
-	public AdaptiveMSHRNModel(AdaptiveMSHRNModel model) {
-		this(model.hrn);
-	}
+//	public AdaptiveMSHRNModel(AdaptiveMSHRNModel model) {
+//		this(model.hrn);
+//	}
 
 	@Override
 	public void initialize(double t0, double[] x0) {
@@ -148,6 +150,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 	@Override
 	public double[] computeOptionalState(double t, double[] x) {
 		double[] tmp = super.computeOptionalState(t, x);
+		parentOptionalStateSize = tmp.length;
 		if (optionalState == null)
 			optionalState = new double[getNumberOfSpecies() + getNumberOfReactions() + tmp.length];
 		int i = 0;
@@ -162,6 +165,18 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 //		q[1] = -simulator.integratorCounter;
 //		q[2] = -simulator.reactionCounter;
 		return optionalState;
+	}
+
+	public List<Integer> getSpeciesTypeStateIndices() {
+		int from = parentOptionalStateSize;
+		int to = from + getNumberOfSpecies();
+		return MathUtilities.intRangeList(from, to);
+	}
+
+	public List<Integer> getReactionTypeStateIndices() {
+		int from = parentOptionalStateSize + getNumberOfSpecies();
+		int to = from + getNumberOfReactions();
+		return MathUtilities.intRangeList(from, to);
 	}
 
 	private double computeReactionType(int reaction) {
@@ -192,6 +207,10 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		default:
 			return Double.NaN;
 		}
+	}
+
+	public void setOptionalEventOccured() {
+		hasOptionalEventOccured = true;
 	}
 
 }

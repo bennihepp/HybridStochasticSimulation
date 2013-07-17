@@ -7,7 +7,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class BacteriumOperatorSiteNetwork extends ExampleConfiguration {
+public class BacteriumOperatorSiteNetwork extends SimulationConfiguration {
 
 	public BacteriumOperatorSiteNetwork() {
 		int[] deterministicReactions = { 2 };

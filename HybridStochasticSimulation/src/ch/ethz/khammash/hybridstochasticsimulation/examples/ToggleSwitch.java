@@ -27,7 +27,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //  R8:  pA      -> -
 //  R9:  pB      -> -
 
-public class ToggleSwitch extends ExampleConfiguration {
+public class ToggleSwitch extends SimulationConfiguration {
 
 	public ToggleSwitch() {
 

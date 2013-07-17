@@ -1,6 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
 
+
 public class ArrayFiniteTrajectoryRecorder extends ArrayFiniteTrajectory implements FiniteTrajectoryRecorder, TrajectoryRecorder {
 
 	private int numOfTimePoints;
@@ -59,14 +60,5 @@ public class ArrayFiniteTrajectoryRecorder extends ArrayFiniteTrajectory impleme
 				setState(index, x);
 		}
 	}
-
-//	@Override
-//	public void handleReactionEvent(int reaction, double t, double[] newX) {
-//		while (index < tSeries.length && tSeries[index] < t ) {
-//			setState(index, previousX);
-//			index++;
-//		}
-//		previousX = newX.clone();
-//	}
 
 }

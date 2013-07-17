@@ -8,6 +8,6 @@ public interface SimulationInformation {
 
 	boolean isIntegrating();
 
-	double[] getInformationState();
+	double[] computeInformationState();
 
 }

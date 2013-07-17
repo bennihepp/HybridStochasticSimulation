@@ -8,7 +8,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class RepressedBacteriumOperonNetwork extends ExampleConfiguration {
+public class RepressedBacteriumOperonNetwork extends SimulationConfiguration {
 
 	public RepressedBacteriumOperonNetwork() {
 		// See Crudu et. al 2009

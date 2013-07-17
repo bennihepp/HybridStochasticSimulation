@@ -1,21 +1,29 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.FastMath;
+import org.xml.sax.SAXException;
 
 import ch.ethz.khammash.hybridstochasticsimulation.examples.BacteriophageT7;
-import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfiguration;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfigurationFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.FastDimerization;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.FastIsomerization;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.Repressilator;
+import ch.ethz.khammash.hybridstochasticsimulation.examples.SimulationConfiguration;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ToggleSwitch;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.VilarOscillator;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.TrajectoryDistributionPlotChartPanel;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.TrajectoryPlotChartPanel;
+import ch.ethz.khammash.hybridstochasticsimulation.io.StochKitNetworkReader;
+import ch.ethz.khammash.hybridstochasticsimulation.math.MathUtilities;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.SimulationUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
@@ -27,7 +35,7 @@ public class Examples {
 	public static List<FinitePlotData> trivialNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Trivial");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Trivial");
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -35,7 +43,7 @@ public class Examples {
 		boolean printMessages = true;
 
 		nss.t1 = 100;
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFinitePlotData td;
 
@@ -67,7 +75,7 @@ public class Examples {
 	public static List<FinitePlotData> conversionCycleNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Conversion Cycle");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Conversion Cycle");
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -83,7 +91,7 @@ public class Examples {
 		nss.theta = 10;
 		nss.t1 = 10;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 //		nss.gamma = 0;
 //		nss.N = 1e3;
@@ -153,7 +161,7 @@ public class Examples {
 	public static List<FinitePlotData> regulatedTranscriptionNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Regulated Transcription");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Regulated Transcription");
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 100;
@@ -169,7 +177,7 @@ public class Examples {
 		nss.theta = 1;
 		nss.t1 = 25000;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 //		VectorFinitePlotData td;
 //		td = SimulationUtilities.simulateFiniteStochastic(nss, tSeries, printMessages);
@@ -257,7 +265,7 @@ public class Examples {
 		List<FinitePlotData> ks5plotDataList = new LinkedList<FinitePlotData>();
 		List<FinitePlotData> ks10plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Stochastic Focusing");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Stochastic Focusing");
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 10;
@@ -276,7 +284,7 @@ public class Examples {
 		nss.t1 = 10;
 
 		nss.t1 = 10;
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFinitePlotData td;
 
@@ -298,7 +306,7 @@ public class Examples {
 //		Utilities.printArray("Deterministic ks=5kd", getLastState(td));
 
 		ks = 10.0 * kd;
-		nss.net.setRateParameter(4, ks);
+		((DefaultUnaryBinaryReactionNetwork)nss.net).setRateParameter(4, ks);
 		td = SimulationUtilities.simulateFiniteStochastic(nss, tSeries, printMessages);
 		td.setDescription("Stochastic ks=10kd");
 		ks10plotDataList.add(td);
@@ -313,7 +321,7 @@ public class Examples {
 		VectorFinitePlotData tds;
 
 		ks = 10.0 * kd;
-		nss.net.setRateParameter(4, ks);
+		((DefaultUnaryBinaryReactionNetwork)nss.net).setRateParameter(4, ks);
 		tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages);
 		tds = tdList.get(0);
 		tds.setDescription("AdaptiveMSPDMP ks=10kd");
@@ -420,7 +428,7 @@ public class Examples {
 	public static List<FinitePlotData> simpleCrystallizationNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Simple Crystallization");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Simple Crystallization");
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -434,7 +442,7 @@ public class Examples {
 		nss.gamma = 0;
 
 //		nss.t1 = 100;
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		tdd = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
@@ -482,7 +490,7 @@ public class Examples {
 	public static List<FinitePlotData> birthDeathTunnelNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Birth Death Tunnel");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Birth Death Tunnel");
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -500,7 +508,7 @@ public class Examples {
 		nss.xi = 0.5;
 		nss.t1 = 1000;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		TrajectoryDistributionPlotChartPanel dplot;
@@ -533,7 +541,7 @@ public class Examples {
 	public static List<FinitePlotData> haploinsufficiencyNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Haploinsufficiency");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Haploinsufficiency");
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -550,7 +558,7 @@ public class Examples {
 		nss.theta = 100;
 		nss.t1 = 1e6;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		VectorFiniteDistributionPlotData tdds;
@@ -648,7 +656,7 @@ public class Examples {
 	public static List<FinitePlotData> bacteriumOperatorSiteNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Bacterium Operator Site");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Bacterium Operator Site");
 
 		double[] rateParameters = {
 				2.0e-4,
@@ -656,7 +664,7 @@ public class Examples {
 				10,
 				4.8e-4,
 		};
-		nss.net.setRateParameters(rateParameters);
+		((DefaultUnaryBinaryReactionNetwork)nss.net).setRateParameters(rateParameters);
 		double[] x0 = { 1, 0, 0 };
 		nss.x0 = x0;
 		double[] plotScales = { (rateParameters[2] / rateParameters[3]) / 5, (rateParameters[2] / rateParameters[3]) / 5, 1  };
@@ -672,7 +680,7 @@ public class Examples {
 		nss.gamma = 0;
 //		nss.t1 = 1000000;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		VectorFiniteDistributionPlotData tdds;
@@ -741,7 +749,7 @@ public class Examples {
 	public static List<FinitePlotData> lambdaPhageToggleSwitchNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Lambda Phage Toggle Switch");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Lambda Phage Toggle Switch");
 
 		double k1 =  1.0e-1;
 		double km1 = 1.0;
@@ -768,7 +776,7 @@ public class Examples {
 
 		nss.epsilon = 0.1;
 		nss.delta = 0.2;
-		nss.net.setRateParameters(rateParameters);
+		((DefaultUnaryBinaryReactionNetwork)nss.net).setRateParameters(rateParameters);
 		double[] x0 = { 1, 0, 0, 0, 50, 50 };
 		nss.x0 = x0;
 		double[] plotScales = { -100, -100, -100, -100, 1, 1 };
@@ -780,7 +788,7 @@ public class Examples {
 		boolean printMessages = true;
 
 		nss.t1 = 10;
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		VectorFiniteDistributionPlotData tdds;
@@ -854,7 +862,7 @@ public class Examples {
 	public static List<FinitePlotData> repressedBacteriumOperonNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Repressed Bacterium Operon");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Repressed Bacterium Operon");
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 10;
@@ -862,7 +870,7 @@ public class Examples {
 		boolean printMessages = true;
 
 		nss.t1 = 18;
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		VectorFiniteDistributionPlotData tdds;
@@ -941,7 +949,7 @@ public class Examples {
 	public static List<FinitePlotData> heatShockResponseNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Heat Shock Response");
+		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Heat Shock Response");
 		nss.rdg = null;
 		nss.rng = null;
 
@@ -989,7 +997,7 @@ public class Examples {
 //		nss.theta = 10;
 		nss.t1 = 10*FastMath.pow(10, 4);
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		Utilities.printArray("rates", nss.net.getRateParameters());
 
@@ -1164,7 +1172,8 @@ public class Examples {
 	public static List<FinitePlotData> vilarOscillatorNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = new VilarOscillator(true);
+		boolean modifiedParameters = false;
+		SimulationConfiguration nss = new VilarOscillator(modifiedParameters);
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -1178,9 +1187,9 @@ public class Examples {
 		nss.epsilon = 0.5;
 		nss.gamma = 0;
 		nss.theta = 10;
-		nss.t1 = 1000;
+		nss.t1 = 100;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		VectorFiniteDistributionPlotData tdds;
@@ -1189,11 +1198,17 @@ public class Examples {
 		VectorFinitePlotData tds;
 		TrajectoryPlotChartPanel plot;
 
-		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
-		td.setDescription("Stochastic");
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
-//		plotDataList.add(td);
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+//		td.setDescription("Stochastic");
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+////		plotDataList.add(td);
+
+//		td = SimulationUtilities.simulateDeterministic(nss, tSeries, printMessages);
+//		td.setDescription("Deterministic");
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+////		plotDataList.add(td);
 
 //		tdd = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
 //		tdd = tdd.getSubsetData(states);
@@ -1274,13 +1289,74 @@ public class Examples {
 			plotDataList.add(td);
 		}
 
+		return plotDataList;
+	}
+
+	public static List<FinitePlotData> bacteriophageT7Network() {
+		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
+
+		SimulationConfiguration nss = new BacteriophageT7();
+
+		int PDMPRuns = 100;
+		int stochasticRuns = 100;
+		int numberOfTimePoints = 1001;
+		boolean printMessages = true;
+
+		// Set 1
+		nss.N = 100;
+		nss.delta = 1;
+		nss.xi = 1;
+		nss.epsilon = 0.5;
+		nss.gamma = 0;
+		nss.theta = 10;
+//		nss.t1 = 100;
+
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+
+		VectorFiniteDistributionPlotData tdd;
+		VectorFiniteDistributionPlotData tdds;
+		TrajectoryDistributionPlotChartPanel dplot;
+		VectorFinitePlotData td;
+		VectorFinitePlotData tds;
+		TrajectoryPlotChartPanel plot;
+
 //		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
 //		td.setDescription("Stochastic");
 //		for (int s=0; s < td.getNumberOfStates(); s++)
 //			plotDataList.add(td.getSubsetData(s));
 ////		plotDataList.add(td);
 
+//		tdd = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
+//		tdd.setDescription("Stochastic distribution");
+//		for (int s=0; s < tdd.getNumberOfStates(); s++)
+//			plotDataList.add(tdd.getSubsetData(s));
+////		plotDataList.add(tdd);
+
+////		int[] dR = { };
+////		int[] dR = { 0, 1, 2, 3, 4, 5 };
+//		int[] dR = { 2, 3, 4, 5 };
+//		nss.deterministicReactions = dR;
+//		td = SimulationUtilities.simulatePDMP(nss, tSeries, printMessages);
+////		td = SimulationUtilities.simulatePDMP(nss, tSeries, printMessages);
+//		td.setDescription("PDMP");
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+////		plotDataList.add(td);
+
+//		tdd = SimulationUtilities.simulatePDMPDistribution(PDMPRuns, nss, tSeries, printMessages);
+//		tdd.setDescription("PDMP distribution");
+//		for (int s=0; s < tdd.getNumberOfStates(); s++)
+//			plotDataList.add(tdd.getSubsetData(s));
+//		plotDataList.add(tdd);
+
+		tdd = SimulationUtilities.simulateAdaptiveMSPDMPDistribution(PDMPRuns, nss, tSeries, printMessages);
+		tdd.setDescription("AdaptiveMSPDMP distribution");
+		for (int s=0; s < tdd.getNumberOfStates(); s++)
+			plotDataList.add(tdd.getSubsetData(s));
+//		plotDataList.add(tdd);
+
 //		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, true);
+////		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages, false);
 //		td = tdList.get(0);
 //		td.setDescription("Adaptive");
 //		for (int s=0; s < td.getNumberOfStates(); s++)
@@ -1313,107 +1389,10 @@ public class Examples {
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> bacteriophageT7Network() {
-		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
-
-		ExampleConfiguration nss = new BacteriophageT7();
-
-		int PDMPRuns = 10000;
-		int stochasticRuns = 100;
-		int numberOfTimePoints = 1001;
-		boolean printMessages = true;
-
-		// Set 1
-		nss.N = 100;
-		nss.delta = 1;
-		nss.xi = 1;
-		nss.epsilon = 0.5;
-		nss.gamma = 0;
-		nss.theta = 10;
-//		nss.t1 = 100;
-
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
-
-		VectorFiniteDistributionPlotData tdd;
-		VectorFiniteDistributionPlotData tdds;
-		TrajectoryDistributionPlotChartPanel dplot;
-		VectorFinitePlotData td;
-		VectorFinitePlotData tds;
-		TrajectoryPlotChartPanel plot;
-
-		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
-		td.setDescription("Stochastic");
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
-//		plotDataList.add(td);
-
-//		tdd = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
-//		tdd.setDescription("Stochastic distribution");
-//		for (int s=0; s < tdd.getNumberOfStates(); s++)
-//			plotDataList.add(tdd.getSubsetData(s));
-////		plotDataList.add(tdd);
-
-////		int[] dR = { };
-////		int[] dR = { 0, 1, 2, 3, 4, 5 };
-//		int[] dR = { 2, 3, 4, 5 };
-//		nss.deterministicReactions = dR;
-//		td = SimulationUtilities.simulatePDMP(nss, tSeries, printMessages);
-////		td = SimulationUtilities.simulatePDMP(nss, tSeries, printMessages);
-//		td.setDescription("PDMP");
-//		for (int s=0; s < td.getNumberOfStates(); s++)
-//			plotDataList.add(td.getSubsetData(s));
-////		plotDataList.add(td);
-
-//		tdd = SimulationUtilities.simulatePDMPDistribution(PDMPRuns, nss, tSeries, printMessages);
-//		tdd.setDescription("PDMP distribution");
-//		for (int s=0; s < tdd.getNumberOfStates(); s++)
-//			plotDataList.add(tdd.getSubsetData(s));
-//		plotDataList.add(tdd);
-
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, false);
-//		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages, false);
-		td = tdList.get(0);
-		td.setDescription("Adaptive");
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
-//		plotDataList.add(td);
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alphas");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rhos");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP betas");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP STs");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP RTTs");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP z");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP integrator");
-			plotDataList.add(td);
-		}
-
-//		tdd = SimulationUtilities.simulateAdaptiveMSPDMPDistribution(PDMPRuns, nss, tSeries, printMessages);
-//		tdd.setDescription("AdaptiveMSPDMP distribution");
-//		for (int s=0; s < tdd.getNumberOfStates(); s++)
-//			plotDataList.add(tdd.getSubsetData(s));
-////		plotDataList.add(tdd);
-
-		return plotDataList;
-	}
-
 	public static List<FinitePlotData> fastIsomerization() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = new FastIsomerization();
+		SimulationConfiguration nss = new FastIsomerization();
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 100;
@@ -1421,15 +1400,15 @@ public class Examples {
 		boolean printMessages = true;
 
 		// Set 1
-		nss.N = 100;
+		nss.N = 10000;
 		nss.delta = 1;
 		nss.xi = 1;
 		nss.epsilon = 0.5;
 		nss.gamma = 0;
 		nss.theta = 100;
-		nss.t1 = 1000;
+		nss.t1 = 20000;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		VectorFiniteDistributionPlotData tdds;
@@ -1442,11 +1421,11 @@ public class Examples {
 //		tdd.setDescription("Stochastic distribution");
 //		plotDataList.add(tdd);
 
-		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
-		td.setDescription("Stochastic");
-//		for (int s=0; s < td.getNumberOfStates(); s++)
-//			plotDataList.add(td.getSubsetData(s));
-		plotDataList.add(td);
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+//		td.setDescription("Stochastic");
+////		for (int s=0; s < td.getNumberOfStates(); s++)
+////			plotDataList.add(td.getSubsetData(s));
+//		plotDataList.add(td);
 
 //		tdd = SimulationUtilities.simulateAdaptiveMSPDMPDistribution(PDMPRuns, nss, tSeries, printMessages);
 //		tdd.setDescription("AdaptiveMSPDMP distribution");
@@ -1489,7 +1468,7 @@ public class Examples {
 	public static List<FinitePlotData> fastDimerization() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = new FastDimerization();
+		SimulationConfiguration nss = new FastDimerization();
 
 		int PDMPRuns = 1000;
 		int stochasticRuns = 1000;
@@ -1505,7 +1484,7 @@ public class Examples {
 		nss.theta = 100;
 //		nss.t1 = 100;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		VectorFiniteDistributionPlotData tdds;
@@ -1520,7 +1499,11 @@ public class Examples {
 ////			plotDataList.add(td.getSubsetData(s));
 //		plotDataList.add(td);
 
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, false);
+//		tdd = SimulationUtilities.simulateAdaptiveMSPDMPDistribution(PDMPRuns, nss, tSeries, printMessages);
+//		tdd.setDescription("AdaptiveMSPDMP distribution");
+//		plotDataList.add(tdd);
+
+		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, true);
 //		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages, false);
 		td = tdList.get(0);
 		td.setDescription("Adaptive");
@@ -1529,25 +1512,24 @@ public class Examples {
 		plotDataList.add(td);
 		if (tdList.size() > 1) {
 			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alphas");
+			td.setDescription("AdaptiveMSPDMP alpha");
 			plotDataList.add(td);
 			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rhos");
+			td.setDescription("AdaptiveMSPDMP rho");
 			plotDataList.add(td);
 			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP betas");
+			td.setDescription("AdaptiveMSPDMP beta");
 			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP STs");
+			td = tdList.get(4);		td.setDescription("AdaptiveMSPDMP z (scaled state)");
 			plotDataList.add(td);
 			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP RTTs");
+			td.setDescription("AdaptiveMSPDMP SpeciesType");
 			plotDataList.add(td);
 			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP z");
+			td.setDescription("AdaptiveMSPDMP ReactionType");
 			plotDataList.add(td);
 			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP integrator");
+			td.setDescription("AdaptiveMSPDMP Simulation info");
 			plotDataList.add(td);
 		}
 
@@ -1557,7 +1539,7 @@ public class Examples {
 	public static List<FinitePlotData> repressilator() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = new Repressilator();
+		SimulationConfiguration nss = new Repressilator();
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 100;
@@ -1573,7 +1555,7 @@ public class Examples {
 		nss.theta = 100;
 		nss.t1 = 10000;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		VectorFiniteDistributionPlotData tdds;
@@ -1625,7 +1607,7 @@ public class Examples {
 	public static List<FinitePlotData> toggleSwitch() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		ExampleConfiguration nss = new ToggleSwitch();
+		SimulationConfiguration nss = new ToggleSwitch();
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 100;
@@ -1641,7 +1623,7 @@ public class Examples {
 		nss.theta = 100;
 		nss.t1 = 10000;
 
-		double[] tSeries = Utilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		VectorFiniteDistributionPlotData tdd;
 		VectorFiniteDistributionPlotData tdds;
@@ -1686,6 +1668,62 @@ public class Examples {
 //			td.setDescription("AdaptiveMSPDMP integrator");
 //			plotDataList.add(td);
 //		}
+
+		return plotDataList;
+	}
+
+	public static List<FinitePlotData> heatShockMassAction() throws ParserConfigurationException, SAXException, IOException {
+		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
+
+		File inputFile = new File("models/heat_shock_mass_action.xml");
+		SimulationConfiguration nss = StochKitNetworkReader.readSimulationConfiguration(inputFile);
+
+		int numberOfTimePoints = 1001;
+		boolean printMessages = true;
+
+		nss.t1 = 1;
+
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+
+		VectorFinitePlotData td;
+
+		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+		td.setDescription("Stochastic");
+		plotDataList.add(td);
+		for (int s=0; s < td.getNumberOfStates(); s++)
+			plotDataList.add(td.getSubsetData(s));
+
+		return plotDataList;
+	}
+
+	public static List<FinitePlotData> enzymeKinetics1() throws ParserConfigurationException, SAXException, IOException {
+		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
+
+		File inputFile = new File("models/enzyme_kinetics_1.xml");
+		SimulationConfiguration nss = StochKitNetworkReader.readSimulationConfiguration(inputFile);
+
+		int PDMPRuns = 100;
+		int stochasticRuns = 100;
+		int numberOfTimePoints = 1001;
+		boolean printMessages = true;
+
+		nss.t1 = 1;
+
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+
+		VectorFinitePlotData td;
+
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+//		td.setDescription("Stochastic");
+//		plotDataList.add(td);
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+
+		td = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
+		td.setDescription("Stochastic distribution");
+		plotDataList.add(td);
+		for (int s=0; s < td.getNumberOfStates(); s++)
+			plotDataList.add(td.getSubsetData(s));
 
 		return plotDataList;
 	}

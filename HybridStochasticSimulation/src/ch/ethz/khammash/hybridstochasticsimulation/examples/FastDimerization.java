@@ -20,7 +20,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //  R2:  S0      -> -         [0.02]
 //  R3:  S1      -> S2        [0.004]
 
-public class FastDimerization extends ExampleConfiguration {
+public class FastDimerization extends SimulationConfiguration {
 
 	public FastDimerization() {
 

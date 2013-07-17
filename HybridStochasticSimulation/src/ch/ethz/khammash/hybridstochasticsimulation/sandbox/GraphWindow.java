@@ -19,6 +19,10 @@ import org.jgraph.graph.DefaultGraphCell;
 import org.jgraph.graph.GraphConstants;
 import org.jgrapht.ext.JGraphModelAdapter;
 
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionEdge;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
+
 
 /**
  * Adapted from jgrapht example from Barak Naveh, Aug 3, 2003.

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.SpeciesVertex;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 public class CombiningAveragingProvider extends AbstractAveragingProvider {
 
@@ -34,26 +34,25 @@ public class CombiningAveragingProvider extends AbstractAveragingProvider {
 
 	@Override
 	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales) {
-		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(reactionTimescales);
+		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(t, x, reactionTimescales);
 		List<Set<SpeciesVertex>> subnetworksToAverage = greedySelectSubnetworksToAverage(averagingCandidates);
 
 		if (previousSubnetworksToAverage != null)
-			resamplePreviouslyAveragedSubnetworks(x, subnetworksToAverage, previousSubnetworksToAverage);
+			resamplePreviouslyAveragedSubnetworks(t, x, subnetworksToAverage, previousSubnetworksToAverage);
 
 		previousSubnetworksToAverage = subnetworksToAverage;
 		return subnetworksToAverage;
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> findAveragingCandidates(double[] reactionTimescales) {
+	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales) {
 		previousSubnetworkToAveragingProviderMap = new HashMap<>();
 		List<Set<SpeciesVertex>> allCandidates = new ArrayList<>();
 		for (AveragingProvider ap : averagingProviders) {
-			List<Set<SpeciesVertex>> candidates = ap.findAveragingCandidates(reactionTimescales);
+			List<Set<SpeciesVertex>> candidates = ap.findAveragingCandidates(t, x, reactionTimescales);
 			for (Set<SpeciesVertex> candidate : candidates)
 				if (!previousSubnetworkToAveragingProviderMap.containsKey(candidate))
 					previousSubnetworkToAveragingProviderMap.put(candidate, ap);
-//			allCandidatesMap.put(ap, candidates);
 			allCandidates.addAll(candidates);
 		}
 		return allCandidates;
@@ -66,7 +65,7 @@ public class CombiningAveragingProvider extends AbstractAveragingProvider {
 	}
 
 	@Override
-	public void resamplePreviouslyAveragedSubnetworks(double[] x,
+	public void resamplePreviouslyAveragedSubnetworks(double t, double[] x,
 			List<Set<SpeciesVertex>> subnetworksToAverage, List<Set<SpeciesVertex>> previousSubnetworksToAverage) {
 		// Resample states that have been averaged before but are no longer averaged
 		Set<SpeciesVertex> allAveragingSpecies = new HashSet<SpeciesVertex>();
@@ -74,14 +73,14 @@ public class CombiningAveragingProvider extends AbstractAveragingProvider {
 			allAveragingSpecies.addAll(subnetwork);
 		for (Set<SpeciesVertex> subnetworkSpecies : previousSubnetworksToAverage)
 			if (!allAveragingSpecies.containsAll(subnetworkSpecies)) {
-				resampleFromSteadyStateDistribution(x, subnetworkSpecies);
+				resampleFromSteadyStateDistribution(t, x, subnetworkSpecies);
 			}
 	}
 
 	@Override
-	public void resampleFromSteadyStateDistribution(double[] x, Set<SpeciesVertex> subnetworkSpecies) {
+	public void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
 		AveragingProvider ap = previousSubnetworkToAveragingProviderMap.get(subnetworkSpecies);
-		ap.resampleFromSteadyStateDistribution(x, subnetworkSpecies);
+		ap.resampleFromSteadyStateDistribution(t, x, subnetworkSpecies);
 	}
 
 }

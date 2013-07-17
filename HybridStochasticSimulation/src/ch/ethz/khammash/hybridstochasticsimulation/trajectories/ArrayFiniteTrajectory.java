@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -12,6 +13,33 @@ public class ArrayFiniteTrajectory extends AbstractFiniteTrajectory {
 
 	protected double[] tSeries;
 	protected double[][] xSeries;
+
+	public static FiniteTrajectory createSubTrajectory(FiniteTrajectory tr, int[] subsetStates) {
+		return createSubTrajectory(tr, ArrayUtils.toObject(subsetStates));
+	}
+
+	public static FiniteTrajectory createSubTrajectory(FiniteTrajectory tr, Integer[] subsetStates) {
+		return createSubTrajectory(tr, Arrays.asList(subsetStates));
+	}
+
+	public static FiniteTrajectory createSubTrajectory(FiniteTrajectory tr, List<Integer> subsetStates) {
+		if (subsetStates.size() == tr.getNumberOfStates()) {
+			boolean allStates = true;
+			for (int i=0; i < subsetStates.size(); i++)
+				if (i != subsetStates.get(i)) {
+					allStates = false;
+					break;
+				}
+			if (allStates)
+				return tr;
+		}
+		double[][] subsetxSeries = new double[subsetStates.size()][tr.getNumberOfTimePoints()];
+		for (int i=0; i < subsetStates.size(); i++) {
+			int s = subsetStates.get(i);
+			System.arraycopy(tr.getxSeries(s), 0, subsetxSeries[i], 0, tr.getNumberOfTimePoints());
+		}
+		return new ArrayFiniteTrajectory(tr.gettSeries(), subsetxSeries);
+	}
 
 	public ArrayFiniteTrajectory(double[] tSeries) {
 		this.tSeries = tSeries;

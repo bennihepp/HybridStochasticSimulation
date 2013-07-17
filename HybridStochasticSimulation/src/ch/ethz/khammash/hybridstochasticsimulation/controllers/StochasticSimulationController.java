@@ -6,7 +6,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.factories.StochasticSimulator
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 
 
-public class StochasticSimulationController<T extends StochasticReactionNetworkModel> extends AbstractSimulationController<T> {
+public class StochasticSimulationController extends AbstractSimulationController<StochasticReactionNetworkModel> {
 
     public StochasticSimulationController() {
     	super();
@@ -24,7 +24,7 @@ public class StochasticSimulationController<T extends StochasticReactionNetworkM
     }
 
 	final private void construct() {
-		setSimulatorFactory(new StochasticSimulatorFactory<T>());
+		setSimulatorFactory(new StochasticSimulatorFactory());
 	}
 
 }

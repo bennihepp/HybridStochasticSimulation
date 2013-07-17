@@ -1,15 +1,18 @@
-package ch.ethz.khammash.hybridstochasticsimulation.networks;
+package ch.ethz.khammash.hybridstochasticsimulation.averaging;
 
 import java.util.List;
 import java.util.Set;
 
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.ReactionNetworkGraph;
-import ch.ethz.khammash.hybridstochasticsimulation.sandbox.SpeciesVertex;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 public interface AveragingProvider {
 
-	void init(double theta, UnaryBinaryReactionNetwork network, ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies);
+	List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales);
 
-	List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] speciesTimescales);
+	List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales);
+
+	void reset();
+
+	void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies);
 
 }

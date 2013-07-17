@@ -7,7 +7,7 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
-public class ConversionCycleNetwork extends ExampleConfiguration {
+public class ConversionCycleNetwork extends SimulationConfiguration {
 
 	public ConversionCycleNetwork() {
 		int[] deterministicReactions = { 0, 1 };

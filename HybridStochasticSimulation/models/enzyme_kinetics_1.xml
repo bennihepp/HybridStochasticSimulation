@@ -1,0 +1,139 @@
+<Model>
+  <Description>Enzyme Kinetics 1</Description>
+  <NumberOfReactions>8</NumberOfReactions>
+  <NumberOfSpecies>4</NumberOfSpecies>
+  <ParametersList>
+    <Parameter>
+      <Id>k1on</Id>
+      <Expression>1.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k1off</Id>
+      <Expression>1.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k2on</Id>
+      <Expression>1.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k2off</Id>
+      <Expression>1.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>kE</Id>
+      <Expression>10.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>gammaE</Id>
+      <Expression>0.01</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>kS</Id>
+      <Expression>10.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>gammaS</Id>
+      <Expression>0.01</Expression>
+    </Parameter>
+  </ParametersList>
+  <ReactionsList>
+    <Reaction>
+      <Id>Reaction1</Id>
+      <Type>mass-action</Type>
+      <Rate>k1on</Rate>
+      <Reactants>
+        <SpeciesReference id="E" stoichiometry="1.000000"/>
+        <SpeciesReference id="S" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="ES" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction2</Id>
+      <Type>mass-action</Type>
+      <Rate>k1off</Rate>
+      <Reactants>
+        <SpeciesReference id="ES" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="E" stoichiometry="1.000000"/>
+        <SpeciesReference id="S" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction3</Id>
+      <Type>mass-action</Type>
+      <Rate>k2on</Rate>
+      <Reactants>
+        <SpeciesReference id="ES" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="E" stoichiometry="1.000000"/>
+        <SpeciesReference id="P" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction4</Id>
+      <Type>mass-action</Type>
+      <Rate>k2off</Rate>
+      <Reactants>
+        <SpeciesReference id="E" stoichiometry="1.000000"/>
+        <SpeciesReference id="P" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="ES" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction5</Id>
+      <Type>mass-action</Type>
+      <Rate>gammaE</Rate>
+      <Reactants>
+        <SpeciesReference id="E" stoichiometry="1.000000"/>
+      </Reactants>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction6</Id>
+      <Type>mass-action</Type>
+      <Rate>gammaS</Rate>
+      <Reactants>
+        <SpeciesReference id="S" stoichiometry="1.000000"/>
+      </Reactants>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction7</Id>
+      <Type>mass-action</Type>
+      <Rate>kE</Rate>
+      <Products>
+        <SpeciesReference id="E" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction8</Id>
+      <Type>mass-action</Type>
+      <Rate>kS</Rate>
+      <Products>
+        <SpeciesReference id="S" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+  </ReactionsList>
+  <SpeciesList>
+    <Species>
+      <Id>E</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>S</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>ES</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>P</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+  </SpeciesList>
+</Model>

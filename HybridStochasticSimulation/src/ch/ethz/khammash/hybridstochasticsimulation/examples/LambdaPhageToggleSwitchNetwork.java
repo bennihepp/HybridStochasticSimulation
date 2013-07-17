@@ -7,7 +7,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class LambdaPhageToggleSwitchNetwork extends ExampleConfiguration {
+public class LambdaPhageToggleSwitchNetwork extends SimulationConfiguration {
 
 	public LambdaPhageToggleSwitchNetwork() {
 		// See Crudu et. al 2009

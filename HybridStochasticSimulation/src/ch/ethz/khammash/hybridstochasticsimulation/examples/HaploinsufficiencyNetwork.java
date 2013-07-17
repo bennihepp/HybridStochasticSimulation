@@ -7,7 +7,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 
 
-public class HaploinsufficiencyNetwork extends ExampleConfiguration {
+public class HaploinsufficiencyNetwork extends SimulationConfiguration {
 
 	public HaploinsufficiencyNetwork() {
 		int[] deterministicReactions = { 2 };

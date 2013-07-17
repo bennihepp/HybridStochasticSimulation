@@ -2,16 +2,24 @@ package ch.ethz.khammash.ode;
 
 public interface TimepointProvider {
 
-	public double getInitialTimepoint();
+	static class NoMoreTimepointsException extends RuntimeException {
+		private static final long serialVersionUID = 4506876838123448120L;
 
-	public double getLastTimepoint();
+		public NoMoreTimepointsException(String message) {
+			super(message);
+		}
+	}
 
-	public void reset();
+	double getInitialTimepoint();
 
-	public double getCurrentTimepoint();
+	double getLastTimepoint();
 
-	public boolean hasNextTimepoint();
+	void reset();
 
-	public double getNextTimepoint();
+	double getCurrentTimepoint();
+
+	boolean hasNextTimepoint(double tCurrent);
+
+	double getNextTimepoint(double tCurrent) throws NoMoreTimepointsException;
 
 }

@@ -2,6 +2,7 @@ package ch.ethz.khammash.ode.lsodar;
 
 import ch.ethz.khammash.ode.EventFunction;
 import ch.ethz.khammash.ode.EventObserver;
+import ch.ethz.khammash.ode.FiniteTimepointProvider;
 import ch.ethz.khammash.ode.Ode;
 import ch.ethz.khammash.ode.Solver;
 import ch.ethz.khammash.ode.StateObserver;
@@ -52,7 +53,7 @@ public class LsodarSolver implements Solver {
     	this.absTol = absTol;
     }
 
-    public void initialize(Ode ode, EventFunction ef, StateObserver stateObserver, EventObserver eventObserver) {
+    public void initialize(Ode ode, EventFunction ef, StateObserver stateObserver, EventObserver eventObserver) throws JniInitializationException {
     	if (initialized)
     		dispose();
     	this.ode = ode;
@@ -62,6 +63,8 @@ public class LsodarSolver implements Solver {
     	eventIndex = -1;
 //    	eventFlags = new boolean[ode.getNumberOfEventValues()];
         jni_pointer = jni_initialize(ode, ef, relTol, absTol);
+        if (jni_pointer == 0)
+        	throw new JniInitializationException("Failed to initialize native LsodarDirectSolver");
         initialized = true;
     }
 
@@ -77,8 +80,8 @@ public class LsodarSolver implements Solver {
     private native double jni_integrate(long jni_pointer, double t0, double[] x0, double t1);
 
 	@Override
-	public double integrate(double t0, double[] x0, double t1) {
-		throw new UnsupportedOperationException("Not implemented in LsodarSolver");
+	public double integrate(double t0, double[] x0, double t1) throws NotImplementedException {
+		throw new NotImplementedException("Not implemented in LsodarSolver");
 	}
 
 	@Override
@@ -87,10 +90,10 @@ public class LsodarSolver implements Solver {
 		this.x = x;
 	}
 
-    public double integrate() {
+    public double integrate() throws LsodarIntegrationException, NotYetInitializedException {
     	if (initialized) {
     		double t = timepointProvider.getCurrentTimepoint();
-    		double tNext = timepointProvider.getNextTimepoint();
+    		double tNext = timepointProvider.getNextTimepoint(t);
 			stateObserver.report(t, x);
 //    		double t0 = timepointProvider.getCurrentTimepoint();
 //    		double t1 = timepointProvider.getLastTimepoint();
@@ -109,21 +112,21 @@ public class LsodarSolver implements Solver {
             			resetEventOccuredFlags();
             			return t;
             		} else
-            			throw new RuntimeException("Integration of ODE failed");
+            			throw new LsodarIntegrationException("Integration of ODE failed");
         		if (t == tNext)
         			stateObserver.report(t, x);
-        		if (timepointProvider.hasNextTimepoint())
-        			tNext = timepointProvider.getNextTimepoint();
+        		if (timepointProvider.hasNextTimepoint(t))
+        			tNext = timepointProvider.getNextTimepoint(t);
         		else
         			break;
     		}
     		return t;
     	} else
-    		throw new IllegalStateException("Solver has not yet been initialized");
+    		throw new NotYetInitializedException("Solver has not yet been initialized");
     }
 
 	@Override
-	public double integrate(TimepointProvider timepointProvider, double[] x) {
+	public double integrate(TimepointProvider timepointProvider, double[] x) throws LsodarIntegrationException {
 		prepare(timepointProvider, x);
 		return integrate();
 	}
@@ -173,7 +176,7 @@ public class LsodarSolver implements Solver {
     	MyEventObserver eventObserver = new MyEventObserver();
     	double[] tSeries = { 0, 0.5, 1.0 };
     	q.initialize(ode, ef, observer, eventObserver);
-    	Timepoints timepointProvider = new Timepoints(tSeries);
+    	FiniteTimepointProvider timepointProvider = new FiniteTimepointProvider(tSeries);
     	double[] x0 = { 0 };
     	q.integrate(timepointProvider, x0);
         q.dispose();
@@ -207,49 +210,6 @@ public class LsodarSolver implements Solver {
 			values[0] = 2.0 - x[0];
 		}
     	
-    }
-
-    public static class Timepoints implements TimepointProvider {
-
-    	private double[] tSeries;
-    	private int index;
-
-    	public Timepoints(double[] tSeries) {
-    		this.tSeries = tSeries;
-    		index = 0;
-    	}
-
-		@Override
-		public double getInitialTimepoint() {
-			return tSeries[0];
-		}
-
-		@Override
-		public double getLastTimepoint() {
-			return tSeries[tSeries.length - 1];
-		}
-
-		@Override
-		public void reset() {
-			index = 0;
-		}
-
-		@Override
-		public double getCurrentTimepoint() {
-			return tSeries[index];
-		}
-
-		@Override
-		public boolean hasNextTimepoint() {
-			return (index + 1) < tSeries.length;
-		}
-
-		@Override
-		public double getNextTimepoint() {
-			index++;
-			return tSeries[index];
-		}
-
     }
 
     public static class MyObserver implements StateObserver {

@@ -3,13 +3,21 @@ package ch.ethz.khammash.ode.nonstiff;
 import ch.ethz.khammash.ode.EventFunction;
 import ch.ethz.khammash.ode.EventObserver;
 import ch.ethz.khammash.ode.EventObserver.EventAction;
-import ch.ethz.khammash.ode.Exception;
+import ch.ethz.khammash.ode.FiniteTimepointProvider;
 import ch.ethz.khammash.ode.Ode;
 import ch.ethz.khammash.ode.Solver;
 import ch.ethz.khammash.ode.StateObserver;
 import ch.ethz.khammash.ode.TimepointProvider;
 
 public class EulerSolver implements Solver {
+
+	public static class EventAtStartOfIntegrationException extends RuntimeException {
+		private static final long serialVersionUID = -474930742741047560L;
+
+		public EventAtStartOfIntegrationException(String message) {
+			super(message);
+		}
+	}
 
 	protected Ode ode;
 	protected EventFunction ef;
@@ -51,7 +59,7 @@ public class EulerSolver implements Solver {
 		ef.computeEventValues(t, x, eventValues);
 		for (int i=0; i < ef.getNumberOfEventValues(); i++) {
 			if (eventValues[i] == 0)
-				throw new Exception("Event function has zeros at start of integration");
+				throw new EventAtStartOfIntegrationException("Event function has zeros at start of integration");
 //			eventSigns[i] = (eventValues[i] > 0) ? 1 : -1;
 		}
 		stateObserver.report(t, x.clone());
@@ -87,11 +95,11 @@ public class EulerSolver implements Solver {
 	@Override
 	public double integrate() {
 		double t = timepointProvider.getCurrentTimepoint();
-		double tReport = timepointProvider.getNextTimepoint();
+		double tReport = timepointProvider.getNextTimepoint(t);
 		ef.computeEventValues(t, x, eventValues);
 		for (int i=0; i < ef.getNumberOfEventValues(); i++) {
 			if (eventValues[i] == 0)
-				throw new Exception("Event function has zeros at start of integration");
+				throw new EventAtStartOfIntegrationException("Event function has zeros at start of integration");
 //			eventSigns[i] = (eventValues[i] > 0) ? 1 : -1;
 		}
 		while (true) {
@@ -117,8 +125,8 @@ public class EulerSolver implements Solver {
 			eventValues2 = tmp;
 			if (t == tReport) {
 				stateObserver.report(t, x);
-	    		if (timepointProvider.hasNextTimepoint())
-	    			tReport = timepointProvider.getNextTimepoint();
+	    		if (timepointProvider.hasNextTimepoint(t))
+	    			tReport = timepointProvider.getNextTimepoint(t);
 	    		else
 	    			break;
 			}
@@ -159,7 +167,7 @@ public class EulerSolver implements Solver {
     	q.integrate(t0, x0, t1);
     	x0[0] = 0.0;
     	double[] tSeries = { 0, 0.5, 1.0 };
-    	Timepoints timepointProvider = new Timepoints(tSeries);
+    	FiniteTimepointProvider timepointProvider = new FiniteTimepointProvider(tSeries);
     	q.integrate(timepointProvider, x0);
         q.dispose();
     };
@@ -193,49 +201,6 @@ public class EulerSolver implements Solver {
 			values[0] = 0.5;
 		}
     	
-    }
-
-    protected static class Timepoints implements TimepointProvider {
-
-    	private double[] tSeries;
-    	private int index;
-
-    	public Timepoints(double[] tSeries) {
-    		this.tSeries = tSeries;
-    		index = 0;
-    	}
-
-		@Override
-		public double getInitialTimepoint() {
-			return tSeries[0];
-		}
-
-		@Override
-		public double getLastTimepoint() {
-			return tSeries[tSeries.length - 1];
-		}
-
-		@Override
-		public void reset() {
-			index = 0;
-		}
-
-		@Override
-		public double getCurrentTimepoint() {
-			return tSeries[index];
-		}
-
-		@Override
-		public boolean hasNextTimepoint() {
-			return (index + 1) < tSeries.length;
-		}
-
-		@Override
-		public double getNextTimepoint() {
-			index++;
-			return tSeries[index];
-		}
-
     }
 
     protected static class MyObserver implements StateObserver {

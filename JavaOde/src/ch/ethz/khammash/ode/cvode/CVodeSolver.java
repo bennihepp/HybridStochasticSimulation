@@ -9,13 +9,51 @@ import ch.ethz.khammash.ode.DirectBufferEventFunctionAdapter;
 import ch.ethz.khammash.ode.DirectBufferOdeAdapter;
 import ch.ethz.khammash.ode.EventFunction;
 import ch.ethz.khammash.ode.EventObserver;
+import ch.ethz.khammash.ode.EventObserver.EventAction;
 import ch.ethz.khammash.ode.Exception;
+import ch.ethz.khammash.ode.FiniteTimepointProvider;
 import ch.ethz.khammash.ode.Ode;
 import ch.ethz.khammash.ode.Solver;
 import ch.ethz.khammash.ode.StateObserver;
 import ch.ethz.khammash.ode.TimepointProvider;
 
 public class CVodeSolver implements Solver {
+
+	public static class InvalidMultistepTypeException extends Exception {
+		private static final long serialVersionUID = 691615125296233066L;
+
+		public InvalidMultistepTypeException(String message) {
+			super(message);
+		}
+	}
+
+	public static class InvalidIterationTypeException extends Exception {
+		private static final long serialVersionUID = -742731064807994470L;
+
+		public InvalidIterationTypeException(String message) {
+			super(message);
+		}
+	}
+
+	public static class JniInitializationException extends InitializationException {
+		private static final long serialVersionUID = -742731064807994470L;
+
+		public JniInitializationException(String message) {
+			super(message);
+		}
+	}
+
+	static class CVodeIntegrationException extends IntegrationException {
+		private static final long serialVersionUID = 8509338706972523801L;
+
+		public CVodeIntegrationException(String message) {
+			super(message);
+		}
+
+		public CVodeIntegrationException(String message, Throwable cause) {
+			super(message, cause);
+		}
+	}
 
     static {
         // Load the shared library libcvodejni
@@ -62,15 +100,15 @@ public class CVodeSolver implements Solver {
     	this.absTolerance = absTolerance;
     };
 
-    public void setMultistepType(int multistepType) {
+    public void setMultistepType(int multistepType) throws InvalidMultistepTypeException {
     	if (multistepType != MULTISTEPTYPE_ADAMS && multistepType != MULTISTEPTYPE_BDF)
-    		throw new Exception("Multistep type must be either MULTISTEPTYPE_ADAMS or MULTISTEPTYPE_BDF");
+    		throw new InvalidMultistepTypeException("Multistep type must be either MULTISTEPTYPE_ADAMS or MULTISTEPTYPE_BDF");
     	this.multistepType = multistepType;
     }
 
-    public void setIterationType(int iterationType) {
+    public void setIterationType(int iterationType) throws InvalidIterationTypeException {
     	if (iterationType != ITERATIONTYPE_FUNCTIONAL && iterationType != ITERATIONTYPE_NEWTON)
-    		throw new Exception("Iteration type must be either ITERATIONTYPE_FUNCTIONAL or ITERATIONTYPE_NEWTON");
+    		throw new InvalidIterationTypeException("Iteration type must be either ITERATIONTYPE_FUNCTIONAL or ITERATIONTYPE_NEWTON");
     	this.iterationType = iterationType;
     }
 
@@ -101,7 +139,8 @@ public class CVodeSolver implements Solver {
 			DoubleBuffer gBuffer, IntBuffer eventIndexBuffer,
 			double relTol, double absTol, int multistepType, int iterationType, int maxNumOfSteps, double minStep, double maxStep);
 
-    public void initialize(Ode ode, EventFunction ef, StateObserver stateObserver, EventObserver eventObserver) {
+	@Override
+    public void initialize(Ode ode, EventFunction ef, StateObserver stateObserver, EventObserver eventObserver) throws JniInitializationException {
     	if (initialized)
     		dispose();
     	this.stateObserver = stateObserver;
@@ -138,7 +177,7 @@ public class CVodeSolver implements Solver {
         jni_pointer = jni_initialize(this.ode, this.ef, xBuffer, xTmpBuffer, xDotBuffer, gBuffer, eventIndexBuffer,
         		relTolerance, absTolerance, multistepType, iterationType, maxNumOfSteps, minStep, maxStep);
         if (jni_pointer == 0)
-        	throw new Exception("Failed to initialize native CVodeSolver");
+        	throw new JniInitializationException("Failed to initialize native CVodeSolver");
         initialized = true;
 		prepared = false;
     }
@@ -164,8 +203,8 @@ public class CVodeSolver implements Solver {
     private native double jni_integrate(long jni_pointer, double t1);
 
 	@Override
-	public double integrate(double t0, double[] x0, double t1) {
-		throw new UnsupportedOperationException("Not implemented in CVodeSolver");
+	public double integrate(double t0, double[] x0, double t1) throws NotImplementedException {
+		throw new NotImplementedException("Not implemented in CVodeSolver");
 	}
 
 	@Override
@@ -185,7 +224,7 @@ public class CVodeSolver implements Solver {
 	}
 
 	@Override
-	public double integrate() {
+	public double integrate() throws CVodeIntegrationException, NotYetInitializedException {
     	if (initialized) {
     		double t = timepointProvider.getCurrentTimepoint();
 			stateObserver.report(t, x);
@@ -205,8 +244,8 @@ public class CVodeSolver implements Solver {
 //    		double t = timepointProvider.getCurrentTimepoint();
 //    		while (timepointProvider.hasNextTimepoint()) {
 //    			double tNext = timepointProvider.getNextTimepoint();
-    		do {
-        		double tNext = timepointProvider.getNextTimepoint();
+			while (timepointProvider.hasNextTimepoint(t)) {
+        		double tNext = timepointProvider.getNextTimepoint(t);
 //        		System.out.println("t="+t+", tNext="+tNext);
 				t = jni_integrate(jni_pointer, tNext);
         		xBuffer.position(0);
@@ -224,21 +263,22 @@ public class CVodeSolver implements Solver {
 
         		if (t < tNext)
             		if (eventOccured()) {
-            			eventObserver.report(getEventOccuredIndex(), t, x);
+            			EventAction ea = eventObserver.report(getEventOccuredIndex(), t, x);
             			resetEventOccuredFlags();
-            			return t;
+            			if (ea == EventAction.STOP)
+	            			return t;
             		} else
-            			throw new RuntimeException("Integration of ODE failed: t < tNext");
+            			throw new CVodeIntegrationException("Integration of ODE failed: t < tNext");
         		if (t > tNext)
         			throw new RuntimeException("Integration of ODE failed: t > tNext");
     			stateObserver.report(t, x);
-    		} while (timepointProvider.hasNextTimepoint());
+    		}
     		return t;
     	} else
-    		throw new IllegalStateException("Solver has not yet been initialized");
+    		throw new NotYetInitializedException("Solver has not yet been initialized");
 	}
 
-    public double integrate(TimepointProvider timepointProvider, double[] x) {
+    public double integrate(TimepointProvider timepointProvider, double[] x) throws CVodeIntegrationException {
     	prepare(timepointProvider, x);
     	return integrate();
     }
@@ -283,7 +323,7 @@ public class CVodeSolver implements Solver {
     	MyEventObserver eventObserver = new MyEventObserver();
     	double[] tSeries = { 0, 0.5, 1.0 };
     	q.initialize(ode, ef, observer, eventObserver);
-    	Timepoints timepointProvider = new Timepoints(tSeries);
+    	FiniteTimepointProvider timepointProvider = new FiniteTimepointProvider(tSeries);
     	double[] x0 = { 0.2 };
     	q.integrate(timepointProvider, x0);
     	q.dispose();
@@ -317,49 +357,6 @@ public class CVodeSolver implements Solver {
 			values[0] = 2.0 - x[0];
 		}
     	
-    }
-
-    public static class Timepoints implements TimepointProvider {
-
-    	private double[] tSeries;
-    	private int index;
-
-    	public Timepoints(double[] tSeries) {
-    		this.tSeries = tSeries;
-    		index = 0;
-    	}
-
-		@Override
-		public double getInitialTimepoint() {
-			return tSeries[0];
-		}
-
-		@Override
-		public double getLastTimepoint() {
-			return tSeries[tSeries.length - 1];
-		}
-
-		@Override
-		public void reset() {
-			index = 0;
-		}
-
-		@Override
-		public double getCurrentTimepoint() {
-			return tSeries[index];
-		}
-
-		@Override
-		public boolean hasNextTimepoint() {
-			return (index + 1) < tSeries.length;
-		}
-
-		@Override
-		public double getNextTimepoint() {
-			index++;
-			return tSeries[index];
-		}
-
     }
 
     public static class MyObserver implements StateObserver {

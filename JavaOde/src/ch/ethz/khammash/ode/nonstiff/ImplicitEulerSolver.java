@@ -8,6 +8,7 @@ import org.ejml.ops.SpecializedOps;
 
 import ch.ethz.khammash.ode.EventFunction;
 import ch.ethz.khammash.ode.EventObserver;
+import ch.ethz.khammash.ode.FiniteTimepointProvider;
 import ch.ethz.khammash.ode.Ode;
 import ch.ethz.khammash.ode.StateObserver;
 
@@ -207,10 +208,10 @@ public class ImplicitEulerSolver extends EulerSolver {
 	}
 
 	protected void findNextStateImplicitFixed(double t, double[] x, double step, double[] out) {
-		CommonOps.setIdentity(B);
 		xV.setData(x);
 //		System.arraycopy(x, 0, y1.getData(), 0, ode.getDimensionOfVectorField());
 		y1.set(xV);
+		CommonOps.setIdentity(B);
 		rootFunctionEuler(t, xV, y1, step, f1);
 		while (NormOps.fastNormP2(f1) > rootTolerance) {
 			CommonOps.invert(B, B_inv);
@@ -300,7 +301,7 @@ public class ImplicitEulerSolver extends EulerSolver {
     	q.integrate(t0, x0, t1);
     	x0[0] = 0.0;
     	double[] tSeries = { 0, 0.5, 1.0 };
-    	Timepoints timepointProvider = new Timepoints(tSeries);
+    	FiniteTimepointProvider timepointProvider = new FiniteTimepointProvider(tSeries);
     	q.integrate(timepointProvider, x0);
         q.dispose();
     };

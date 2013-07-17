@@ -71,21 +71,21 @@ int g_bridge(double t, N_Vector y, double* gout, void* user_data) {
 }*/
 
 int throw_java_exception(JNIEnv* env, char* msg) {
-    jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/cvode/Exception");
+    jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/cvode/CVodeSolver.JniException");
     if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-        fprintf(stderr, "throw_java_exception: Failed to find class ch.ethz.khammash.ode.cvode.Exception\n");
+        fprintf(stderr, "throw_java_exception: Failed to find class ch.ethz.khammash.ode.cvode.CVodeSolver.JniException\n");
         fprintf(stderr, "Original message: %s\n", msg);
         return -1;
     }
     jmethodID constructorMethodID = (*env)->GetMethodID(env, excpClass, "<init>", "(Ljava/lang/String;)V");
     if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-        fprintf(stderr, "throw_java_exception: Failed to get method ID of constructor for ch.ethz.khammash.ode.cvode.Exception\n");
+        fprintf(stderr, "throw_java_exception: Failed to get method ID of constructor for ch.ethz.khammash.ode.cvode.CVodeSolver.JniException\n");
         fprintf(stderr, "Original message: %s\n", msg);
         return -1;
     }
     jobject excp = (*env)->NewObject(env, excpClass, constructorMethodID, msg);
     if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-        fprintf(stderr, "throw_java_exception: Failed to create ch.ethz.khammash.ode.cvode.Exception object\n");
+        fprintf(stderr, "throw_java_exception: Failed to create ch.ethz.khammash.ode.cvode.CVodeSolver.JniException object\n");
         fprintf(stderr, "Original message: %s\n", msg);
         return -1;
     }
@@ -99,15 +99,15 @@ int throw_java_exception(JNIEnv* env, char* msg) {
 }
 
 int throw_java_exception_error_code(JNIEnv* env, char* msg, int error_code) {
-    jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/cvode/Exception");
+    jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/cvode/CVodeSolver.JniException");
     if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-        fprintf(stderr, "throw_java_exception_error_code: Failed to find class ch.ethz.khammash.ode.cvode.Exception\n");
+        fprintf(stderr, "throw_java_exception_error_code: Failed to find class ch.ethz.khammash.ode.cvode.CVodeSolver.JniException\n");
         fprintf(stderr, "Original message: %s\n", msg);
         return -1;
     }
     jmethodID constructorMethodID = (*env)->GetMethodID(env, excpClass, "<init>", "(Ljava/lang/String;I)V");
     if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-        fprintf(stderr, "throw_java_exception_error_code: Failed to get method ID of constructor for ch.ethz.khammash.ode.cvode.Exception\n");
+        fprintf(stderr, "throw_java_exception_error_code: Failed to get method ID of constructor for ch.ethz.khammash.ode.cvode.CVodeSolver.JniException\n");
         fprintf(stderr, "Original message: %s\n", msg);
         return -1;
     }
@@ -119,7 +119,7 @@ int throw_java_exception_error_code(JNIEnv* env, char* msg, int error_code) {
     }
     jobject excp = (*env)->NewObject(env, excpClass, constructorMethodID, jmsg, error_code);
     if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-        fprintf(stderr, "throw_java_exception_error_code: Failed to create ch.ethz.khammash.ode.cvode.Exception object\n");
+        fprintf(stderr, "throw_java_exception_error_code: Failed to create ch.ethz.khammash.ode.cvode.CVodeSolver.JniException object\n");
         fprintf(stderr, "Original message: %s\n", msg);
         return -1;
     }

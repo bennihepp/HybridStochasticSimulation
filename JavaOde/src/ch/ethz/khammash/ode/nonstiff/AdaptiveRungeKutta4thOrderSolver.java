@@ -6,6 +6,7 @@ import org.ejml.ops.CommonOps;
 
 import ch.ethz.khammash.ode.EventFunction;
 import ch.ethz.khammash.ode.EventObserver;
+import ch.ethz.khammash.ode.FiniteTimepointProvider;
 import ch.ethz.khammash.ode.Ode;
 import ch.ethz.khammash.ode.StateObserver;
 
@@ -147,7 +148,7 @@ public class AdaptiveRungeKutta4thOrderSolver extends EulerSolver {
     	q.integrate(t0, x0, t1);
     	x0[0] = 0.0;
     	double[] tSeries = { 0, 0.5, 1.0 };
-    	Timepoints timepointProvider = new Timepoints(tSeries);
+    	FiniteTimepointProvider timepointProvider = new FiniteTimepointProvider(tSeries);
     	q.integrate(timepointProvider, x0);
         q.dispose();
     };

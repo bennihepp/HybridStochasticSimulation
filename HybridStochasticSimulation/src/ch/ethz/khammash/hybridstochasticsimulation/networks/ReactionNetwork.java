@@ -2,6 +2,8 @@ package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
 import java.util.List;
 
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
+
 
 public interface ReactionNetwork {
 
@@ -30,5 +32,15 @@ public interface ReactionNetwork {
 	List<Integer> getInvolvedSpecies(int reaction);
 
 	List<Integer> getInvolvedReactions(int species);
+
+	ReactionNetworkGraph getGraph();
+
+	String getSpeciesLabel(int species);
+
+	String getReactionLabel(int reaction);
+
+	List<String> getSpeciesLabels();
+
+	List<String> getReactionLabels();
 
 }

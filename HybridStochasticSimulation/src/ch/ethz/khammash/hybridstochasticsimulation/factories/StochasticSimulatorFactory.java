@@ -7,7 +7,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.StochasticSimulator;
 
 public class StochasticSimulatorFactory
-		implements SimulatorFactory<Simulator<StochasticReactionNetworkModel>> {
+		implements SimulatorFactory<StochasticReactionNetworkModel> {
 
 	@Override
 	public Simulator<StochasticReactionNetworkModel> createSimulator(RandomDataGenerator rdg) {

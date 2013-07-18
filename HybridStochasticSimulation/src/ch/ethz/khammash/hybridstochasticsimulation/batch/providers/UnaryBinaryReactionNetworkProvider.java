@@ -27,7 +27,8 @@ public class UnaryBinaryReactionNetworkProvider extends AbstractProvider<UnaryBi
 		if (inputFileName != null) {
 			File inputFile = new File(inputFileName);
 			try {
-				return StochKitNetworkReader.readUnaryBinaryNetworkFromFile(inputFile);
+				UnaryBinaryReactionNetwork network = StochKitNetworkReader.readUnaryBinaryNetworkFromFile(inputFile);
+				return network;
 			} catch (ParserConfigurationException | SAXException | IOException e) {
 				throw new RuntimeException(e);
 			}

@@ -1,8 +1,12 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import java.io.IOException;
 import java.util.List;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.math3.util.FastMath;
+import org.xml.sax.SAXException;
 
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent.EventType;
@@ -41,12 +45,12 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.heatShockResponseNetwork();
 //							List<FinitePlotData> plotDataList = Examples.vilarOscillatorNetwork();
 //							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
-							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
+//							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
 //							List<FinitePlotData> plotDataList = Examples.fastDimerization();
 //							List<FinitePlotData> plotDataList = Examples.repressilator();
 //							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
-//							try {
-//								List<FinitePlotData> plotDataList = Examples.heatShockMassAction();
+							try {
+								List<FinitePlotData> plotDataList = Examples.heatShockMassAction();
 //								List<FinitePlotData> plotDataList = Examples.enzymeKinetics1();
 								int rows;
 								int cols;
@@ -61,11 +65,11 @@ public class GUI {
 								window.setPlotData(plotDataList, rows, cols);
 								window.validate();
 								window.getStatusBar().setText("Finished simulation", 2000);
-//							} catch (ParserConfigurationException
-//									| SAXException | IOException e) {
-//								e.printStackTrace();
-//								window.getStatusBar().setText("Simulation failed!");
-//							}
+							} catch (ParserConfigurationException
+									| SAXException | IOException e) {
+								e.printStackTrace();
+								window.getStatusBar().setText("Simulation failed!");
+							}
 						}
 					};
 					t.start();

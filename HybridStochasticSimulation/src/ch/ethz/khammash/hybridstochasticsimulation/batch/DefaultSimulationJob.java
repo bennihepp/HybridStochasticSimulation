@@ -3,6 +3,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.batch;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,9 +32,8 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	private double t1;
 	private double[] x0;
 	private int runs;
-	private String[] labels;
-	private double[] plotScales;
 	private Type simulationType;
+	private double[] plotScales;
 
 	public static <T extends ReactionNetworkModel> DefaultSimulationJob<T> createTrajectorySimulation(
 			ModelFactory<T> modelFactory, FiniteTrajectoryRecorderFactory trajectoryRecorderFactory,
@@ -64,6 +64,8 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		this.x0 = x0;
 		this.runs = runs;
 		this.simulationType = simulationType;
+		this.plotScales = new double[x0.length];
+		Arrays.fill(plotScales, 1.0);
 	}
 
 	public String getName() {
@@ -126,12 +128,8 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		this.plotScales = plotScales;
 	}
 
-	public String[] getLabels() {
-		return labels;
-	}
-
-	public void setLabels(String[] labels) {
-		this.labels = labels;
+	public List<String> getLabels() {
+		return modelFactory.createModel().getNetwork().getSpeciesLabels();
 	}
 
 	public Type getSimulationType() {
@@ -140,11 +138,10 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 
 	@Override
 	public void runJob() {
-		System.out.println("runJob()");
 		Set<SimulationOutput> usedOutputs = new LinkedHashSet<>();
 		long startTime = System.currentTimeMillis();
 		List<FinitePlotData> plotDataList = new LinkedList<>();
-		System.out.println("Running simulation " + getName() + " [" + getSimulationType() + "] (" + getRuns() + ")");
+		System.out.println("Running simulation \"" + getName() + "\" [" + getSimulationType() + "] (" + getRuns() + " runs)");
 		switch (getSimulationType()) {
 		case TRAJECTORY:
 			for (int i=0; i < getRuns(); i++) {

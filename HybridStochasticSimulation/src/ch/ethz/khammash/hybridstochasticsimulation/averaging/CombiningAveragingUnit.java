@@ -10,26 +10,26 @@ import java.util.Set;
 
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
-public class CombiningAveragingProvider extends AbstractAveragingProvider {
+public class CombiningAveragingUnit extends AbstractAveragingUnit {
 
-	private List<AveragingProvider> averagingProviders;
+	private List<AveragingUnit> averagingUnits;
 	private List<Set<SpeciesVertex>> previousSubnetworksToAverage;
-	private Map<Set<SpeciesVertex>, AveragingProvider> previousSubnetworkToAveragingProviderMap;
+	private Map<Set<SpeciesVertex>, AveragingUnit> previousSubnetworkToAveragingUnitMap;
 
-	public CombiningAveragingProvider() {
-		averagingProviders = new LinkedList<>();
+	public CombiningAveragingUnit() {
+		averagingUnits = new LinkedList<>();
 	}
 
-	public void addAveragingProvider(AveragingProvider ap) {
-		averagingProviders.add(ap);
+	public void addAveragingUnit(AveragingUnit ap) {
+		averagingUnits.add(ap);
 	}
 
-	public void removeAveragingProvider(AveragingProvider ap) {
-		averagingProviders.remove(ap);
+	public void removeAveragingUnit(AveragingUnit ap) {
+		averagingUnits.remove(ap);
 	}
 
-	public void clearAveragingProviders() {
-		averagingProviders.clear();
+	public void clearAveragingUnits() {
+		averagingUnits.clear();
 	}
 
 	@Override
@@ -46,13 +46,13 @@ public class CombiningAveragingProvider extends AbstractAveragingProvider {
 
 	@Override
 	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales) {
-		previousSubnetworkToAveragingProviderMap = new HashMap<>();
+		previousSubnetworkToAveragingUnitMap = new HashMap<>();
 		List<Set<SpeciesVertex>> allCandidates = new ArrayList<>();
-		for (AveragingProvider ap : averagingProviders) {
-			List<Set<SpeciesVertex>> candidates = ap.findAveragingCandidates(t, x, reactionTimescales);
+		for (AveragingUnit au : averagingUnits) {
+			List<Set<SpeciesVertex>> candidates = au.findAveragingCandidates(t, x, reactionTimescales);
 			for (Set<SpeciesVertex> candidate : candidates)
-				if (!previousSubnetworkToAveragingProviderMap.containsKey(candidate))
-					previousSubnetworkToAveragingProviderMap.put(candidate, ap);
+				if (!previousSubnetworkToAveragingUnitMap.containsKey(candidate))
+					previousSubnetworkToAveragingUnitMap.put(candidate, au);
 			allCandidates.addAll(candidates);
 		}
 		return allCandidates;
@@ -61,7 +61,7 @@ public class CombiningAveragingProvider extends AbstractAveragingProvider {
 	@Override
 	public void reset() {
 		previousSubnetworksToAverage = null;
-		previousSubnetworkToAveragingProviderMap = null;
+		previousSubnetworkToAveragingUnitMap = null;
 	}
 
 	@Override
@@ -79,7 +79,7 @@ public class CombiningAveragingProvider extends AbstractAveragingProvider {
 
 	@Override
 	public void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
-		AveragingProvider ap = previousSubnetworkToAveragingProviderMap.get(subnetworkSpecies);
+		AveragingUnit ap = previousSubnetworkToAveragingUnitMap.get(subnetworkSpecies);
 		ap.resampleFromSteadyStateDistribution(t, x, subnetworkSpecies);
 	}
 

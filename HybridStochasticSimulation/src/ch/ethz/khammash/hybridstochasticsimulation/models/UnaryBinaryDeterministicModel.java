@@ -7,6 +7,7 @@ import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDifferentialEquations, StochasticReactionNetworkModel {
@@ -17,15 +18,17 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 	private int[] reactionChoiceIndices2;
 	private double[][] reactionStochiometries;
 	private double[] propTmpVector;
+	private UnaryBinaryReactionNetwork network;
 
-	public UnaryBinaryDeterministicModel(UnaryBinaryReactionNetwork net) {
-		dimension = net.getNumberOfSpecies();
-		rateParameters = new double[net.getNumberOfReactions()];
-		reactionChoiceIndices1 = new int[net.getNumberOfReactions()];
-		reactionChoiceIndices2 = new int[net.getNumberOfReactions()];
-		reactionStochiometries = new double[net.getNumberOfReactions()][net.getNumberOfSpecies()];
-		propTmpVector = new double[net.getNumberOfReactions()];
-		init(net);
+	public UnaryBinaryDeterministicModel(UnaryBinaryReactionNetwork network) {
+		this.network = network;
+		dimension = network.getNumberOfSpecies();
+		rateParameters = new double[network.getNumberOfReactions()];
+		reactionChoiceIndices1 = new int[network.getNumberOfReactions()];
+		reactionChoiceIndices2 = new int[network.getNumberOfReactions()];
+		reactionStochiometries = new double[network.getNumberOfReactions()][network.getNumberOfSpecies()];
+		propTmpVector = new double[network.getNumberOfReactions()];
+		init(network);
 	}
 
 	final private void init(UnaryBinaryReactionNetwork net) {
@@ -141,6 +144,11 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 		for (int r=0; r < propTmpVector.length; r++)
 			propSum += propTmpVector[r];
 		return propSum;
+	}
+
+	@Override
+	public ReactionNetwork getNetwork() {
+		return network;
 	}
 
 }

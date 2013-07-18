@@ -9,7 +9,6 @@ import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.RandomDataGeneratorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
@@ -17,7 +16,7 @@ public interface SimulationController<T extends ReactionNetworkModel> {
 
 	void setExecutorService(ExecutorService executor);
 
-	void setSimulatorFactory(SimulatorFactory<Simulator<T>> simulatorFactory);
+	void setSimulatorFactory(SimulatorFactory<T> simulatorFactory);
 
 //	void setTrajectoryRecorderFactory(TrajectoryRecorderFactory<E> trajectoryRecorderFactory);
 

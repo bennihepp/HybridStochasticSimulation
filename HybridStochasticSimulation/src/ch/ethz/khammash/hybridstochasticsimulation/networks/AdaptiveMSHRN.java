@@ -17,8 +17,7 @@ import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
 import org.apache.commons.math3.util.FastMath;
 
 import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 import com.google.common.base.Optional;
@@ -30,8 +29,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	// TODO: Does xi make sense or just use the value of delta?
 	private double xi = 0.5;
 	private double epsilon = 0.1;
-	private ReactionNetworkGraph graph;
-	private Optional<AveragingProvider> averagingProviderOptional;
+	private Optional<AveragingUnit> averagingUnitOptional;
 	private boolean printMessages;
 
 	public static AdaptiveMSHRN createFrom(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
@@ -64,8 +62,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	}
 
 	final private void _init() {
-		graph = new ReactionNetworkGraph(this);
-		unsetAveragingProvider();
+		unsetAveragingUnit();
 		init();
 	}
 
@@ -73,23 +70,19 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		this.printMessages = printMessages;
 	}
 
-	// Important: reset() must be called after changing the averaging provider
-	public void setAveragingProvider(AveragingProvider averagingProvider) {
-		if (averagingProvider == null)
-			unsetAveragingProvider();
+	// Important: reset() must be called after changing the averaging unit
+	public void setAveragingUnit(AveragingUnit averagingUnit) {
+		if (averagingUnit == null)
+			unsetAveragingUnit();
 		else {
-			this.averagingProviderOptional = Optional.of(averagingProvider);
-			averagingProvider.reset();
+			this.averagingUnitOptional = Optional.of(averagingUnit);
+			averagingUnit.reset();
 		}
 	}
 
-	public ReactionNetworkGraph getReactionNetworkGraph() {
-		return graph;
-	}
-
-	// Important: reset() must be called after changing the averaging provider
-	final public void unsetAveragingProvider() {
-		this.averagingProviderOptional = Optional.absent();
+	// Important: reset() must be called after changing the averaging unit
+	final public void unsetAveragingUnit() {
+		this.averagingUnitOptional = Optional.absent();
 	}
 
 	final public double getXi() {
@@ -119,8 +112,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			setBetaUnchecked(r, FastMath.log(getRateParameter(r)) / FastMath.log(getN()));
 		invalidateReactionTermTypes();
 		updateScaleFactors();
-		if (averagingProviderOptional.isPresent()) {
-			averagingProviderOptional.get().reset();
+		if (averagingUnitOptional.isPresent()) {
+			averagingUnitOptional.get().reset();
 		}
 	}
 
@@ -135,7 +128,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			HashSet<SpeciesVertex> speciesToAverage = new HashSet<SpeciesVertex>();
 			for (int s=0; s < getNumberOfSpecies(); s++)
 				if (zeroDeficiencySpeciesToAverageMask[s])
-					speciesToAverage.add(graph.getSpeciesVertex(s));
+					speciesToAverage.add(getGraph().getSpeciesVertex(s));
 			Utilities.printCollection(" Species to average", speciesToAverage);
 		}
 	
@@ -179,10 +172,10 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 
 		double[] reactionTimescales = computeReactionTimescales(x, printMessages);
 
-		if (averagingProviderOptional.isPresent()) {
-			AveragingProvider averagingProvider = averagingProviderOptional.get();
+		if (averagingUnitOptional.isPresent()) {
+			AveragingUnit averagingUnit = averagingUnitOptional.get();
 			List<Set<SpeciesVertex>> subnetworksToAverage
-				= averagingProvider.getSubnetworksToAverageAndResampleState(t, x, reactionTimescales);
+				= averagingUnit.getSubnetworksToAverageAndResampleState(t, x, reactionTimescales);
 			averageSubnetworks(subnetworksToAverage, printMessages);
 		}
 

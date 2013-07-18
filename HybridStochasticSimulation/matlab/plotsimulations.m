@@ -1,6 +1,6 @@
 inputfilepath = '../jobs/';
-inputfilename = 'simulationBacteriophageT7_100000';
-outputfilepath = 'plots/';
+inputfilename = 'simulationBacteriophageT7';
+outputfilepath = '../jobs/plots/';
 outputfilename = inputfilename;
 useTransparency = true;
 drawStdDevOutlines = false;
@@ -27,6 +27,7 @@ ylimMax = 0;
 axArr = [];
 
 simulationIndices = 1:length(S.simulations);
+% simulationIndices = [1];
 %rows = S.rows;
 %cols = S.cols;
 cols = 1;
@@ -36,23 +37,23 @@ for q=simulationIndices
     numOfPlots = numOfPlots + length(plots);
 end
 rows = ceil(numOfPlots / cols);
-%rows = 2;
-%cols = 1;
-%plotIndices = [1,10];
+rows = 2;
+cols = 2;
 l = 1;
 for q=simulationIndices
     plots = S.simulations{q};
     plotIndices = 1:length(plots);
+    plotIndices = [3,4];
     for i=plotIndices
         plt = plots(i);
         ax2 = subplot(rows, cols, l);
         axArr(end + 1) = ax2;
-        if l == 1
-            ax1 = ax2;
-        end
-        if l == 4
-            linkaxes([ax1, ax2], 'y');
-        end
+%         if l == 1
+%             ax1 = ax2;
+%         end
+%         if l == 4
+%             linkaxes([ax1, ax2], 'y');
+%         end
         xlabel('time in seconds');
         ylabel('copy numbers');
         title(plt.title);
@@ -76,8 +77,8 @@ for q=simulationIndices
             hold on;
             colorIndex = mod(m - 1, length(colorOrder)) + 1;
             color = colorOrder(colorIndex,:);
-            fadeColor = ones(size(color)) - 0.1 * (ones(size(color)) - color);
             if isfield(traj, 'xSeriesStdDev')
+                fadeColor = ones(size(color)) - 0.1 * (ones(size(color)) - color);
                 xSeriesStdDev = traj.xSeriesStdDev;
                 if exist('plotScales', 'var')
                     zSeriesStdDev = plotScales(j) .* xSeriesStdDev;
@@ -126,13 +127,13 @@ end
 %for i=1:1
 %    linkaxes([axArr(i),axArr(1+i)],'y');
 %end
-if linkAxes
-    for i=plotIndices
-        subplot(rows, cols, i);
-        xlim([xlimMin, xlimMax]);
-        ylim([ylimMin, ylimMax]);
-    end
-end
+% if linkAxes
+%     for i=plotIndices
+%         subplot(rows, cols, i);
+%         xlim([xlimMin, xlimMax]);
+%         ylim([ylimMin, ylimMax]);
+%     end
+% end
 
 if writeOutput
     %opts = struct('width', 7, 'height', 7, 'Resolution', 600, 'Color', 'CMYK');

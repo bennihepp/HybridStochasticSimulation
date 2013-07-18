@@ -7,7 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import ch.ethz.khammash.hybridstochasticsimulation.graphs.DependencyGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionEdge;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
@@ -15,33 +14,30 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionN
 
 import com.google.common.collect.Sets;
 
-public abstract class AbstractAveragingProvider implements AveragingProvider {
+public abstract class AbstractAveragingUnit implements AveragingUnit {
 
 	protected double theta;
 	protected UnaryBinaryReactionNetwork network;
 	protected ReactionNetworkGraph graph;
 	protected Set<SpeciesVertex> importantSpecies;
-	protected DependencyGraph depGraph;
 	private List<Set<SpeciesVertex>> previousSubnetworksToAverage;
 
-	public AbstractAveragingProvider(double theta, UnaryBinaryReactionNetwork network, ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies) {
-		DependencyGraph depGraph = new DependencyGraph(graph);
-		init(theta, network, graph, importantSpecies, depGraph); 
+	public AbstractAveragingUnit(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
+		init(theta, network, importantSpecies); 
 	}
 
-	protected AbstractAveragingProvider() {}
+	protected AbstractAveragingUnit() {}
 
-	final private void init(double theta, UnaryBinaryReactionNetwork network, ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies, DependencyGraph depGraph) {
+	final private void init(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
 		this.theta = theta;
 		this.network = network;
-		this.graph = graph;
 		this.importantSpecies = importantSpecies;
-		this.depGraph = depGraph;
+		this.graph = network.getGraph();
 		this.previousSubnetworksToAverage = null;
 	}
 
-	protected void copyFrom(AbstractAveragingProvider provider) {
-		init(provider.theta, provider.network, provider.graph, provider.importantSpecies, provider.depGraph);
+	protected void copyFrom(AbstractAveragingUnit provider) {
+		init(provider.theta, provider.network, provider.importantSpecies);
 	}
 
 	@Override

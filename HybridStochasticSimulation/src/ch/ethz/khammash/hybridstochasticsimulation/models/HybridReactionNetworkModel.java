@@ -7,6 +7,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
 import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 
 
 public class HybridReactionNetworkModel implements HybridModel,
@@ -24,7 +25,10 @@ public class HybridReactionNetworkModel implements HybridModel,
 	private int[] reactionChoiceIndices2;
 	private double[][] reactionStochiometries;
 
+	private HybridReactionNetwork hrn;
+
 	public HybridReactionNetworkModel(HybridReactionNetwork hrn) {
+		this.hrn = hrn;
 		dimension = hrn.getNumberOfSpecies();
 		modelRateParameters = new double[hrn.getNumberOfReactions()];
 		reactionChoiceIndices1 = new int[hrn.getNumberOfReactions()];
@@ -205,6 +209,11 @@ public class HybridReactionNetworkModel implements HybridModel,
 		for (int i = 0; i < stochiometry.length; i++) {
 			x[i] += stochiometry[i];
 		}
+	}
+
+	@Override
+	public ReactionNetwork getNetwork() {
+		return hrn;
 	}
 
 }

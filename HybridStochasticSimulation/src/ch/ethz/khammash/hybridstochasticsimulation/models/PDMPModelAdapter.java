@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPEventObserver;
 
 public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, FirstOrderDifferentialEquations, PDMPEventObserver {
@@ -150,6 +151,11 @@ public class PDMPModelAdapter<T extends HybridModel> implements PDMPModel, First
 	@Override
 	public double[] computeOptionalState(double t, double[] x) {
 		return null;
+	}
+
+	@Override
+	public ReactionNetwork getNetwork() {
+		return hybridModel.getNetwork();
 	}
 
 }

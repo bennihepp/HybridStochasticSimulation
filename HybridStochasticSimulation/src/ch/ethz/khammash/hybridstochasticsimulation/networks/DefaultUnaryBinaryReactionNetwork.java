@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
+
 
 /*
  * rateParameters k_i are of the form so that the propensity of a reaction is
@@ -29,26 +31,31 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 	private List<int[]> choiceIndicesList;
 	private List<List<Integer>> involvedSpecies;
 	private List<List<Integer>> involvedReactions;
+	private ReactionNetworkGraph graph;
+	private List<String> speciesLabels;
+	private List<String> reactionLabels;
 
 	public static DefaultUnaryBinaryReactionNetwork createFromNetwork(UnaryBinaryReactionNetwork net) {
 		DefaultUnaryBinaryReactionNetwork newNet = new DefaultUnaryBinaryReactionNetwork(net.getNumberOfSpecies(), net.getNumberOfReactions());
+		newNet.setSpeciesLabels(net.getSpeciesLabels());
+		newNet.setReactionLabels(net.getReactionLabels());
 		newNet.setRateParameters(net.getRateParameters());
 		newNet.setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
 		return newNet;
 	}
 
-	public static DefaultUnaryBinaryReactionNetwork createSubnetwork(UnaryBinaryReactionNetwork net, Set<Integer> subnetworkSpecies) {
-		Map<Integer, Integer> subspeciesMap = new HashMap<>(subnetworkSpecies.size());
+	public static DefaultUnaryBinaryReactionNetwork createSubnetwork(UnaryBinaryReactionNetwork network, Set<Integer> subnetworkSpecies) {
+		Map<Integer, Integer> subSpeciesMap = new HashMap<>(subnetworkSpecies.size());
 		int i = 0;
 		for (int species : subnetworkSpecies) {
-			subspeciesMap.put(i, species);
+			subSpeciesMap.put(i, species);
 			i++;
 		}
-		Map<Integer, Integer> subReactions = new HashMap<>(net.getNumberOfReactions());
+		Map<Integer, Integer> subReactions = new HashMap<>(network.getNumberOfReactions());
 		int j = 0;
-		for (int reaction=0; reaction < net.getNumberOfReactions(); reaction++) {
+		for (int reaction=0; reaction < network.getNumberOfReactions(); reaction++) {
 			boolean interactsWithOutsideSpecies = false;
-			List<Integer> involvedSpecies = net.getInvolvedSpecies(reaction);
+			List<Integer> involvedSpecies = network.getInvolvedSpecies(reaction);
 			for (int species : involvedSpecies)
 				if (!subnetworkSpecies.contains(species)) {
 					interactsWithOutsideSpecies = true;
@@ -57,7 +64,7 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 			if (interactsWithOutsideSpecies)
 				continue;
 			for (int species : subnetworkSpecies) {
-				if (net.getStochiometry(species, reaction) != 0) {
+				if (network.getStochiometry(species, reaction) != 0) {
 					subReactions.put(j, reaction);
 					j++;
 					break;
@@ -67,16 +74,21 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 		int[][] subProductionStochiometries = new int[subReactions.size()][subnetworkSpecies.size()];
 		int[][] subConsumptionStochiometries = new int[subReactions.size()][subnetworkSpecies.size()];
 		DefaultUnaryBinaryReactionNetwork subNetwork = new DefaultUnaryBinaryReactionNetwork(subnetworkSpecies.size(), subReactions.size());
+		for (Map.Entry<Integer, Integer> entry : subSpeciesMap.entrySet()) {
+			int subSpecies = entry.getKey();
+			subNetwork.setSpeciesLabel(subSpecies, network.getSpeciesLabel(entry.getValue()));
+		}
 		for (Map.Entry<Integer, Integer> entry : subReactions.entrySet()) {
 			int subReaction = entry.getKey();
-			double rateParameter = net.getRateParameter(entry.getValue());
+			double rateParameter = network.getRateParameter(entry.getValue());
 			subNetwork.setRateParameter(subReaction, rateParameter);
-			int[] productionStochiometries = net.getProductionStochiometries(entry.getValue());
-			int[] consumptionStochiometries = net.getConsumptionStochiometries(entry.getValue());;
+			int[] productionStochiometries = network.getProductionStochiometries(entry.getValue());
+			int[] consumptionStochiometries = network.getConsumptionStochiometries(entry.getValue());;
 			for (int k=0; k < subNetwork.getNumberOfSpecies(); k++) {
-				subProductionStochiometries[subReaction][k] = productionStochiometries[subspeciesMap.get(k)];
-				subConsumptionStochiometries[subReaction][k] = consumptionStochiometries[subspeciesMap.get(k)];
+				subProductionStochiometries[subReaction][k] = productionStochiometries[subSpeciesMap.get(k)];
+				subConsumptionStochiometries[subReaction][k] = consumptionStochiometries[subSpeciesMap.get(k)];
 			}
+			subNetwork.setReactionLabel(subReaction, network.getReactionLabel(entry.getValue()));
 		}
 		subNetwork.setStochiometries(subProductionStochiometries, subConsumptionStochiometries);
 		return subNetwork;
@@ -91,6 +103,16 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 		consumptionStochiometry = new int[numOfReactions][numOfSpecies];
 		stochiometry = new int[numOfReactions][numOfSpecies];
 		rateParameters = new double[numOfReactions];
+		initLabels();
+	}
+
+	final private void initLabels() {
+		speciesLabels = new ArrayList<>(numOfSpecies);
+		for (int s=0; s < numOfSpecies; s++)
+			speciesLabels.add("S" + s);
+		reactionLabels = new ArrayList<>(numOfReactions);
+		for (int r=0; r < numOfReactions; r++)
+			reactionLabels.add("R" + r);
 	}
 
 	@Override
@@ -327,6 +349,49 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 					ir.add(r);
 			involvedReactions.add(Collections.unmodifiableList(ir));
 		}
+	}
+
+	@Override
+	public ReactionNetworkGraph getGraph() {
+		if (graph == null)
+			graph = new ReactionNetworkGraph(this);
+		return graph;
+	}
+
+	@Override
+	public String getSpeciesLabel(int species) {
+		return speciesLabels.get(species);
+	}
+
+	@Override
+	public String getReactionLabel(int reaction) {
+		return reactionLabels.get(reaction);
+	}
+
+	@Override
+	public List<String> getSpeciesLabels() {
+		return Collections.unmodifiableList(speciesLabels);
+	}
+
+	@Override
+	public List<String> getReactionLabels() {
+		return Collections.unmodifiableList(reactionLabels);
+	}
+
+	public void setSpeciesLabel(int species, String label) {
+		speciesLabels.set(species, label);
+	}
+
+	public void setReactionLabel(int reaction, String label) {
+		reactionLabels.set(reaction, label);
+	}
+
+	public void setSpeciesLabels(List<String> speciesLabels) {
+		this.speciesLabels = new ArrayList<>(speciesLabels);
+	}
+
+	public void setReactionLabels(List<String> reactionLabels) {
+		this.reactionLabels = new ArrayList<>(reactionLabels);
 	}
 
 }

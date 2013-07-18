@@ -6,9 +6,8 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulatorCommonsMath;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 
-public class PDMPSimulatorFactoryCommonsMath implements SimulatorFactory<Simulator<PDMPModel>> {
+public class PDMPSimulatorFactoryCommonsMath implements SimulatorFactory<PDMPModel> {
 
 	private IntegratorFactory integratorFactory;
 	private double ehMaxCheckInterval;

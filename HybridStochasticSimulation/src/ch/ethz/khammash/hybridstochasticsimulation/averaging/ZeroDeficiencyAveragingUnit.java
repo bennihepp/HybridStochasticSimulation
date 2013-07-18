@@ -23,7 +23,6 @@ import org.jgrapht.graph.DirectedSubgraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ComplexEdge;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ComplexGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ComplexVertex;
-import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.math.BroydenRootSolver;
 import ch.ethz.khammash.hybridstochasticsimulation.math.MultivariateFunction;
@@ -34,7 +33,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionN
 
 import com.google.common.collect.Sets;
 
-public class ZeroDeficiencyAveragingProvider extends AbstractAveragingProvider {
+public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 	private RandomDataGenerator rdg;
 	private List<Set<SpeciesVertex>> zeroDeficiencySubnetworks;
@@ -47,8 +46,8 @@ public class ZeroDeficiencyAveragingProvider extends AbstractAveragingProvider {
 //		return new ZeroDeficiencyAveragingProvider(theta, network, graph, importantSpecies, rdg, printMessages);
 //	}
 
-	public static ZeroDeficiencyAveragingProvider createCopy(ZeroDeficiencyAveragingProvider provider, RandomDataGenerator rdg) {
-		ZeroDeficiencyAveragingProvider copy = new ZeroDeficiencyAveragingProvider();
+	public static ZeroDeficiencyAveragingUnit createCopy(ZeroDeficiencyAveragingUnit provider, RandomDataGenerator rdg) {
+		ZeroDeficiencyAveragingUnit copy = new ZeroDeficiencyAveragingUnit();
 		copy.copyFrom(provider);
 		copy.rdg = rdg;
 		copy.zeroDeficiencySubnetworks = provider.zeroDeficiencySubnetworks;
@@ -58,9 +57,8 @@ public class ZeroDeficiencyAveragingProvider extends AbstractAveragingProvider {
 		return copy;
 	}
 
-	public ZeroDeficiencyAveragingProvider(double theta, UnaryBinaryReactionNetwork network,
-			ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies, RandomDataGenerator rdg, boolean printMessages) {
-		super(theta, network, graph, importantSpecies);
+	public ZeroDeficiencyAveragingUnit(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies, RandomDataGenerator rdg, boolean printMessages) {
+		super(theta, network, importantSpecies);
 		this.printMessages = printMessages;
 		this.subnetworkInformationMap = new HashMap<>();
 		this.zeroDeficiencySubnetworks = findZeroDeficiencySubnetworks();
@@ -68,7 +66,7 @@ public class ZeroDeficiencyAveragingProvider extends AbstractAveragingProvider {
 		this.rdg = rdg;
 	}
 
-	protected ZeroDeficiencyAveragingProvider() {
+	protected ZeroDeficiencyAveragingUnit() {
 		super();
 	}
 

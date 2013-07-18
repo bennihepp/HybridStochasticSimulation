@@ -5,7 +5,7 @@ import java.util.Set;
 
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
-public interface AveragingProvider {
+public interface AveragingUnit {
 
 	List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales);
 

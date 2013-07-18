@@ -13,9 +13,9 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.ode.nonstiff.EulerIntegrator;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.CombiningAveragingProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.PseudoLinearAveragingProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.ZeroDeficiencyAveragingProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.CombiningAveragingUnit;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.PseudoLinearAveragingUnit;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.ZeroDeficiencyAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationControllerCommonsMath;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.StochasticSimulationController;
@@ -94,8 +94,8 @@ public class SimulationUtilities {
 			System.out.println("PDMP: Evaluating trajectory at " + tSeries.length + " time points");
 
 		PDMPSimulationController ctrl = new PDMPSimulationController();
-		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel>>() {
+		SimulatorFactory<PDMPModel> simulatorFactory
+			= new SimulatorFactory<PDMPModel>() {
 
 				@Override
 				public Simulator<PDMPModel> createSimulator(
@@ -191,8 +191,8 @@ public class SimulationUtilities {
 //		RealVector tauVector = tVector.mapMultiply(hrn.getTimeScaleFactor());
 
 		PDMPSimulationController ctrl = new PDMPSimulationController();
-		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel>>() {
+		SimulatorFactory<PDMPModel> simulatorFactory
+			= new SimulatorFactory<PDMPModel>() {
 
 				@Override
 				public Simulator<PDMPModel> createSimulator(RandomDataGenerator rdg) {
@@ -252,7 +252,7 @@ public class SimulationUtilities {
 			System.out.println("AdaptiveMSPDMP: Evaluating trajectory at " + tSeries.length + " time points");
 		}
 
-		ctrl.setSimulatorFactory(new SimulatorFactory<Simulator<PDMPModel>>() {
+		ctrl.setSimulatorFactory(new SimulatorFactory<PDMPModel>() {
 			@Override
 			public Simulator<PDMPModel> createSimulator(
 					RandomDataGenerator rdg) {
@@ -327,17 +327,17 @@ public class SimulationUtilities {
 		HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
 		for (int s : nss.importantSpecies)
 			importantSpeciesVertices.add(graph.getSpeciesVertex(s));
-		PseudoLinearAveragingProvider pseudoLinearAveragingProvider = new PseudoLinearAveragingProvider(
-				nss.theta, hrn, hrn.getReactionNetworkGraph(), importantSpeciesVertices);
-//		pseudoLinearAveragingProvider.stopIfAveragingBecomesInvalid(false);
-//		pseudoLinearAveragingProvider.performPseudoLinearAveragingOnlyOnce(false);
-		ZeroDeficiencyAveragingProvider zeroDeficiencyAveragingProvider = new ZeroDeficiencyAveragingProvider(
-				nss.theta, hrn, hrn.getReactionNetworkGraph(), importantSpeciesVertices, rdgFactory.createRandomDataGenerator(), printMessages);
-		CombiningAveragingProvider averagingProvider = new CombiningAveragingProvider();
-		averagingProvider.addAveragingProvider(zeroDeficiencyAveragingProvider);
-		averagingProvider.addAveragingProvider(pseudoLinearAveragingProvider);
-//		hrn.setAveragingProvider(averagingProvider);
-		hrn.setAveragingProvider(zeroDeficiencyAveragingProvider);
+		PseudoLinearAveragingUnit pseudoLinearAveragingUnit = new PseudoLinearAveragingUnit(
+				nss.theta, hrn, importantSpeciesVertices);
+//		pseudoLinearAveragingUnit.stopIfAveragingBecomesInvalid(false);
+//		pseudoLinearAveragingUnit.performPseudoLinearAveragingOnlyOnce(false);
+		ZeroDeficiencyAveragingUnit zeroDeficiencyAveragingUnit = new ZeroDeficiencyAveragingUnit(
+				nss.theta, hrn, importantSpeciesVertices, rdgFactory.createRandomDataGenerator(), printMessages);
+		CombiningAveragingUnit averagingUnit = new CombiningAveragingUnit();
+		averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
+		averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
+//		hrn.setAveragingUnit(averagingUnit);
+		hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
 		hrn.setDelta(nss.delta);
 		hrn.setEpsilon(nss.epsilon);
 		hrn.setXi(nss.xi);
@@ -358,8 +358,8 @@ public class SimulationUtilities {
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
 		PDMPSimulationController ctrl = new PDMPSimulationController();
-		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel>>() {
+		SimulatorFactory<PDMPModel> simulatorFactory
+			= new SimulatorFactory<PDMPModel>() {
 
 				@Override
 				public Simulator<PDMPModel> createSimulator(
@@ -507,8 +507,8 @@ public class SimulationUtilities {
 		if (printMessages)
 			System.out.println("Deterministic: Evaluating trajectory");
 
-		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel>>() {
+		SimulatorFactory<PDMPModel> simulatorFactory
+			= new SimulatorFactory<PDMPModel>() {
 
 				@Override
 				public Simulator<PDMPModel> createSimulator(
@@ -673,8 +673,8 @@ public class SimulationUtilities {
 		if (printMessages)
 			System.out.println("AdaptiveMSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
-		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel>>() {
+		SimulatorFactory<PDMPModel> simulatorFactory
+			= new SimulatorFactory<PDMPModel>() {
 
 				@Override
 				public Simulator<PDMPModel> createSimulator(
@@ -796,8 +796,8 @@ public class SimulationUtilities {
 		if (printMessages)
 			System.out.println("AdaptiveMSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
-		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel>>() {
+		SimulatorFactory<PDMPModel> simulatorFactory
+			= new SimulatorFactory<PDMPModel>() {
 
 				@Override
 				public Simulator<PDMPModel> createSimulator(
@@ -919,12 +919,12 @@ public class SimulationUtilities {
 		HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
 		for (int s : nss.importantSpecies)
 			importantSpeciesVertices.add(graph.getSpeciesVertex(s));
-//		PseudoLinearAveragingProvider averagingProvider = new PseudoLinearAveragingProvider(
+//		PseudoLinearAveragingUnit averagingUnit = new PseudoLinearAveragingUnit(
 //		nss.theta, hrn, hrn.getReactionNetworkGraph(), importantSpeciesVertices);
-//		averagingProvider.performPseudoLinearAveragingOnlyOnce(false);
-		final ZeroDeficiencyAveragingProvider averagingProvider = new ZeroDeficiencyAveragingProvider(
-				nss.theta, hrn, hrn.getReactionNetworkGraph(), importantSpeciesVertices, rdgFactory.createRandomDataGenerator(), true);
-		hrn.setAveragingProvider(averagingProvider);
+//		averagingUnit.performPseudoLinearAveragingOnlyOnce(false);
+		final ZeroDeficiencyAveragingUnit averagingUnit = new ZeroDeficiencyAveragingUnit(
+				nss.theta, hrn, importantSpeciesVertices, rdgFactory.createRandomDataGenerator(), true);
+		hrn.setAveragingUnit(averagingUnit);
 		hrn.setDelta(nss.delta);
 		hrn.setEpsilon(nss.epsilon);
 		hrn.setXi(nss.xi);
@@ -941,8 +941,8 @@ public class SimulationUtilities {
 		if (printMessages)
 			System.out.println("AdaptiveMSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
-		SimulatorFactory<Simulator<PDMPModel>> simulatorFactory
-			= new SimulatorFactory<Simulator<PDMPModel>>() {
+		SimulatorFactory<PDMPModel> simulatorFactory
+			= new SimulatorFactory<PDMPModel>() {
 
 				@Override
 				public Simulator<PDMPModel> createSimulator(
@@ -979,9 +979,9 @@ public class SimulationUtilities {
 			@Override
 			public PDMPModel createModel() {
 				AdaptiveMSHRN hrnCopy = AdaptiveMSHRN.createCopy(hrn);
-				ZeroDeficiencyAveragingProvider averagingProviderClone
-					= ZeroDeficiencyAveragingProvider.createCopy(averagingProvider, rdgFactory.createRandomDataGenerator());
-				hrnCopy.setAveragingProvider(averagingProviderClone);
+				ZeroDeficiencyAveragingUnit averagingUnitClone
+					= ZeroDeficiencyAveragingUnit.createCopy(averagingUnit, rdgFactory.createRandomDataGenerator());
+				hrnCopy.setAveragingUnit(averagingUnitClone);
 				return new AdaptiveMSHRNModel(hrnCopy);
 			}
 		};

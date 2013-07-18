@@ -37,7 +37,7 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	public final static int DEFAULT_NUMBER_OF_THREADS = 4;
 
 	private ListeningExecutorService executor;
-	private Optional<SimulatorFactory<Simulator<T>>> simulatorFactoryOptional;
+	private Optional<SimulatorFactory<T>> simulatorFactoryOptional;
 //	private Optional<TrajectoryRecorderFactory<E>> trajectoryRecorderFactoryOptional;
 	private Optional<RandomDataGeneratorFactory> rdgFactoryOptional;
 
@@ -79,12 +79,12 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		this.executor = MoreExecutors.listeningDecorator(executor);
 	}
 
-	protected Optional<SimulatorFactory<Simulator<T>>> getSimulatorFactoryOptional() {
+	protected Optional<SimulatorFactory<T>> getSimulatorFactoryOptional() {
 		return simulatorFactoryOptional;
 	}
 
 	@Override
-	final public void setSimulatorFactory(SimulatorFactory<Simulator<T>> simulatorFactory) {
+	final public void setSimulatorFactory(SimulatorFactory<T> simulatorFactory) {
 		simulatorFactoryOptional = Optional.of(simulatorFactory);
 	}
 

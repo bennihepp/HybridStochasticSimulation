@@ -2,6 +2,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import java.util.Arrays;
 
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 
@@ -12,10 +13,12 @@ public class UnaryBinaryStochasticModel implements StochasticReactionNetworkMode
 	private int[] reactionChoiceIndices2;
 	private double[] modelRateParameters;
 	private int[][] reactionStochiometries;
+	private UnaryBinaryReactionNetwork network;
 
-    public UnaryBinaryStochasticModel(UnaryBinaryReactionNetwork net) {
-    	numberOfSpecies = net.getNumberOfSpecies();
-    	init(net);
+    public UnaryBinaryStochasticModel(UnaryBinaryReactionNetwork network) {
+    	this.network = network;
+    	numberOfSpecies = network.getNumberOfSpecies();
+    	init(network);
     }
 
     final private void init(UnaryBinaryReactionNetwork net) {
@@ -95,6 +98,11 @@ public class UnaryBinaryStochasticModel implements StochasticReactionNetworkMode
 	@Override
 	public boolean isTimeIndependent() {
 		return true;
+	}
+
+	@Override
+	public ReactionNetwork getNetwork() {
+		return network;
 	}
 
 }

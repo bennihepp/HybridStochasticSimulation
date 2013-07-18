@@ -2,6 +2,8 @@ package ch.ethz.khammash.hybridstochasticsimulation.models;
 
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
+
 
 public class HybridModelAdapter implements HybridModel {
 
@@ -61,6 +63,11 @@ public class HybridModelAdapter implements HybridModel {
 		for (int r=0; r < propTmpVector.length; r++)
 			propSum += propTmpVector[r];
 		return propSum;
+	}
+
+	@Override
+	public ReactionNetwork getNetwork() {
+		return transitionMeasure.getNetwork();
 	}
 
 }

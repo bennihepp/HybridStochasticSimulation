@@ -6,13 +6,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 import com.google.common.collect.Sets;
 
-public class PseudoLinearAveragingProvider extends AbstractAveragingProvider {
+public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 
 	private List<Set<SpeciesVertex>> pseudoLinearSubnetworks;
 	private List<Set<SpeciesVertex>> averagingCandidates;
@@ -21,8 +20,8 @@ public class PseudoLinearAveragingProvider extends AbstractAveragingProvider {
 	private boolean _warnIfAveragingBecomesInvalid = true;
 	private boolean _performPseudoLinearAveragingOnlyOnce = true;
 
-	public static PseudoLinearAveragingProvider createCopy(PseudoLinearAveragingProvider provider) {
-		PseudoLinearAveragingProvider copy = new PseudoLinearAveragingProvider();
+	public static PseudoLinearAveragingUnit createCopy(PseudoLinearAveragingUnit provider) {
+		PseudoLinearAveragingUnit copy = new PseudoLinearAveragingUnit();
 		copy.copyFrom(provider);
 		copy.pseudoLinearSubnetworks = provider.pseudoLinearSubnetworks;
 		copy._stopIfAveragingBecomesInvalid = provider._stopIfAveragingBecomesInvalid;
@@ -31,12 +30,12 @@ public class PseudoLinearAveragingProvider extends AbstractAveragingProvider {
 		return copy;
 	}
 
-	public PseudoLinearAveragingProvider(double theta, UnaryBinaryReactionNetwork network, ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies) {
-		super(theta, network, graph, importantSpecies);
+	public PseudoLinearAveragingUnit(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
+		super(theta, network, importantSpecies);
 		this.pseudoLinearSubnetworks = findPseudoLinearSubnetworks();
 	}
 
-	protected PseudoLinearAveragingProvider() {
+	protected PseudoLinearAveragingUnit() {
 		super();
 	}
 

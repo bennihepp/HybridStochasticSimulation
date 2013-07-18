@@ -13,12 +13,14 @@ import com.google.inject.Inject;
 
 public class AdaptiveMSHRNModelFactoryProvider extends AbstractProvider<ModelFactory<PDMPModel>> {
 
-	private Provider<AdaptiveMSHRN> hrnProvider;
+//	private Provider<AdaptiveMSHRN> hrnProvider;
+	private AdaptiveMSHRN baseHrn;
 
 	@Inject
 	public AdaptiveMSHRNModelFactoryProvider(HierarchicalConfiguration config, Provider<AdaptiveMSHRN> hrnProvider) {
 		super(config, "ModelParameters");
-		this.hrnProvider = hrnProvider;
+//		this.hrnProvider = hrnProvider;
+		baseHrn = hrnProvider.get();
 	}
 
 	@Override
@@ -27,7 +29,8 @@ public class AdaptiveMSHRNModelFactoryProvider extends AbstractProvider<ModelFac
 
 			@Override
 			public PDMPModel createModel() {
-				AdaptiveMSHRN hrn = hrnProvider.get();
+//				AdaptiveMSHRN hrn = hrnProvider.get();
+				AdaptiveMSHRN hrn = AdaptiveMSHRN.createCopy(baseHrn);
 				AdaptiveMSHRNModel hrnModel = new AdaptiveMSHRNModel(hrn);
 				hrnModel.setExposeOptionalState(config().getBoolean("exposeOptionalState", false));
 				return hrnModel;

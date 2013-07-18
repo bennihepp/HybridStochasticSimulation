@@ -120,6 +120,8 @@ public class HeatShockResponseNetwork extends SimulationConfiguration {
 		    0,   // S9
 		};
 
+		int[] importantSpecies = { 0, 1 };
+
 		double t0 = 0.0;
 		double t1 = 100.0;
 		double N = 100;
@@ -166,6 +168,7 @@ public class HeatShockResponseNetwork extends SimulationConfiguration {
 		this.t0 = t0;
 		this.t1 = t1;
 		this.x0 = x0;
+		this.importantSpecies = importantSpecies;
 		this.plotScales = plotScales;
 		this.speciesNames = speciesNames;
 		this.rng = new MersenneTwister();

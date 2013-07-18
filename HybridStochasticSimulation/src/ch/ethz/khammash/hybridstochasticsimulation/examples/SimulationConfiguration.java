@@ -22,7 +22,7 @@ public class SimulationConfiguration {
 	public String[] speciesNames;
 	public int[] importantSpecies = {};
 	public int[] deterministicReactions = {};
-	public double epsilon = 0.1;
+	public double eta = 0.1;
 	public double delta = 0.5;
 	public double xi = 0.5;
 	public double theta = 1000;

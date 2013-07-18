@@ -230,7 +230,7 @@ public class SimulationUtilities {
 	public static List<VectorFinitePlotData> simulateAdaptiveMSPDMPCommonsMath(SimulationConfiguration nss, double[] tSeries, boolean printMessages, boolean completeTrajectory) {
 		AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		hrn.setDelta(nss.delta);
-		hrn.setEta(nss.epsilon);
+		hrn.setEta(nss.eta);
 		hrn.setXi(nss.xi);
 		hrn.setTolerance(nss.tolerance);
 		AdaptiveMSHRNModel model = new AdaptiveMSHRNModel(hrn);
@@ -327,17 +327,18 @@ public class SimulationUtilities {
 			importantSpeciesVertices.add(graph.getSpeciesVertex(s));
 		PseudoLinearAveragingUnit pseudoLinearAveragingUnit = new PseudoLinearAveragingUnit(
 				nss.theta, hrn, importantSpeciesVertices);
-//		pseudoLinearAveragingUnit.stopIfAveragingBecomesInvalid(false);
-//		pseudoLinearAveragingUnit.performPseudoLinearAveragingOnlyOnce(false);
+		pseudoLinearAveragingUnit.stopIfAveragingBecomesInvalid(false);
+		pseudoLinearAveragingUnit.performPseudoLinearAveragingOnlyOnce(false);
 		ZeroDeficiencyAveragingUnit zeroDeficiencyAveragingUnit = new ZeroDeficiencyAveragingUnit(
 				nss.theta, hrn, importantSpeciesVertices, rdgFactory.createRandomDataGenerator(), printMessages);
 		CombiningAveragingUnit averagingUnit = new CombiningAveragingUnit();
 		averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
 		averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
-//		hrn.setAveragingUnit(averagingUnit);
-		hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
+		hrn.setAveragingUnit(averagingUnit);
+//		hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
+//		hrn.setAveragingUnit(pseudoLinearAveragingUnit);
 		hrn.setDelta(nss.delta);
-		hrn.setEta(nss.epsilon);
+		hrn.setEta(nss.eta);
 		hrn.setXi(nss.xi);
 		hrn.setTolerance(nss.tolerance);
 		AdaptiveMSHRNModel model = new AdaptiveMSHRNModel(hrn);
@@ -809,7 +810,7 @@ public class SimulationUtilities {
 			final double[] tSeries, boolean printMessages) {
 		final AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		hrn.setDelta(nss.delta);
-		hrn.setEta(nss.epsilon);
+		hrn.setEta(nss.eta);
 		hrn.setXi(nss.xi);
 		hrn.setTolerance(nss.tolerance);
 		double[] x0 = nss.x0;
@@ -874,7 +875,7 @@ public class SimulationUtilities {
 				nss.theta, hrn, importantSpeciesVertices, rdgFactory.createRandomDataGenerator(), true);
 		hrn.setAveragingUnit(averagingUnit);
 		hrn.setDelta(nss.delta);
-		hrn.setEta(nss.epsilon);
+		hrn.setEta(nss.eta);
 		hrn.setXi(nss.xi);
 		hrn.setTolerance(nss.tolerance);
 		final double[] x0 = nss.x0;

@@ -131,11 +131,13 @@ public class BatchGuiceModule extends AbstractModule {
 		bind(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {}).toProvider(StochasticSimulationControllerProvider.class);
 		bind(new TypeLiteral<SimulationController<PDMPModel>>() {}).toProvider(PDMPSimulationControllerProvider.class);
 		bind(new TypeLiteral<SimulatorFactory<PDMPModel>>() {}).toProvider(PDMPSimulatorFactoryProvider.class);
-		String solverType = config.getString("SimulationParameters.solver.type");
-		switch (solverType) {
-		case "CVodeSolver":
-			bind(SolverFactory.class).toProvider(CVodeSolverFactoryProvider.class);
-			break;
+		String solverType = config.getString("SimulationParameters.solver.type", null);
+		if (solverType != null) {
+			switch (solverType) {
+			case "CVodeSolver":
+				bind(SolverFactory.class).toProvider(CVodeSolverFactoryProvider.class);
+				break;
+			}
 		}
 		// Networks
 		bind(UnaryBinaryReactionNetwork.class).toProvider(UnaryBinaryReactionNetworkProvider.class);

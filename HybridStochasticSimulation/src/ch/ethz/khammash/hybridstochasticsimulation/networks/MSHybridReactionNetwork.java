@@ -68,8 +68,8 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 			checkArgument(beta.length == getNumberOfReactions(), "Expected beta.length == getNumberOfReactions()");
 			this.beta = beta.clone();
 		}
-		speciesScaleFactors = new double[alpha.length];
-		inverseSpeciesScaleFactors = new double[alpha.length];
+		speciesScaleFactors = new double[getNumberOfSpecies()];
+		inverseSpeciesScaleFactors = new double[getNumberOfSpecies()];
 //		rateScaleFactors = new double[beta.length];
 		reactionTermTypes = new ReactionTermType[getNumberOfReactions()][getNumberOfSpecies()];
 		speciesTypes = new SpeciesType[getNumberOfSpecies()];

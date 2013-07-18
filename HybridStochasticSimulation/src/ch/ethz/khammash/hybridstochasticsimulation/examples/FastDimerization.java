@@ -23,6 +23,10 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 public class FastDimerization extends SimulationConfiguration {
 
 	public FastDimerization() {
+		this(true);
+	}
+
+	public FastDimerization(boolean modifiedStochiometries) {
 
 		int[][] productionStochiometries = {
 		//   R0  R1  R2  R3
@@ -37,6 +41,11 @@ public class FastDimerization extends SimulationConfiguration {
 		    { 0,  1,  0,  1 }, // S1
 		    { 0,  0,  0,  0 }, // S2
 		};
+
+		if (modifiedStochiometries) {
+			consumptionStochiometries[0][2] = 0;
+			consumptionStochiometries[2][2] = 1;
+		}
 
 		double[] x0 = { 540, 730, 0 };
 

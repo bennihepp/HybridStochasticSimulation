@@ -1,5 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation.graphs;
 
+
 public class SpeciesVertex {
 
 	private int species;
@@ -29,6 +30,23 @@ public class SpeciesVertex {
 	@Override
 	public String toString() {
 		return getName();
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (other == null)
+			return false;
+		if (other == this)
+			return true;
+		if (!other.getClass().equals(getClass()))
+			return false;
+		SpeciesVertex otherVertex = (SpeciesVertex)other;
+		return this.species == otherVertex.species && this.name.equals(otherVertex.name);
+	}
+
+	@Override
+	public int hashCode() {
+		return java.util.Objects.hash(species, name);
 	}
 
 }

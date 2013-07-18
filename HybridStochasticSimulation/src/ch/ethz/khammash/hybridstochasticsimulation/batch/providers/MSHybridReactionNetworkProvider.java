@@ -1,7 +1,5 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch.providers;
 
-import java.util.Arrays;
-
 import javax.inject.Provider;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
@@ -27,15 +25,15 @@ public class MSHybridReactionNetworkProvider extends AbstractProvider<MSHybridRe
 		double N = config().getDouble("N");
 		double gamma = config().getDouble("gamma");
 		double[] alpha = dataConfig().getDoubleArray("alpha", null);
-		if (alpha == null) {
-			alpha = new double[network.getNumberOfSpecies()];
-			Arrays.fill(alpha, 0.0);
-		}
+//		if (alpha == null) {
+//			alpha = new double[network.getNumberOfSpecies()];
+//			Arrays.fill(alpha, 0.0);
+//		}
 		double[] beta = dataConfig().getDoubleArray("beta", null);
-		if (beta == null) {
-			beta = new double[network.getNumberOfReactions()];
-			Arrays.fill(beta, 0.0);
-		}
+//		if (beta == null) {
+//			beta = new double[network.getNumberOfReactions()];
+//			Arrays.fill(beta, 0.0);
+//		}
 		return MSHybridReactionNetwork.createFrom(network, N, gamma, alpha, beta);
 	}
 

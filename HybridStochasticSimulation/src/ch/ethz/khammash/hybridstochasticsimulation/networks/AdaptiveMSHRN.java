@@ -2,6 +2,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -59,6 +60,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		setEta(hrn.getEpsilon());
 		setXi(hrn.getXi());
 		_init();
+		if (hrn.averagingUnitOptional.isPresent())
+			setAveragingUnit(hrn.averagingUnitOptional.get());
 	}
 
 	final private void _init() {
@@ -207,34 +210,41 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 				}
 			}
 
-//			// Compute average waiting time for stochastic and deterministic reactions
-//			double stochasticPropensitySum = 0.0;
-//			double deterministicPropensitySum = 0.0;
-//			for (int r=0; r < getNumberOfReactions(); r++) {
-//				if (propensities[r] > 0) {
-//					ReactionType rt = getReactionType(r);
-//					if (rt == ReactionType.STOCHASTIC)
-//						stochasticPropensitySum += propensities[r];
-//					else if (rt == ReactionType.DETERMINISTIC)
-//						deterministicPropensitySum += propensities[r];
-//				}
-//			}
-//
-//			// If the timescale-separation between stochastic and deterministic reactions is too small
-//			// treat all reactions as stochastic
-//			double stochasticToDeterministicAvgWaitingTimeRatio = Double.POSITIVE_INFINITY;
-//			if (stochasticPropensitySum != 0.0)
-//				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensitySum / stochasticPropensitySum;
-//			if (stochasticToDeterministicAvgWaitingTimeRatio < getTheta()) {
-//				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
-//				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
-//				overrideReactionTypes(reactionTypes);
-//				if (printMessages)
-//					System.out.println(" Overriding reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + "<" + getTheta());
-//			}
-//			else
-//				if (printMessages)
-//					System.out.println(" Keeping reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + getTheta());
+			// Compute waiting times for stochastic and deterministic reactions
+			double stochasticPropensityMax = 0.0;
+			double deterministicPropensityMax = 0.0;
+			for (int r=0; r < getNumberOfReactions(); r++) {
+				if (propensities[r] > 0) {
+					ReactionType rt = getReactionType(r);
+					if (rt == ReactionType.STOCHASTIC) {
+						if (propensities[r] > stochasticPropensityMax)
+							stochasticPropensityMax = propensities[r];
+//						stochasticPropensity += propensities[r];
+					} else if (rt == ReactionType.DETERMINISTIC) {
+						if (propensities[r] > deterministicPropensityMax)
+							deterministicPropensityMax = propensities[r];
+//						deterministicPropensityMax += propensities[r];
+					}
+				}
+			}
+
+			// If the timescale-separation between stochastic and deterministic reactions is too small
+			// treat all reactions as stochastic
+			double stochasticToDeterministicAvgWaitingTimeRatio = Double.POSITIVE_INFINITY;
+			if (stochasticPropensityMax > 0.0)
+				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensityMax / stochasticPropensityMax;
+			// TODO: provide Parameter for this
+			double theta = 100;
+			if (stochasticToDeterministicAvgWaitingTimeRatio < theta) {
+				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
+				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
+				overrideReactionTypes(reactionTypes);
+				if (printMessages)
+					System.out.println(" Overriding reaction types (" + deterministicPropensityMax + "/" + stochasticPropensityMax + "=" + stochasticToDeterministicAvgWaitingTimeRatio + "<" + theta);
+			}
+			else
+				if (printMessages)
+					System.out.println(" Keeping reaction types (" + deterministicPropensityMax + "/" + stochasticPropensityMax + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + theta);
 		}
 
 	}

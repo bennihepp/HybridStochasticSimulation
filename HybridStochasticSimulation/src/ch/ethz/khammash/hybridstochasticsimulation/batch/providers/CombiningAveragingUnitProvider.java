@@ -14,6 +14,7 @@ public class CombiningAveragingUnitProvider extends AbstractProvider<CombiningAv
 
 	private Injector injector;
 
+	// TODO: Use something like a list of AveragingUnits instead of the provider
 	@Inject
 	public CombiningAveragingUnitProvider(HierarchicalConfiguration config, Injector injector) {
 		super(config, "AveragingParameters");

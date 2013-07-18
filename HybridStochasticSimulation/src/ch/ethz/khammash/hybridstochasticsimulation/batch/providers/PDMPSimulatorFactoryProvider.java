@@ -13,6 +13,7 @@ public class PDMPSimulatorFactoryProvider extends AbstractProvider<SimulatorFact
 
 	private SolverFactory solverFactory;
 
+	// TODO: Change factory to provider
 	@Inject
 	public PDMPSimulatorFactoryProvider(HierarchicalConfiguration config, SolverFactory solverFactory) {
 		super(config, "SimulationParameters");

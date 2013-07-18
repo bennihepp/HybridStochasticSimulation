@@ -2,6 +2,8 @@ package ch.ethz.khammash.hybridstochasticsimulation.batch.providers;
 
 import java.util.Set;
 
+import javax.inject.Provider;
+
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
@@ -17,9 +19,9 @@ public class ZeroDeficiencyAveragingUnitProvider extends AbstractAveragingUnitPr
 	private RandomDataGeneratorFactory rdgFactory;
 
 	@Inject
-	public ZeroDeficiencyAveragingUnitProvider(HierarchicalConfiguration config, UnaryBinaryReactionNetwork network,
+	public ZeroDeficiencyAveragingUnitProvider(HierarchicalConfiguration config, Provider<UnaryBinaryReactionNetwork> networkProvider,
 			RandomDataGeneratorFactory rdgFactory) {
-		super(config, network);
+		super(config, networkProvider);
 		this.rdgFactory = rdgFactory;
 	}
 

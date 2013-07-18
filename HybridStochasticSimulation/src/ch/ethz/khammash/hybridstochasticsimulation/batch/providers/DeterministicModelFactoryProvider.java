@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch.providers;
 
+import javax.inject.Provider;
+
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
@@ -13,12 +15,12 @@ import com.google.inject.Inject;
 
 public class DeterministicModelFactoryProvider extends AbstractProvider<ModelFactory<PDMPModel>> {
 
-	private UnaryBinaryReactionNetwork network;
+	private Provider<UnaryBinaryReactionNetwork> networkProvider;
 
 	@Inject
-	public DeterministicModelFactoryProvider(HierarchicalConfiguration config, UnaryBinaryReactionNetwork network) {
+	public DeterministicModelFactoryProvider(HierarchicalConfiguration config, Provider<UnaryBinaryReactionNetwork> networkProvider) {
 		super(config, "ModelParameters");
-		this.network = network;
+		this.networkProvider = networkProvider;
 	}
 
 	@Override
@@ -27,6 +29,7 @@ public class DeterministicModelFactoryProvider extends AbstractProvider<ModelFac
 
 			@Override
 			public PDMPModel createModel() {
+				UnaryBinaryReactionNetwork network = networkProvider.get();
 				UnaryBinaryDeterministicModel model = new UnaryBinaryDeterministicModel(network);
 				return new PDMPModelAdapter<HybridModel>(model);
 			}

@@ -2,9 +2,10 @@ package ch.ethz.khammash.hybridstochasticsimulation.controllers;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -17,6 +18,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRec
 import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.RandomDataGeneratorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
+import ch.ethz.khammash.hybridstochasticsimulation.factories.TrajectoryRecorderFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
@@ -142,10 +144,44 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	}
 
 	@Override
+	public List<TrajectoryRecorder> simulateTrajectories(
+			int runs, ModelFactory<T> modelFactory, TrajectoryRecorderFactory trFactory,
+			double t0, double[] x0, double t1) {
+		checkArgument(runs > 0, "Expected runs > 0");
+
+		final List<TrajectoryRecorder> trList = Collections.synchronizedList(new LinkedList<TrajectoryRecorder>());
+        for (int k=0; k < runs; k++) {
+    		T model = modelFactory.createModel();
+    		TrajectoryRecorder tr = trFactory.createTrajectoryRecorder();
+    		Callable<TrajectoryRecorder> sw = createSimulationWorker(model, tr, t0, x0, t1);
+    		ListenableFuture<TrajectoryRecorder> completion = executor.submit(sw);
+    		Futures.addCallback(completion, new FutureCallback<TrajectoryRecorder>() {
+
+				@Override
+				public void onFailure(Throwable t) {
+					throw new RuntimeException(t);
+				}
+
+				@Override
+				public void onSuccess(TrajectoryRecorder tr) {
+					trList.add(tr);
+				}
+
+    		});
+        }
+        executor.shutdown();
+        do {
+        	try {
+        		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+	        } catch (InterruptedException e) { }
+        } while (!executor.isTerminated());
+        return trList;
+	}
+
+	@Override
 	public FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
 			int runs, ModelFactory<T> modelFactory, FiniteTrajectoryRecorderFactory trFactory,
-			double t0, double[] x0, double t1)
-			throws InterruptedException, CancellationException, ExecutionException {
+			double t0, double[] x0, double t1) {
 		checkArgument(runs > 0, "Expected runs > 0");
 //		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
 

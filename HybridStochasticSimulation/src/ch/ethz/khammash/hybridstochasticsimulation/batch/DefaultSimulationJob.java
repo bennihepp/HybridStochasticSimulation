@@ -8,8 +8,6 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
@@ -17,7 +15,9 @@ import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFinitePlotData;
 
@@ -144,11 +144,30 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		System.out.println("Running simulation \"" + getName() + "\" [" + getSimulationType() + "] (" + getRuns() + " runs)");
 		switch (getSimulationType()) {
 		case TRAJECTORY:
-			for (int i=0; i < getRuns(); i++) {
-				T model = createModel();
-				FiniteTrajectoryRecorder tr = createTrajectory();
-				getSimulationController().simulateTrajectory(
-						model, tr, gett0(),  getx0(), gett1());
+//			for (int i=0; i < getRuns(); i++) {
+//				T model = createModel();
+//				FiniteTrajectoryRecorder tr = createTrajectory();
+//				getSimulationController().simulateTrajectory(
+//						model, tr, gett0(),  getx0(), gett1());
+//				VectorFinitePlotData pd = new VectorFinitePlotData(tr.gettSeries(), tr.getxSeries());
+//				if (getLabels() != null)
+//					pd.setStateNames(getLabels());
+//				if (getPlotScales() != null)
+//					pd.setPlotScales(getPlotScales());
+//				if (getRuns() > 1)
+//					pd.setDescription(getName() + "(" + i + ")");
+//				else
+//					pd.setDescription(getName());
+//				plotDataList.add(pd);
+//			}
+
+			ModelFactory<T> modelFactory = getModelFactory();
+			FiniteTrajectoryRecorderFactory trFactory = getTrajectoryFactory();
+			List<TrajectoryRecorder> trList = getSimulationController().simulateTrajectories(
+					getRuns(), modelFactory, trFactory,
+					gett0(), getx0(), gett1());
+			for (int i=0; i < trList.size(); i++) {
+				FiniteTrajectory tr = (FiniteTrajectory)trList.get(i);
 				VectorFinitePlotData pd = new VectorFinitePlotData(tr.gettSeries(), tr.getxSeries());
 				if (getLabels() != null)
 					pd.setStateNames(getLabels());
@@ -162,9 +181,9 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 			}
 			break;
 		case DISTRIBUTION:
-			try {
-				ModelFactory<T> modelFactory = getModelFactory();
-				FiniteTrajectoryRecorderFactory trFactory = getTrajectoryFactory();
+//			try {
+				modelFactory = getModelFactory();
+				trFactory = getTrajectoryFactory();
 				FiniteStatisticalSummaryTrajectory tr = getSimulationController().simulateTrajectoryDistribution(
 						getRuns(), modelFactory, trFactory,
 						gett0(), getx0(), gett1());
@@ -175,12 +194,12 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 					pd.setPlotScales(getPlotScales());
 				pd.setDescription(getName());
 				plotDataList.add(pd);
-			} catch (CancellationException | InterruptedException
-					| ExecutionException e) {
-				System.err.println("ERROR: Failed to simulate trajectory distribution " + getName());
-				e.printStackTrace();
-				System.err.println();
-			}
+//			} catch (CancellationException | InterruptedException
+//					| ExecutionException e) {
+//				System.err.println("ERROR: Failed to simulate trajectory distribution " + getName());
+//				e.printStackTrace();
+//				System.err.println();
+//			}
 			break;
 		}
 		List<SimulationOutput> outputs = getOutputs();

@@ -53,6 +53,19 @@ public class BatchGuiceModule extends AbstractModule {
 	protected void configure() {
 		// Configuration
 		bind(HierarchicalConfiguration.class).toInstance(config);
+		// RandomDataGeneratorFactory
+		// TODO: make random data seed configurable
+		RandomDataGeneratorFactory rdgFactory = new DefaultRandomDataGeneratorFactory();
+//		RandomDataGeneratorFactory rdgFactory = new RandomDataGeneratorFactory() {
+//			
+//			@Override
+//			public RandomDataGenerator createRandomDataGenerator() {
+//				RandomDataGenerator rdg = new RandomDataGenerator();
+//				rdg.reSeed(100L);
+//				return rdg;
+//			}
+//		};
+		bind(RandomDataGeneratorFactory.class).toInstance(rdgFactory);
 		// Averaging
 		String averagingType = config.getString("SimulationParameters.averagingType", "Dummy");
 		switch (averagingType) {
@@ -72,9 +85,6 @@ public class BatchGuiceModule extends AbstractModule {
 		bind(ZeroDeficiencyAveragingUnit.class).toProvider(ZeroDeficiencyAveragingUnitProvider.class);
 		bind(PseudoLinearAveragingUnit.class).toProvider(PseudoLinearAveragingUnitProvider.class);
 		bind(CombiningAveragingUnit.class).toProvider(CombiningAveragingUnitProvider.class);
-		// RandomDataGeneratorFactory
-		RandomDataGeneratorFactory rdgFactory = new DefaultRandomDataGeneratorFactory();
-		bind(RandomDataGeneratorFactory.class).toInstance(rdgFactory);
 		// ModelFactory
 		String modelType = config.getString("ModelParameters.modelType", "Stochastic");
 		switch (modelType) {

@@ -14,6 +14,7 @@ public class PDMPSimulationControllerProvider extends AbstractSimulationControll
 
 	private SimulatorFactory<PDMPModel> simulatorFactory;
 
+	// TODO: Change factories to providers
 	@Inject
 	public PDMPSimulationControllerProvider(HierarchicalConfiguration config, SimulatorFactory<PDMPModel> simulatorFactory,
 			RandomDataGeneratorFactory rdgFactory) {

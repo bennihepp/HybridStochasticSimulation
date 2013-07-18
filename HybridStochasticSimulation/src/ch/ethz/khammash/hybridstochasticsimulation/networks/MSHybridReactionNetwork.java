@@ -52,15 +52,19 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		checkArgument(N > 0, "Expected N > 0");
 		this.N = N;
 		this.gamma = gamma;
-		if (alpha == null)
+		if (alpha == null) {
 			this.alpha = new double[getNumberOfSpecies()];
-		else {
+			// redundant
+//			Arrays.fill(alpha, 0.0);
+		} else {
 			checkArgument(alpha.length == getNumberOfSpecies(), "Expected alpha.length == getNumberOfSpecies()");
 			this.alpha = alpha.clone();
 		}
-		if (beta == null)
+		if (beta == null) {
 			this.beta = new double[getNumberOfReactions()];
-		else {
+			// redundant
+//			Arrays.fill(beta, 0.0);
+		} else {
 			checkArgument(beta.length == getNumberOfReactions(), "Expected beta.length == getNumberOfReactions()");
 			this.beta = beta.clone();
 		}
@@ -72,6 +76,10 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		reactionTypes = new ReactionType[getNumberOfReactions()];
 		reactionTermTypesInvalid = true;
 		updateScaleFactors();
+	}
+
+	protected MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N, double gamma) {
+		this(net, N, gamma, null, null);
 	}
 
 	protected MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {

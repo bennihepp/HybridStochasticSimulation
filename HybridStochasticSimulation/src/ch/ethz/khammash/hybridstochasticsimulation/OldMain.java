@@ -10,8 +10,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.DataConfiguration;
@@ -224,7 +222,7 @@ public class OldMain {
 			if (dataConfig.containsKey("xi"))
 				hrn.setXi(dataConfig.getDouble("xi"));
 			if (dataConfig.containsKey("eta"))
-				hrn.setEpsilon(dataConfig.getDouble("eta"));
+				hrn.setEta(dataConfig.getDouble("eta"));
 			if (config.getMaxIndex("averagingUnits") >= 0)
 				parseAveragingUnits(config.configurationAt("averagingUnits"));
 			String averagingUnitName = config.getString("averagingUnit", null);
@@ -651,25 +649,18 @@ public class OldMain {
 				}
 				break;
 			case DISTRIBUTION:
-				try {
-					ModelFactory<?> modelFactory = sim.getModelFactory();
-					FiniteTrajectoryRecorderFactory trFactory = sim.getTrajectoryFactory();
-					FiniteStatisticalSummaryTrajectory tr = sim.getSimulationController().simulateTrajectoryDistribution(
-							sim.getRuns(), modelFactory, trFactory,
-							sim.gett0(), sim.getx0(), sim.gett1());
-					VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tr);
-					if (sim.getLabels() != null)
-						pd.setStateNames(sim.getLabels());
-					if (sim.getPlotScales() != null)
-						pd.setPlotScales(sim.getPlotScales());
-					pd.setDescription(name);
-					plotDataList.add(pd);
-				} catch (CancellationException | InterruptedException
-						| ExecutionException e) {
-					System.err.println("ERROR: Failed to simulate trajectory distribution " + name);
-					e.printStackTrace();
-					System.err.println();
-				}
+				ModelFactory<?> modelFactory = sim.getModelFactory();
+				FiniteTrajectoryRecorderFactory trFactory = sim.getTrajectoryFactory();
+				FiniteStatisticalSummaryTrajectory tr = sim.getSimulationController().simulateTrajectoryDistribution(
+						sim.getRuns(), modelFactory, trFactory,
+						sim.gett0(), sim.getx0(), sim.gett1());
+				VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tr);
+				if (sim.getLabels() != null)
+					pd.setStateNames(sim.getLabels());
+				if (sim.getPlotScales() != null)
+					pd.setPlotScales(sim.getPlotScales());
+				pd.setDescription(name);
+				plotDataList.add(pd);
 				break;
 			}
 			List<SimulationOutput> outputs = sim.getOutputs();

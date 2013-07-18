@@ -53,6 +53,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 
 	@Override
 	public void initialize(double t0, double[] x0) {
+		hrn.init();
 		adapt(t0, x0);
 	}
 

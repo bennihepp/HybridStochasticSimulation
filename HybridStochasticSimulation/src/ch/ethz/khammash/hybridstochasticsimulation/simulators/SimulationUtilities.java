@@ -3,8 +3,6 @@ package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -230,9 +228,9 @@ public class SimulationUtilities {
 	}
 
 	public static List<VectorFinitePlotData> simulateAdaptiveMSPDMPCommonsMath(SimulationConfiguration nss, double[] tSeries, boolean printMessages, boolean completeTrajectory) {
-		AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		hrn.setDelta(nss.delta);
-		hrn.setEpsilon(nss.epsilon);
+		hrn.setEta(nss.epsilon);
 		hrn.setXi(nss.xi);
 		hrn.setTolerance(nss.tolerance);
 		AdaptiveMSHRNModel model = new AdaptiveMSHRNModel(hrn);
@@ -321,7 +319,7 @@ public class SimulationUtilities {
 
 	public static List<VectorFinitePlotData> simulateAdaptiveMSPDMP(SimulationConfiguration nss, double[] tSeries, boolean printMessages, final boolean optionalTrajectory) {
 		RandomDataGeneratorFactory rdgFactory = new DefaultRandomDataGeneratorFactory(nss.rng);
-		AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		hrn.setPrintMessages(printMessages);
 		ReactionNetworkGraph graph = new ReactionNetworkGraph(hrn);
 		HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
@@ -339,7 +337,7 @@ public class SimulationUtilities {
 //		hrn.setAveragingUnit(averagingUnit);
 		hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
 		hrn.setDelta(nss.delta);
-		hrn.setEpsilon(nss.epsilon);
+		hrn.setEta(nss.epsilon);
 		hrn.setXi(nss.xi);
 		hrn.setTolerance(nss.tolerance);
 		AdaptiveMSHRNModel model = new AdaptiveMSHRNModel(hrn);
@@ -635,27 +633,17 @@ public class SimulationUtilities {
 				return new PDMPModelAdapter<HybridReactionNetworkModel>(hrnClone);
 			}
 		};
-		try {
-			final long startTime = System.currentTimeMillis();
-			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
-					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, x0, t1);
-			final long endTime = System.currentTimeMillis();
-			if (printMessages)
-				System.out.println("Total execution time: " + (endTime - startTime));
+		final long startTime = System.currentTimeMillis();
+		FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+				.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, x0, t1);
+		final long endTime = System.currentTimeMillis();
+		if (printMessages)
+			System.out.println("Total execution time: " + (endTime - startTime));
 
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
-			pd.setStateNames(nss.speciesNames);
-			pd.setPlotScales(nss.plotScales);
-			return pd;
-
-		} catch (InterruptedException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (ExecutionException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (CancellationException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		}
-		return null;
+		VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
+		pd.setStateNames(nss.speciesNames);
+		pd.setPlotScales(nss.plotScales);
+		return pd;
 	}
 
 	public static VectorFiniteDistributionPlotData simulatePDMPDistribution(int runs, SimulationConfiguration nss,
@@ -701,27 +689,17 @@ public class SimulationUtilities {
 				return new PDMPModelAdapter<HybridReactionNetworkModel>(hrnClone);
 			}
 		};
-		try {
-			final long startTime = System.currentTimeMillis();
-			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
-					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, x0, t1);
-			final long endTime = System.currentTimeMillis();
-			if (printMessages)
-				System.out.println("Total execution time: " + (endTime - startTime));
+		final long startTime = System.currentTimeMillis();
+		FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+				.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, x0, t1);
+		final long endTime = System.currentTimeMillis();
+		if (printMessages)
+			System.out.println("Total execution time: " + (endTime - startTime));
 
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
-			pd.setStateNames(nss.speciesNames);
-			pd.setPlotScales(nss.plotScales);
-			return pd;
-
-		} catch (InterruptedException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (ExecutionException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (CancellationException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		}
-		return null;
+		VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
+		pd.setStateNames(nss.speciesNames);
+		pd.setPlotScales(nss.plotScales);
+		return pd;
 	}
 
 	public static VectorFiniteDistributionPlotData simulateMSPDMPDistributionCommonsMath(int runs, SimulationConfiguration nss,
@@ -754,27 +732,17 @@ public class SimulationUtilities {
 				return new PDMPModelAdapter<MSHybridReactionNetworkModel>(hrnClone);
 			}
 		};
-		try {
-			final long startTime = System.currentTimeMillis();
-			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
-					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
-			final long endTime = System.currentTimeMillis();
-			if (printMessages)
-				System.out.println("Total execution time: " + (endTime - startTime));
+		final long startTime = System.currentTimeMillis();
+		FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+				.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
+		final long endTime = System.currentTimeMillis();
+		if (printMessages)
+			System.out.println("Total execution time: " + (endTime - startTime));
 
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
-			pd.setStateNames(nss.speciesNames);
-			pd.setPlotScales(nss.plotScales);
-			return pd;
-
-		} catch (InterruptedException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (ExecutionException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (CancellationException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		}
-		return null;
+		VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
+		pd.setStateNames(nss.speciesNames);
+		pd.setPlotScales(nss.plotScales);
+		return pd;
 	}
 
 	public static VectorFiniteDistributionPlotData simulateMSPDMPDistribution(int runs, SimulationConfiguration nss,
@@ -824,34 +792,24 @@ public class SimulationUtilities {
 				return new PDMPModelAdapter<MSHybridReactionNetworkModel>(hrnClone);
 			}
 		};
-		try {
-			final long startTime = System.currentTimeMillis();
-			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
-					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
-			final long endTime = System.currentTimeMillis();
-			if (printMessages)
-				System.out.println("Total execution time: " + (endTime - startTime));
+		final long startTime = System.currentTimeMillis();
+		FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+				.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
+		final long endTime = System.currentTimeMillis();
+		if (printMessages)
+			System.out.println("Total execution time: " + (endTime - startTime));
 
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
-			pd.setStateNames(nss.speciesNames);
-			pd.setPlotScales(nss.plotScales);
-			return pd;
-
-		} catch (InterruptedException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (ExecutionException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (CancellationException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		}
-		return null;
+		VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
+		pd.setStateNames(nss.speciesNames);
+		pd.setPlotScales(nss.plotScales);
+		return pd;
 	}
 
 	public static VectorFiniteDistributionPlotData simulateAdaptiveMSPDMPDistributionCommonsMath(int runs, final SimulationConfiguration nss,
 			final double[] tSeries, boolean printMessages) {
-		final AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		final AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		hrn.setDelta(nss.delta);
-		hrn.setEpsilon(nss.epsilon);
+		hrn.setEta(nss.epsilon);
 		hrn.setXi(nss.xi);
 		hrn.setTolerance(nss.tolerance);
 		double[] x0 = nss.x0;
@@ -888,33 +846,23 @@ public class SimulationUtilities {
 				return new AdaptiveMSHRNModel(hrnCopy);
 			}
 		};
-		try {
-			final long startTime = System.currentTimeMillis();
-			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
-					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
-			final long endTime = System.currentTimeMillis();
-			if (printMessages)
-				System.out.println("Total execution time: " + (endTime - startTime));
+		final long startTime = System.currentTimeMillis();
+		FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+				.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
+		final long endTime = System.currentTimeMillis();
+		if (printMessages)
+			System.out.println("Total execution time: " + (endTime - startTime));
 
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
-			pd.setStateNames(nss.speciesNames);
-			pd.setPlotScales(nss.plotScales);
-			return pd;
-
-		} catch (InterruptedException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (ExecutionException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (CancellationException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		}
-		return null;
+		VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
+		pd.setStateNames(nss.speciesNames);
+		pd.setPlotScales(nss.plotScales);
+		return pd;
 	}
 
 	public static VectorFiniteDistributionPlotData simulateAdaptiveMSPDMPDistribution(int runs, final SimulationConfiguration nss,
 			final double[] tSeries, boolean printMessages) {
 		final RandomDataGeneratorFactory rdgFactory = new DefaultRandomDataGeneratorFactory(nss.rng);
-		final AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma, nss.alpha, nss.beta);
+		final AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		ReactionNetworkGraph graph = new ReactionNetworkGraph(hrn);
 		HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
 		for (int s : nss.importantSpecies)
@@ -926,7 +874,7 @@ public class SimulationUtilities {
 				nss.theta, hrn, importantSpeciesVertices, rdgFactory.createRandomDataGenerator(), true);
 		hrn.setAveragingUnit(averagingUnit);
 		hrn.setDelta(nss.delta);
-		hrn.setEpsilon(nss.epsilon);
+		hrn.setEta(nss.epsilon);
 		hrn.setXi(nss.xi);
 		hrn.setTolerance(nss.tolerance);
 		final double[] x0 = nss.x0;
@@ -985,27 +933,17 @@ public class SimulationUtilities {
 				return new AdaptiveMSHRNModel(hrnCopy);
 			}
 		};
-		try {
-			final long startTime = System.currentTimeMillis();
-			FiniteStatisticalSummaryTrajectory distributionTr = ctrl
-					.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
-			final long endTime = System.currentTimeMillis();
-			if (printMessages)
-				System.out.println("Total execution time: " + (endTime - startTime));
+		final long startTime = System.currentTimeMillis();
+		FiniteStatisticalSummaryTrajectory distributionTr = ctrl
+				.simulateTrajectoryDistribution(runs, modelFactory, trFactory, t0, z0, t1);
+		final long endTime = System.currentTimeMillis();
+		if (printMessages)
+			System.out.println("Total execution time: " + (endTime - startTime));
 
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
-			pd.setStateNames(nss.speciesNames);
-			pd.setPlotScales(nss.plotScales);
-			return pd;
-
-		} catch (InterruptedException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (ExecutionException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (CancellationException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		}
-		return null;
+		VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
+		pd.setStateNames(nss.speciesNames);
+		pd.setPlotScales(nss.plotScales);
+		return pd;
 	}
 
 	public static VectorFiniteDistributionPlotData simulateStochasticDistribution(int runs, final SimulationConfiguration nss,
@@ -1032,28 +970,18 @@ public class SimulationUtilities {
 				return new UnaryBinaryStochasticModel(nss.net);
 			}
 		};
-		try {
-			final long startTime = System.currentTimeMillis();
-			FiniteStatisticalSummaryTrajectory distributionTr = ctrl.simulateTrajectoryDistribution(
-					runs, modelFactory, trFactory, t0, x0, t1);
-			//public StatisticalSummary[][] simulateTrajectoryDistribution(int runs, ModelFactory<T> modelFactory, double[] tSeries, double[] x0)
-			final long endTime = System.currentTimeMillis();
-			if (printMessages)
-				System.out.println("Total execution time: " + (endTime - startTime));
+		final long startTime = System.currentTimeMillis();
+		FiniteStatisticalSummaryTrajectory distributionTr = ctrl.simulateTrajectoryDistribution(
+				runs, modelFactory, trFactory, t0, x0, t1);
+		//public StatisticalSummary[][] simulateTrajectoryDistribution(int runs, ModelFactory<T> modelFactory, double[] tSeries, double[] x0)
+		final long endTime = System.currentTimeMillis();
+		if (printMessages)
+			System.out.println("Total execution time: " + (endTime - startTime));
 
-			VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
-			pd.setStateNames(nss.speciesNames);
-			pd.setPlotScales(nss.plotScales);
-			return pd;
-
-		} catch (InterruptedException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (ExecutionException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		} catch (CancellationException e) {
-			System.out.println("Computation of trajectory distributions failed");
-		}
-		return null;
+		VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(distributionTr);
+		pd.setStateNames(nss.speciesNames);
+		pd.setPlotScales(nss.plotScales);
+		return pd;
 	}
 
 }

@@ -2,6 +2,8 @@ package ch.ethz.khammash.hybridstochasticsimulation.batch.providers;
 
 import java.util.Set;
 
+import javax.inject.Provider;
+
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.PseudoLinearAveragingUnit;
@@ -13,8 +15,8 @@ import com.google.inject.Inject;
 public class PseudoLinearAveragingUnitProvider extends AbstractAveragingUnitProvider<PseudoLinearAveragingUnit> {
 
 	@Inject
-	public PseudoLinearAveragingUnitProvider(HierarchicalConfiguration config, UnaryBinaryReactionNetwork network) {
-		super(config, network);
+	public PseudoLinearAveragingUnitProvider(HierarchicalConfiguration config, Provider<UnaryBinaryReactionNetwork> networkProvider) {
+		super(config, networkProvider);
 	}
 
 	@Override

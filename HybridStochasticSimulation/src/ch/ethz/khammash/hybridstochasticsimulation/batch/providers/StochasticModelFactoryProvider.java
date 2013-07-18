@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch.providers;
 
+import javax.inject.Provider;
+
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
@@ -11,12 +13,12 @@ import com.google.inject.Inject;
 
 public class StochasticModelFactoryProvider extends AbstractProvider<ModelFactory<StochasticReactionNetworkModel>> {
 
-	private UnaryBinaryReactionNetwork network;
+	private Provider<UnaryBinaryReactionNetwork> networkProvider;
 
 	@Inject
-	public StochasticModelFactoryProvider(HierarchicalConfiguration config, UnaryBinaryReactionNetwork network) {
+	public StochasticModelFactoryProvider(HierarchicalConfiguration config, Provider<UnaryBinaryReactionNetwork> networkProvider) {
 		super(config, "ModelParameters");
-		this.network = network;
+		this.networkProvider = networkProvider;
 	}
 
 	@Override
@@ -25,6 +27,7 @@ public class StochasticModelFactoryProvider extends AbstractProvider<ModelFactor
 
 			@Override
 			public StochasticReactionNetworkModel createModel() {
+				UnaryBinaryReactionNetwork network = networkProvider.get();
 				return new UnaryBinaryStochasticModel(network);
 			}
 

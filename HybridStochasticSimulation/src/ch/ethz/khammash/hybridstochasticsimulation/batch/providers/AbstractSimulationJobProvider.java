@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch.providers;
 
+import javax.inject.Provider;
+
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.DefaultSimulationJob;
@@ -9,15 +11,16 @@ import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput;
 
 public abstract class AbstractSimulationJobProvider extends AbstractProvider<SimulationJob> {
 
-	private SimulationOutput output;
+	private Provider<SimulationOutput> outputProvider;
 
-	public AbstractSimulationJobProvider(HierarchicalConfiguration config, SimulationOutput output) {
+	public AbstractSimulationJobProvider(HierarchicalConfiguration config, Provider<SimulationOutput> outputProvider) {
 		super(config, "SimulationParameters");
-		this.output = output;
+		this.outputProvider = outputProvider;
 	}
 
 	@Override
 	public SimulationJob get() {
+		SimulationOutput output = outputProvider.get();
 		double t0 = config().getDouble("t0");
 		double t1 = config().getDouble("t1");
 		double[] x0 = dataConfig().getDoubleArray("x0");

@@ -28,12 +28,12 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 
 	// TODO: Does xi make sense or just use the value of delta?
 	private double xi = 0.5;
-	private double epsilon = 0.1;
+	private double eta = 0.1;
 	private Optional<AveragingUnit> averagingUnitOptional;
 	private boolean printMessages;
 
-	public static AdaptiveMSHRN createFrom(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
-		return new AdaptiveMSHRN(net, N, gamma, alpha, beta);
+	public static AdaptiveMSHRN createFrom(UnaryBinaryReactionNetwork net, double N, double gamma) {
+		return new AdaptiveMSHRN(net, N, gamma);
 	}
 
 	public static AdaptiveMSHRN createFrom(MSHybridReactionNetwork hrn) {
@@ -44,8 +44,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		return new AdaptiveMSHRN(hrn);
 	}
 
-	protected AdaptiveMSHRN(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
-		super(net, N, gamma, alpha, beta);
+	protected AdaptiveMSHRN(UnaryBinaryReactionNetwork net, double N, double gamma) {
+		super(net, N, gamma);
 		_init();
 	}
 
@@ -56,7 +56,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 
 	protected AdaptiveMSHRN(AdaptiveMSHRN hrn) {
 		super(hrn);
-		setEpsilon(hrn.getEpsilon());
+		setEta(hrn.getEpsilon());
 		setXi(hrn.getXi());
 		_init();
 	}
@@ -96,13 +96,13 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	}
 
 	final public double getEpsilon() {
-		return epsilon;
+		return eta;
 	}
 
-	public void setEpsilon(double epsilon) {
-		checkArgument(epsilon > 0);
-//		checkArgument(epsilon < 1);
-		this.epsilon = epsilon;
+	public void setEta(double eta) {
+		checkArgument(eta > 0);
+//		checkArgument(eta < 1);
+		this.eta = eta;
 	}
 
 	final public void init() {

@@ -30,7 +30,7 @@ public class MatlabOutput implements SimulationOutput {
         plotDataListMap = new HashMap<>();
         this.outputFile = outputFile;
         if (!overwrite)
-            checkArgument(!outputFile.exists());
+            checkArgument(!outputFile.exists(), "Output file already exists!");
         try {
             outputFile.createNewFile();
         } catch (IOException e) {

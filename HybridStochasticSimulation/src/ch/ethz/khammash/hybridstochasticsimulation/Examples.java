@@ -1299,7 +1299,7 @@ public class Examples {
 
 		SimulationConfiguration nss = new BacteriophageT7();
 
-		int PDMPRuns = 100;
+		int PDMPRuns = 10;
 		int stochasticRuns = 100;
 		int numberOfTimePoints = 1001;
 		boolean printMessages = true;

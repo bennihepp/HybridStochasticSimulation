@@ -9,6 +9,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
@@ -37,6 +38,8 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		implements SimulationController<T> {
 
 	public final static int DEFAULT_NUMBER_OF_THREADS = 4;
+
+	private static final int MAX_QUEUED_JOBS = 100;
 
 	private ListeningExecutorService executor;
 	private Optional<SimulatorFactory<T>> simulatorFactoryOptional;
@@ -150,7 +153,12 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		checkArgument(runs > 0, "Expected runs > 0");
 
 		final List<TrajectoryRecorder> trList = Collections.synchronizedList(new LinkedList<TrajectoryRecorder>());
+
+        final AtomicInteger queuedJobs = new AtomicInteger(0);
+
         for (int k=0; k < runs; k++) {
+        	makeSubmission(queuedJobs);
+
     		T model = modelFactory.createModel();
     		TrajectoryRecorder tr = trFactory.createTrajectoryRecorder();
     		Callable<TrajectoryRecorder> sw = createSimulationWorker(model, tr, t0, x0, t1);
@@ -159,11 +167,13 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 
 				@Override
 				public void onFailure(Throwable t) {
+					releaseSubmission(queuedJobs);
 					throw new RuntimeException(t);
 				}
 
 				@Override
 				public void onSuccess(TrajectoryRecorder tr) {
+					releaseSubmission(queuedJobs);
 					trList.add(tr);
 				}
 
@@ -195,7 +205,10 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
         	for (int i=0; i < dummyTr.getNumberOfTimePoints(); i++)
 				xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
 
+        final AtomicInteger queuedJobs = new AtomicInteger(0);
+
         for (int k=0; k < runs; k++) {
+        	makeSubmission(queuedJobs);
     		T model = modelFactory.createModel();
     		FiniteTrajectoryRecorder tr = trFactory.createTrajectoryRecorder();
     		Callable<TrajectoryRecorder> sw = createSimulationWorker(model, tr, t0, x0, t1);
@@ -204,11 +217,13 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 
 				@Override
 				public void onFailure(Throwable t) {
+					releaseSubmission(queuedJobs);
 					throw new RuntimeException(t);
 				}
 
 				@Override
 				public void onSuccess(TrajectoryRecorder tr) {
+					releaseSubmission(queuedJobs);
 					FiniteTrajectoryRecorder ftr = (FiniteTrajectoryRecorder)tr;
 					double[][] xSeries = ftr.getxSeries();
 					for (int s = 0; s < ftr.getNumberOfStates(); s++) {
@@ -227,6 +242,24 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	        } catch (InterruptedException e) { }
         } while (!executor.isTerminated());
         return VectorFiniteStatisticalSummaryPlotData.createFromStatisticalSummary(tSeries, xSeriesStatistics);
+	}
+
+	private void makeSubmission(AtomicInteger queuedJobs) {
+		synchronized (queuedJobs) {
+        	while (queuedJobs.get() >= MAX_QUEUED_JOBS) {
+				try {
+					queuedJobs.wait();
+				} catch (InterruptedException e) {}
+        	}
+    		queuedJobs.getAndIncrement();
+		}
+	}
+
+	private void releaseSubmission(AtomicInteger queuedJobs) {
+		synchronized(queuedJobs) {
+			queuedJobs.getAndDecrement();
+			queuedJobs.notifyAll();
+		}
 	}
 
 }

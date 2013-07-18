@@ -126,11 +126,11 @@ public class BatchGuiceModule extends AbstractModule {
 		case "Deterministic":
 			bind(SimulationController.class).to(new TypeLiteral<SimulationController<PDMPModel>>() {});
 			bind(SimulationJob.class).toProvider(PDMPSimulationJobProvider.class);
+			bind(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {}).toProvider(StochasticSimulationControllerProvider.class);
+			bind(new TypeLiteral<SimulationController<PDMPModel>>() {}).toProvider(PDMPSimulationControllerProvider.class);
+			bind(new TypeLiteral<SimulatorFactory<PDMPModel>>() {}).toProvider(PDMPSimulatorFactoryProvider.class);
 			break;
 		}
-		bind(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {}).toProvider(StochasticSimulationControllerProvider.class);
-		bind(new TypeLiteral<SimulationController<PDMPModel>>() {}).toProvider(PDMPSimulationControllerProvider.class);
-		bind(new TypeLiteral<SimulatorFactory<PDMPModel>>() {}).toProvider(PDMPSimulatorFactoryProvider.class);
 		String solverType = config.getString("SimulationParameters.solver.type", null);
 		if (solverType != null) {
 			switch (solverType) {

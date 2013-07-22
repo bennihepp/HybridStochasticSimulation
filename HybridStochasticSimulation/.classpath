@@ -33,5 +33,6 @@
 	<classpathentry kind="lib" path="lib/javax.inject.jar"/>
 	<classpathentry kind="lib" path="lib/aopalliance.jar"/>
 	<classpathentry kind="lib" path="lib/guice-throwingproviders-3.0.jar"/>
+	<classpathentry kind="lib" path="/home/bhepp/src/mpj/mpj-v0_38/lib/mpj.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

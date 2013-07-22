@@ -12,9 +12,16 @@ public class ExampleConfigurationFactory {
 		public SimulationConfiguration create();
 	}
 
-	private static ExampleConfigurationFactory instance = new ExampleConfigurationFactory();
+	private static volatile ExampleConfigurationFactory instance = null;
 
 	public static ExampleConfigurationFactory getInstance() {
+		if (instance == null) {
+			synchronized (ExampleConfigurationFactory.class) {
+				if (instance == null) {
+					instance = new ExampleConfigurationFactory();
+				}
+			}
+		}
 		return instance;
 	}
 

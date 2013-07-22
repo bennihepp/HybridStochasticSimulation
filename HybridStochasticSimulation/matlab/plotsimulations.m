@@ -27,7 +27,7 @@ xlimMax = 0;
 ylimMax = 0;
 axArr = [];
 
-% simulationIndices = 1:length(S.simulations);
+simulationIndices = 1:length(S.simulations);
 % simulationIndices = [1];
 %rows = S.rows;
 %cols = S.cols;
@@ -145,7 +145,10 @@ if writeOutput
 
     if writeToExtraFolder
         outputfilepath = [outputfilepath, outputfilename, '/'];
-        mkdir(outputfilepath);
+        tf = isdir(outputfilepath);
+        if ~tf
+            mkdir(outputfilepath);
+        end
         outputfilename = 'plot';
     end
 

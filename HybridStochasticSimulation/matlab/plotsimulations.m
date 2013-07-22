@@ -1,11 +1,12 @@
-inputfilepath = '../jobs/';
-inputfilename = 'simulationBacteriophageT7';
+inputfilepath = '../jobs/outputs/';
+inputfilename = 'HeatShockResponse_stoch_10000';
 outputfilepath = '../jobs/plots/';
 outputfilename = inputfilename;
 useTransparency = true;
 drawStdDevOutlines = false;
 linkAxes = false;
-writeOutput = false;
+writeOutput = true;
+writeToExtraFolder = true;
 
 S = load([inputfilepath, inputfilename,'.mat'], 'simulations');
 
@@ -26,7 +27,7 @@ xlimMax = 0;
 ylimMax = 0;
 axArr = [];
 
-simulationIndices = 1:length(S.simulations);
+% simulationIndices = 1:length(S.simulations);
 % simulationIndices = [1];
 %rows = S.rows;
 %cols = S.cols;
@@ -37,13 +38,13 @@ for q=simulationIndices
     numOfPlots = numOfPlots + length(plots);
 end
 rows = ceil(numOfPlots / cols);
-rows = 2;
-cols = 2;
+% rows = 2;
+% cols = 2;
 l = 1;
 for q=simulationIndices
     plots = S.simulations{q};
     plotIndices = 1:length(plots);
-    plotIndices = [3,4];
+%     plotIndices = [3,4];
     for i=plotIndices
         plt = plots(i);
         ax2 = subplot(rows, cols, l);
@@ -141,6 +142,12 @@ if writeOutput
     %opts = struct('Resolution', 600, 'Color', 'CMYK');
     %exportfig(gcf, [outputfilepath, outputfilename, '.eps'], opts);
     %exportfig(gcf, [outputfilepath, outputfilename, '.pdf'], opts);
+
+    if writeToExtraFolder
+        outputfilepath = [outputfilepath, outputfilename, '/'];
+        mkdir(outputfilepath);
+        outputfilename = 'plot';
+    end
 
     saveas(gcf(), [outputfilepath, outputfilename, '.fig'], 'fig');
     print(gcf(), [outputfilepath, outputfilename, '.pdf'], '-dpdf', '-r600', '-cmyk', '-painters');

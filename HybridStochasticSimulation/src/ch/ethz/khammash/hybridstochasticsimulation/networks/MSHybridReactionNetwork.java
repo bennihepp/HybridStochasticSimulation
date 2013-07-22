@@ -33,6 +33,7 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 	private SpeciesType[] speciesTypes;
 	private ReactionType[] reactionTypes;
 	private boolean reactionTermTypesInvalid;
+	private boolean printMessages;
 
 	public static MSHybridReactionNetwork create(int numOfSpecies, int numOfReactions, double N, double gamma, double[] alpha, double[] beta) {
 		return new MSHybridReactionNetwork(numOfSpecies, numOfReactions, N, gamma, alpha, beta);
@@ -92,6 +93,14 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		this(hrn, hrn.getN(), hrn.getGamma(), hrn.getAlpha(), hrn.getBeta());
 		setDelta(hrn.getDelta());
 		setTolerance(hrn.getTolerance());
+	}
+
+	public void setPrintMessages(boolean printMessages) {
+		this.printMessages = printMessages;
+	}
+
+	protected boolean getPrintMessages() {
+		return printMessages;
 	}
 
 	final protected void invalidateReactionTermTypes() {
@@ -317,20 +326,11 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 	}
 
 	protected void computeReactionTermTypes() {
-		// TODO
-//		int[] counter = { 0, 0, 0 };
 		for (int s=0; s < getNumberOfSpecies(); s++)
 			speciesTypes[s] = SpeciesType.UNDEFINED;
 		for (int r=0; r < getNumberOfReactions(); r++) {
 			computeReactionTermType(r);
-//			if (reactionTypes[r] == ReactionType.STOCHASTIC)
-//				counter[0]++;
-//			else if (reactionTypes[r] == ReactionType.DETERMINISTIC)
-//				counter[1]++;
-//			else if (reactionTypes[r] == ReactionType.EXPLODING)
-//				counter[2]++;
 		}
-//		System.out.println("Found " + counter[0] + " stochastic reactions, " + counter[1] + " deterministic reactions and " + counter[2] + " exploding reactions");
 		for (int s=0; s < getNumberOfSpecies(); s++)
 			if (speciesTypes[s] == SpeciesType.UNDEFINED)
 				speciesTypes[s] = SpeciesType.CONTINUOUS;
@@ -359,10 +359,8 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 	protected ReactionTermType computeReactionTermType(int species, int reaction) {
 		if (getStochiometry(species, reaction) == 0)
 			return ReactionTermType.NONE;
-		double gammaPlusRho = gamma + beta[reaction];
-		for (int s2 = 0; s2 < alpha.length; s2++)
-			if (getConsumptionStochiometry(s2, reaction) > 0)
-				gammaPlusRho += getConsumptionStochiometry(s2, reaction) * alpha[s2];
+		double rho = computeInsideScalingExponent(reaction);
+		double gammaPlusRho = gamma + rho;
 		if (speciesTypes[species] == SpeciesType.CONTINUOUS)
 			return ReactionTermType.DETERMINISTIC;
 		if (alpha[species] >= delta - tolerance) {
@@ -375,16 +373,14 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 //				else
 					return ReactionTermType.DETERMINISTIC;
 			else {
-				// TODO
-				System.out.println("EXPLODING: alpha[" + species + "]=" + alpha[species] + ", gamma+rho[" + reaction + "]=" + gammaPlusRho);
+				if (printMessages)
+					System.out.println("EXPLODING: alpha[" + species + "]=" + alpha[species] + ", gamma+rho[" + reaction + "]=" + gammaPlusRho);
 				return ReactionTermType.EXPLODING;
-//				return ReactionTermType.DETERMINISTIC;
 			}
 		} else
 			return ReactionTermType.STOCHASTIC;
 	}
 
-	// TODO: This is only needed by FiniteAdaptiveMSHRNModelTrajectory
 	public double computeInsideScalingExponent(int reaction) {
 		double rho = beta[reaction];
 		for (int s = 0; s < alpha.length; s++)

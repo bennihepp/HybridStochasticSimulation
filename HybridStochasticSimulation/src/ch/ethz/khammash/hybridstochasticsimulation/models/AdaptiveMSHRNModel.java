@@ -71,7 +71,6 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 			seh.setUpperBound(upperBound);
 			seh.setBoundType(BoundType.UPPER);
 		} else {
-			// TODO: Properly handle switching back to real copy numbers
 			// TODO: Multiply by x oder not?
 			double lowerBound1 = x * Math.pow(hrn.getN(), -hrn.getEpsilon());
 			double lowerBound2 = hrn.getInverseSpeciesScaleFactor(s) * FastMath.pow(hrn.getN(), hrn.getXi() - hrn.getEpsilon());
@@ -161,10 +160,6 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 			optionalState[i++] = computeSpeciesType(s);
 		for (int r=0; r < getNumberOfReactions(); r++)
 			optionalState[i++] = computeReactionType(r);
-		// TODO: Integration information
-//		q[0] = simulator.isIntegrating;
-//		q[1] = -simulator.integratorCounter;
-//		q[2] = -simulator.reactionCounter;
 		return optionalState;
 	}
 

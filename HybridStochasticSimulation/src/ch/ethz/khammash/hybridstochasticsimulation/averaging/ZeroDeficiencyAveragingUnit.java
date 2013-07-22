@@ -270,16 +270,6 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 		BroydenRootSolver solver = new BroydenRootSolver(rootFunction);
 		double[] subXSteadyState = solver.findRoot(subX);
 
-//		boolean hasConservationRelation = subnetworkConservationRelationMap.get(subnetworkSpecies);
-//		if (hasConservationRelation) {
-//			throw new AveragingException("Conservation relations not yet supported");
-//		} else {
-//			for (int j=0; j < mapping.length; j++) {
-//				long sample = sampleFromPoissonDistribution(subXSteadyState[j]);
-//				x[mapping[j]] = sample;
-//			}
-//		}
-
 		for (ConservedSpeciesRelation relation : subnetworkInfo.getConservedSpeciesRelations()) {
 			List<SpeciesVertex> speciesList = relation.getConservedSpeciesList();
 			DenseMatrix64F lcVector = relation.getLinearCombination();
@@ -288,8 +278,6 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 				int k = reverseMapping[v.getSpecies()];
 				yVector.set(k, 0, subXSteadyState[k]);
 			}
-//			yVector = yVector.elementMult(lcVector);
-//			int n = (int)FastMath.round(yVector.elementSum());
 			CommonOps.divide(CommonOps.elementSum(yVector), yVector);
 			double[] p = yVector.getData();
 			int[] alpha = new int[lcVector.numRows];
@@ -300,11 +288,6 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 				n += alpha[j] * subXSteadyState[j];
 //			double[] y = sampleFromMultinomialDistribution(n, p);
 			int[] y = RandomDataUtilities.sampleFromConstrainedMultinomialLikeDistribution(rdg, n, p, alpha);
-//			// TODO: How handle cases where linear combination coefficient are e.g. 2 and we sample an uneven number?
-//			for (int j=0; j < y.length; j++) {
-//				y[j] /= FastMath.abs(lcVector.get(j, 0));
-//				y[j] = FastMath.round(y[j]);
-//			}
 			for (SpeciesVertex v : speciesList) {
 				int k = reverseMapping[v.getSpecies()];
 				x[v.getSpecies()] = y[k];

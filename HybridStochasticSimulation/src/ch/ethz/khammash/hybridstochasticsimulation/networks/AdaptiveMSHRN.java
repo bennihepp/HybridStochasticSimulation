@@ -31,7 +31,6 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	private double xi = 0.5;
 	private double eta = 0.1;
 	private Optional<AveragingUnit> averagingUnitOptional;
-	private boolean printMessages;
 
 	public static AdaptiveMSHRN createFrom(UnaryBinaryReactionNetwork net, double N, double gamma) {
 		return new AdaptiveMSHRN(net, N, gamma);
@@ -67,10 +66,6 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	final private void _init() {
 		unsetAveragingUnit();
 		init();
-	}
-
-	public void setPrintMessages(boolean printMessages) {
-		this.printMessages = printMessages;
 	}
 
 	// Important: reset() must be called after changing the averaging unit
@@ -120,14 +115,14 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		}
 	}
 
-	private void averageSubnetworks(List<Set<SpeciesVertex>> subnetworksToAverage, boolean printMessages) {
+	private void averageSubnetworks(List<Set<SpeciesVertex>> subnetworksToAverage) {
 		boolean[] zeroDeficiencySpeciesToAverageMask = new boolean[getNumberOfSpecies()];
 		for (Set<SpeciesVertex> subnetwork : subnetworksToAverage) {
 			for (SpeciesVertex vertex : subnetwork) {
 				zeroDeficiencySpeciesToAverageMask[vertex.getSpecies()] = true;
 			}
 		}
-		if (printMessages) {
+		if (getPrintMessages()) {
 			HashSet<SpeciesVertex> speciesToAverage = new HashSet<SpeciesVertex>();
 			for (int s=0; s < getNumberOfSpecies(); s++)
 				if (zeroDeficiencySpeciesToAverageMask[s])
@@ -151,7 +146,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 
 	public void adapt(double t, double[] x, double[] xDot, double[] propensities) {
 
-		if (printMessages)
+		if (getPrintMessages())
 			System.out.println("Adapting at t=" + t);
 
 		// Recover true copy numbers from scaled species values
@@ -170,16 +165,16 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 				x[s] = 0.0;
 		}
 
-		if (printMessages)
+		if (getPrintMessages())
 			Utilities.printArray(" alpha=", getAlpha());
 
-		double[] reactionTimescales = computeReactionTimescales(x, printMessages);
+		double[] reactionTimescales = computeReactionTimescales(x);
 
 		if (averagingUnitOptional.isPresent()) {
 			AveragingUnit averagingUnit = averagingUnitOptional.get();
 			List<Set<SpeciesVertex>> subnetworksToAverage
 				= averagingUnit.getSubnetworksToAverageAndResampleState(t, x, reactionTimescales);
-			averageSubnetworks(subnetworksToAverage, printMessages);
+			averageSubnetworks(subnetworksToAverage);
 		}
 
 		// Scale copy numbers with new species scale factors.
@@ -189,7 +184,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 
 		if (propensities != null) {
 
-			if (printMessages) {
+			if (getPrintMessages()) {
 				int cnt = 0;
 				for (int r=0; r < getNumberOfReactions(); r++) {
 					ReactionType rt = getReactionType(r);
@@ -233,25 +228,25 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			double stochasticToDeterministicAvgWaitingTimeRatio = Double.POSITIVE_INFINITY;
 			if (stochasticPropensityMax > 0.0)
 				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensityMax / stochasticPropensityMax;
-			// TODO: provide Parameter for this
+        	// TODO: Make this value configurable
 			double theta = 100;
 			if (stochasticToDeterministicAvgWaitingTimeRatio < theta) {
 				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
 				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
 				overrideReactionTypes(reactionTypes);
-				if (printMessages)
+				if (getPrintMessages())
 					System.out.println(" Overriding reaction types (" + deterministicPropensityMax + "/" + stochasticPropensityMax + "=" + stochasticToDeterministicAvgWaitingTimeRatio + "<" + theta);
 			}
 			else
-				if (printMessages)
+				if (getPrintMessages())
 					System.out.println(" Keeping reaction types (" + deterministicPropensityMax + "/" + stochasticPropensityMax + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + theta);
 		}
 
 	}
 
-	private double[] computeReactionTimescales(double[] x, boolean printMessages) {
+	private double[] computeReactionTimescales(double[] x) {
 		double[] reactionTimescales = new double[getNumberOfReactions()];
-		if (printMessages)
+		if (getPrintMessages())
 			System.out.println(" Reaction timescales:");
 		for (int r=0; r < getNumberOfReactions(); r++) {
 			int[] choiceIndices = getChoiceIndices(r);
@@ -270,16 +265,16 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			}
 			propensity *= maxStochiometry;
 			reactionTimescales[r] = 1.0 / propensity;
-			if (printMessages)
+			if (getPrintMessages())
 				System.out.println("  " + r + ": " + reactionTimescales[r]);
 		}
 		return reactionTimescales;
 	}
 
 	// TODO: not necessary
-//	private double[] computeSpeciesTimescales(double[] x, boolean printMessages) {
+//	private double[] computeSpeciesTimescales(double[] x) {
 //		double[] speciesTimescales = new double[getNumberOfSpecies()];
-//		if (printMessages)
+//		if (getPrintMessages())
 //			System.out.println(" Species timescales:");
 //		for (int s=0; s < getNumberOfSpecies(); s++) {
 //			double v = 0.0;
@@ -302,18 +297,10 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 //				q = x[s];
 //			speciesTimescales[s] = q / v;
 //	//		double tmp = FastMath.pow(getN(), getAlpha(s)) / v;
-//			if (printMessages)
+//			if (getPrintMessages())
 //				System.out.println("  " + s + ": " + speciesTimescales[s]);
 //		}
 //		return speciesTimescales;
-//	}
-
-//	@Override
-//	protected ReactionTermType computeReactionTermType(int species, int reaction) {
-//		ReactionTermType rtt = super.computeReactionTermType(species, reaction);
-//		if (rtt == ReactionTermType.STOCHASTIC && speciesToAverageMask[species])
-//			rtt = ReactionTermType.DETERMINISTIC;
-//		return rtt;
 //	}
 
 	// Solve a linear program to find alpha and beta

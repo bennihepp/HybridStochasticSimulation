@@ -10,9 +10,8 @@ import java.util.List;
 import java.util.Set;
 
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
@@ -25,8 +24,8 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 
 	private String name = "<unnamed>";
 	private List<SimulationOutput> outputs;
-	private ModelFactory<T> modelFactory;
-	private FiniteTrajectoryRecorderFactory trajectoryRecorderFactory;
+	private ObjProvider<T> modelProvider;
+	private ObjProvider<FiniteTrajectoryRecorder> trajectoryRecorderProvider;
 	private SimulationController<T> simulationController;
 	private double t0;
 	private double t1;
@@ -36,28 +35,28 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	private double[] plotScales;
 
 	public static <T extends ReactionNetworkModel> DefaultSimulationJob<T> createTrajectorySimulation(
-			ModelFactory<T> modelFactory, FiniteTrajectoryRecorderFactory trajectoryRecorderFactory,
+			ObjProvider<T> modelProvider, ObjProvider<FiniteTrajectoryRecorder> trajectoryRecorderProvider,
 			SimulationController<T> simulationController,
 			double t0, double t1, double[] x0, int runs) {
-		return new DefaultSimulationJob<T>(modelFactory, trajectoryRecorderFactory, simulationController, t0, t1, x0, runs, Type.TRAJECTORY);
+		return new DefaultSimulationJob<T>(modelProvider, trajectoryRecorderProvider, simulationController, t0, t1, x0, runs, Type.TRAJECTORY);
 	}
 
 	public static <T extends ReactionNetworkModel> DefaultSimulationJob<T> createDistributionSimulation(
-			ModelFactory<T> modelFactory, FiniteTrajectoryRecorderFactory trajectoryRecorderFactory,
+			ObjProvider<T> modelProvider, ObjProvider<FiniteTrajectoryRecorder> trajectoryRecorderProvider,
 			SimulationController<T> simulationController,
 			double t0, double t1, double[] x0, int runs) {
-		return new DefaultSimulationJob<T>(modelFactory, trajectoryRecorderFactory, simulationController, t0, t1, x0, runs, Type.DISTRIBUTION);
+		return new DefaultSimulationJob<T>(modelProvider, trajectoryRecorderProvider, simulationController, t0, t1, x0, runs, Type.DISTRIBUTION);
 	}
 
-	public DefaultSimulationJob(ModelFactory<T> modelFactory, FiniteTrajectoryRecorderFactory trajectoryRecorderFactory,
+	public DefaultSimulationJob(ObjProvider<T> modelProvider, ObjProvider<FiniteTrajectoryRecorder> trajectoryRecorderProvider,
 			SimulationController<T> simulationController,
 			double t0, double t1, double[] x0, int runs, Type simulationType) {
-		checkNotNull(modelFactory);
-		checkNotNull(trajectoryRecorderFactory);
+		checkNotNull(modelProvider);
+		checkNotNull(trajectoryRecorderProvider);
 		checkNotNull(simulationController);
 		outputs = new LinkedList<>();
-		this.modelFactory = modelFactory;
-		this.trajectoryRecorderFactory = trajectoryRecorderFactory;
+		this.modelProvider = modelProvider;
+		this.trajectoryRecorderProvider = trajectoryRecorderProvider;
 		this.simulationController = simulationController;
 		this.t0 = t0;
 		this.t1 = t1;
@@ -89,19 +88,19 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	}
 
 	public T createModel() {
-		return modelFactory.createModel();
+		return modelProvider.get();
 	}
 
-	public ModelFactory<T> getModelFactory() {
-		return modelFactory;
+	public ObjProvider<T> getModelProvider() {
+		return modelProvider;
 	}
 
 	public FiniteTrajectoryRecorder createTrajectory() {
-		return trajectoryRecorderFactory.createTrajectoryRecorder();
+		return trajectoryRecorderProvider.get();
 	}
 
-	public FiniteTrajectoryRecorderFactory getTrajectoryFactory() {
-		return trajectoryRecorderFactory;
+	public ObjProvider<FiniteTrajectoryRecorder> getTrajectoryProvider() {
+		return trajectoryRecorderProvider;
 	}
 
 	public double gett0() {
@@ -129,7 +128,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	}
 
 	public List<String> getLabels() {
-		return modelFactory.createModel().getNetwork().getSpeciesLabels();
+		return modelProvider.get().getNetwork().getSpeciesLabels();
 	}
 
 	public Type getSimulationType() {
@@ -161,10 +160,10 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 //				plotDataList.add(pd);
 //			}
 
-			ModelFactory<T> modelFactory = getModelFactory();
-			FiniteTrajectoryRecorderFactory trFactory = getTrajectoryFactory();
+			ObjProvider<T> modelProvider = getModelProvider();
+			ObjProvider<FiniteTrajectoryRecorder> trProvider = getTrajectoryProvider();
 			List<TrajectoryRecorder> trList = getSimulationController().simulateTrajectories(
-					getRuns(), modelFactory, trFactory,
+					getRuns(), modelProvider, trProvider,
 					gett0(), getx0(), gett1());
 			for (int i=0; i < trList.size(); i++) {
 				FiniteTrajectory tr = (FiniteTrajectory)trList.get(i);
@@ -182,10 +181,10 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 			break;
 		case DISTRIBUTION:
 //			try {
-				modelFactory = getModelFactory();
-				trFactory = getTrajectoryFactory();
+				modelProvider = getModelProvider();
+				trProvider = getTrajectoryProvider();
 				FiniteStatisticalSummaryTrajectory tr = getSimulationController().simulateTrajectoryDistribution(
-						getRuns(), modelFactory, trFactory,
+						getRuns(), modelProvider, trProvider,
 						gett0(), getx0(), gett1());
 				VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tr);
 				if (getLabels() != null)

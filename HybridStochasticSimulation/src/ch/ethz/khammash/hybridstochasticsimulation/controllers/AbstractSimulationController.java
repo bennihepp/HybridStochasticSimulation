@@ -8,19 +8,15 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
 
-import ch.ethz.khammash.hybridstochasticsimulation.factories.DefaultRandomDataGeneratorFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.RandomDataGeneratorFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.TrajectoryRecorderFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.RandomDataGeneratorProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
@@ -42,9 +38,10 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	private static final int MAX_QUEUED_JOBS = 100;
 
 	private ListeningExecutorService executor;
-	private Optional<SimulatorFactory<T>> simulatorFactoryOptional;
+	private Optional<ObjProvider<Simulator<T>>> simulatorProviderOptional;
 //	private Optional<TrajectoryRecorderFactory<E>> trajectoryRecorderFactoryOptional;
-	private Optional<RandomDataGeneratorFactory> rdgFactoryOptional;
+	// TODO: rdgProvider is not used anymore
+	private Optional<ObjProvider<RandomDataGenerator>> rdgProviderOptional;
 
 	public AbstractSimulationController() {
 		this(DEFAULT_NUMBER_OF_THREADS);
@@ -56,9 +53,10 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 
 	public AbstractSimulationController(ExecutorService executor) {
 		this.executor = MoreExecutors.listeningDecorator(executor);
-		simulatorFactoryOptional = Optional.absent();
+		simulatorProviderOptional = Optional.absent();
 //		trajectoryRecorderFactoryOptional = Optional.absent();
-		rdgFactoryOptional = Optional.<RandomDataGeneratorFactory>of(new DefaultRandomDataGeneratorFactory());
+		ObjProvider<RandomDataGenerator> rdgProvider = new RandomDataGeneratorProvider();
+		rdgProviderOptional = Optional.of(rdgProvider);
 	}
 
 	protected SimulationWorker createSimulationWorker(T model, TrajectoryRecorder tr, double t0, double[] x0, double t1) {
@@ -84,13 +82,13 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		this.executor = MoreExecutors.listeningDecorator(executor);
 	}
 
-	protected Optional<SimulatorFactory<T>> getSimulatorFactoryOptional() {
-		return simulatorFactoryOptional;
+	protected Optional<ObjProvider<Simulator<T>>> getSimulatorFactoryOptional() {
+		return simulatorProviderOptional;
 	}
 
 	@Override
-	final public void setSimulatorFactory(SimulatorFactory<T> simulatorFactory) {
-		simulatorFactoryOptional = Optional.of(simulatorFactory);
+	final public void setSimulatorProvider(ObjProvider<Simulator<T>> simulatorProvider) {
+		simulatorProviderOptional = Optional.of(simulatorProvider);
 	}
 
 //	@Override
@@ -100,16 +98,16 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 //	}
 
 	@Override
-	final public void setRandomDataGeneratorFactory(RandomDataGeneratorFactory rdgFactory) {
-		rdgFactoryOptional = Optional.of(rdgFactory);
+	final public void setRandomDataGeneratorProvider(ObjProvider<RandomDataGenerator> rdgProvider) {
+		rdgProviderOptional = Optional.of(rdgProvider);
 	}
 
 	protected Simulator<T> createSimulator() {
         // We want to have different random number sequences for each run
-		if (simulatorFactoryOptional.isPresent())
-			return simulatorFactoryOptional.get().createSimulator(createRandomDataGenerator());
+		if (simulatorProviderOptional.isPresent())
+			return simulatorProviderOptional.get().get();
 		else
-			throw new UnsupportedOperationException("The SimulatorFactory has not been set yet");
+			throw new UnsupportedOperationException("The SimulatorProvider has not been set yet");
 	}
 
 //	private E createTrajectoryRecorder() {
@@ -127,10 +125,10 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 //	}
 
 	protected RandomDataGenerator createRandomDataGenerator() {
-		if (rdgFactoryOptional.isPresent())
-			return rdgFactoryOptional.get().createRandomDataGenerator();
+		if (rdgProviderOptional.isPresent())
+			return rdgProviderOptional.get().get();
 		else
-			throw new UnsupportedOperationException("The RandomDataGeneratorFactory has not been set yet");
+			throw new UnsupportedOperationException("The RandomDataGeneratorProvider has not been set yet");
 	}
 
 //	@Override
@@ -148,32 +146,35 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 
 	@Override
 	public List<TrajectoryRecorder> simulateTrajectories(
-			int runs, ModelFactory<T> modelFactory, TrajectoryRecorderFactory trFactory,
+			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends TrajectoryRecorder> trProvider,
 			double t0, double[] x0, double t1) {
 		checkArgument(runs > 0, "Expected runs > 0");
 
 		final List<TrajectoryRecorder> trList = Collections.synchronizedList(new LinkedList<TrajectoryRecorder>());
 
-        final AtomicInteger queuedJobs = new AtomicInteger(0);
+        final Semaphore jobQueueCounter = new Semaphore(MAX_QUEUED_JOBS);
+//        final AtomicInteger queuedJobs = new AtomicInteger(0);
 
         for (int k=0; k < runs; k++) {
-        	makeSubmission(queuedJobs);
-
-    		T model = modelFactory.createModel();
-    		TrajectoryRecorder tr = trFactory.createTrajectoryRecorder();
+        	jobQueueCounter.acquireUninterruptibly();
+//        	makeSubmission(queuedJobs);
+    		T model = modelProvider.get();
+    		TrajectoryRecorder tr = trProvider.get();
     		Callable<TrajectoryRecorder> sw = createSimulationWorker(model, tr, t0, x0, t1);
     		ListenableFuture<TrajectoryRecorder> completion = executor.submit(sw);
     		Futures.addCallback(completion, new FutureCallback<TrajectoryRecorder>() {
 
 				@Override
 				public void onFailure(Throwable t) {
-					releaseSubmission(queuedJobs);
+					jobQueueCounter.release();
+//					releaseSubmission(queuedJobs);
 					throw new RuntimeException(t);
 				}
 
 				@Override
 				public void onSuccess(TrajectoryRecorder tr) {
-					releaseSubmission(queuedJobs);
+					jobQueueCounter.release();
+//					releaseSubmission(queuedJobs);
 					trList.add(tr);
 				}
 
@@ -190,12 +191,12 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 
 	@Override
 	public FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
-			int runs, ModelFactory<T> modelFactory, FiniteTrajectoryRecorderFactory trFactory,
+			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends FiniteTrajectoryRecorder> trProvider,
 			double t0, double[] x0, double t1) {
 		checkArgument(runs > 0, "Expected runs > 0");
 //		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
 
-		FiniteTrajectoryRecorder dummyTr = trFactory.createTrajectoryRecorder();
+		FiniteTrajectoryRecorder dummyTr = trProvider.get();
 		dummyTr.beginRecording(t0, x0, t1);
 		int numOfStates = dummyTr.getNumberOfStates();
 		int numOfTimePoints = dummyTr.getNumberOfTimePoints();
@@ -205,25 +206,29 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
         	for (int i=0; i < dummyTr.getNumberOfTimePoints(); i++)
 				xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
 
-        final AtomicInteger queuedJobs = new AtomicInteger(0);
+        final Semaphore jobQueueCounter = new Semaphore(MAX_QUEUED_JOBS);
+//        final AtomicInteger queuedJobs = new AtomicInteger(0);
 
         for (int k=0; k < runs; k++) {
-        	makeSubmission(queuedJobs);
-    		T model = modelFactory.createModel();
-    		FiniteTrajectoryRecorder tr = trFactory.createTrajectoryRecorder();
+        	jobQueueCounter.acquireUninterruptibly();
+//        	makeSubmission(queuedJobs);
+    		T model = modelProvider.get();
+    		FiniteTrajectoryRecorder tr = trProvider.get();
     		Callable<TrajectoryRecorder> sw = createSimulationWorker(model, tr, t0, x0, t1);
     		ListenableFuture<TrajectoryRecorder> completion = executor.submit(sw);
     		Futures.addCallback(completion, new FutureCallback<TrajectoryRecorder>() {
 
 				@Override
 				public void onFailure(Throwable t) {
-					releaseSubmission(queuedJobs);
+					jobQueueCounter.release();
+//					releaseSubmission(queuedJobs);
 					throw new RuntimeException(t);
 				}
 
 				@Override
 				public void onSuccess(TrajectoryRecorder tr) {
-					releaseSubmission(queuedJobs);
+					jobQueueCounter.release();
+//					releaseSubmission(queuedJobs);
 					FiniteTrajectoryRecorder ftr = (FiniteTrajectoryRecorder)tr;
 					double[][] xSeries = ftr.getxSeries();
 					for (int s = 0; s < ftr.getNumberOfStates(); s++) {
@@ -244,22 +249,22 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
         return VectorFiniteStatisticalSummaryPlotData.createFromStatisticalSummary(tSeries, xSeriesStatistics);
 	}
 
-	private void makeSubmission(AtomicInteger queuedJobs) {
-		synchronized (queuedJobs) {
-        	while (queuedJobs.get() >= MAX_QUEUED_JOBS) {
-				try {
-					queuedJobs.wait();
-				} catch (InterruptedException e) {}
-        	}
-    		queuedJobs.getAndIncrement();
-		}
-	}
+//	private void makeSubmission(AtomicInteger queuedJobs) {
+//		synchronized (queuedJobs) {
+//        	while (queuedJobs.get() >= MAX_QUEUED_JOBS) {
+//				try {
+//					queuedJobs.wait();
+//				} catch (InterruptedException e) {}
+//        	}
+//    		queuedJobs.getAndIncrement();
+//		}
+//	}
 
-	private void releaseSubmission(AtomicInteger queuedJobs) {
-		synchronized(queuedJobs) {
-			queuedJobs.getAndDecrement();
-			queuedJobs.notifyAll();
-		}
-	}
+//	private void releaseSubmission(AtomicInteger queuedJobs) {
+//		synchronized(queuedJobs) {
+//			queuedJobs.getAndDecrement();
+//			queuedJobs.notifyAll();
+//		}
+//	}
 
 }

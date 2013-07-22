@@ -2,7 +2,6 @@ package ch.ethz.khammash.hybridstochasticsimulation.controllers;
 
 import java.util.concurrent.ExecutorService;
 
-import ch.ethz.khammash.hybridstochasticsimulation.factories.StochasticSimulatorFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 
 
@@ -24,7 +23,7 @@ public class StochasticSimulationController extends AbstractSimulationController
     }
 
 	final private void construct() {
-		setSimulatorFactory(new StochasticSimulatorFactory());
+//		setSimulatorProvider(new StochasticSimulatorProvider());
 	}
 
 }

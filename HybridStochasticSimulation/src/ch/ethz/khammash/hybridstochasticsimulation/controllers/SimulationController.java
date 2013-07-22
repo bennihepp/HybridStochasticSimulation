@@ -3,35 +3,33 @@ package ch.ethz.khammash.hybridstochasticsimulation.controllers;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.RandomDataGeneratorFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.TrajectoryRecorderFactory;
+import org.apache.commons.math3.random.RandomDataGenerator;
+
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
 public interface SimulationController<T extends ReactionNetworkModel> {
 
 	void setExecutorService(ExecutorService executor);
 
-	void setSimulatorFactory(SimulatorFactory<T> simulatorFactory);
+	void setSimulatorProvider(ObjProvider<Simulator<T>> simulatorProvider);
 
-//	void setTrajectoryRecorderFactory(TrajectoryRecorderFactory<E> trajectoryRecorderFactory);
-
-	void setRandomDataGeneratorFactory(RandomDataGeneratorFactory rdgFactory);
+	void setRandomDataGeneratorProvider(ObjProvider<RandomDataGenerator> rdgProvider);
 
 //	E simulateTrajectory(T model, double t0, double[] x0, double t1);
 
 	void simulateTrajectory(T model, TrajectoryRecorder tr, double t0, double[] x0, double t1);
 
 	List<TrajectoryRecorder> simulateTrajectories(int runs,
-			ModelFactory<T> modelFactory, TrajectoryRecorderFactory trFactory,
+			ObjProvider<? extends T> modelProvider, ObjProvider<? extends TrajectoryRecorder> trProvider,
 			double t0, double[] x0, double t1);
 
 	FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
-			int runs, ModelFactory<T> modelFactory, FiniteTrajectoryRecorderFactory trFactory,
+			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends FiniteTrajectoryRecorder> trProvider,
 			double t0, double[] x0, double t1);
 
 }

@@ -164,7 +164,6 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 		        	if (recordSimulationInformation)
 		        		simInfo.integrating = true;
 					// Evolve ODE until next stochastic reaction fires
-//			        x[x.length - 2] = 0.0;
 		        	double nextUnitJumpTime = -FastMath.log(rdg.nextUniform(0.0,  1.0));
 		        	// x[x.length - 1] will be < 0
 			        x[x.length - 1] = -nextUnitJumpTime;
@@ -230,7 +229,7 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 		        		simInfo.reactionCounter++;
 		        	reactionCounterArray[reaction]++;
 		        	stateObserver.report(t, x);
-		        	// TODO: Should this also be coupled to N?
+		        	// TODO: Make this value configurable (coupled to N?)
 		        	if (j > 100) {
 		        		model.checkAndHandleOptionalEvent(t, x);
 		        		j = 0;

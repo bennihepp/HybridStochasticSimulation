@@ -22,13 +22,21 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionN
 
 public class StochKitNetworkReader {
 
+	public static class FileFormatException extends Exception {
+		private static final long serialVersionUID = -8291451734049197094L;
+
+		public FileFormatException(String message) {
+			super(message);
+		}
+	}
+
 	private StochKitNetworkReader() {}
 
-	public static UnaryBinaryReactionNetwork readUnaryBinaryNetworkFromFile(File inputFile) throws ParserConfigurationException, SAXException, IOException {
+	public static UnaryBinaryReactionNetwork readUnaryBinaryNetworkFromFile(File inputFile) throws ParserConfigurationException, SAXException, IOException, FileFormatException {
 		return readSimulationConfiguration(inputFile).net;
 	}
 
-	public static SimulationConfiguration readSimulationConfiguration(File inputFile) throws ParserConfigurationException, SAXException, IOException {
+	public static SimulationConfiguration readSimulationConfiguration(File inputFile) throws ParserConfigurationException, SAXException, IOException, FileFormatException {
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 	    DocumentBuilder builder = factory.newDocumentBuilder();
 	    Document document = builder.parse(inputFile);
@@ -75,15 +83,13 @@ public class StochKitNetworkReader {
 	}
 
 	private static void parseReactions(DefaultUnaryBinaryReactionNetwork net,
-			Map<String, Integer> speciesMap, Map<String, Double> parameterMap, Element element) {
+			Map<String, Integer> speciesMap, Map<String, Double> parameterMap, Element element) throws FileFormatException {
 		NodeList nodeList = element.getElementsByTagName("Reaction");
 		for (int reaction=0; reaction < nodeList.getLength(); reaction++) {
 			Element childElement = (Element)nodeList.item(reaction);
-//			String id = childElement.getElementsByTagName("Id").item(0).getTextContent();
 			String type = childElement.getElementsByTagName("Type").item(0).getTextContent();
 			if (!type.equals("mass-action"))
-				// TODO: Custom exception type
-				throw new RuntimeException("Unsupported reaction type: " + type);
+				throw new FileFormatException("Unsupported reaction type: " + type);
 			String rateString = childElement.getElementsByTagName("Rate").item(0).getTextContent();
 			double rate = parameterMap.get(rateString);
 			net.setRateParameter(reaction, rate);

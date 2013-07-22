@@ -223,7 +223,7 @@ public class PDMPSimulatorCommonsMath extends AbstractSimulator<PDMPModel> {
 	        	reactionCounterArray[reaction]++;
 	        	for (TrajectoryRecorder handler : trajectoryRecorders)
 	        		handler.record(t, x);
-	        	// TODO
+	        	// TODO: Make this value configurable
 	        	if (j > 100)
 	        		model.checkAndHandleOptionalEvent(t, x);
 	        	j++;

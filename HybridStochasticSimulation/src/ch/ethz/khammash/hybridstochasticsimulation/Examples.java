@@ -23,6 +23,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.examples.VilarOscillator;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.TrajectoryDistributionPlotChartPanel;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.TrajectoryPlotChartPanel;
 import ch.ethz.khammash.hybridstochasticsimulation.io.StochKitNetworkReader;
+import ch.ethz.khammash.hybridstochasticsimulation.io.StochKitNetworkReader.FileFormatException;
 import ch.ethz.khammash.hybridstochasticsimulation.math.MathUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.SimulationUtilities;
@@ -451,9 +452,9 @@ public class Examples {
 		tdd.setDescription("Stochastic");
 		plotDataList.add(tdd);
 
-		tdd = SimulationUtilities.simulateAdaptiveMSPDMPDistributionCommonsMath(PDMPRuns, nss, tSeries, printMessages);
-		tdd.setDescription("AdaptiveMSPDMP");
-		plotDataList.add(tdd);
+//		tdd = SimulationUtilities.simulateAdaptiveMSPDMPDistributionCommonsMath(PDMPRuns, nss, tSeries, printMessages);
+//		tdd.setDescription("AdaptiveMSPDMP");
+//		plotDataList.add(tdd);
 
 //		tdd = SimulationUtilities.simulateMSPDMPDistribution(PDMPRuns, nss, tSeries, printMessages);
 //		tdd.setDescription("MSPDMP");
@@ -529,13 +530,13 @@ public class Examples {
 //		tdd.setDescription("AdaptiveMSPDMP");
 //		plotDataList.add(tdd);
 
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages);
-		tdList.get(0).setDescription("AdaptiveMSPDMP");
-		plotDataList.add(tdList.get(0));
-//		tdList.get(1).setDescription("AdaptiveMSPDMP alphas");
-//		plotDataList.add(tdList.get(1));
-//		tdList.get(2).setDescription("AdaptiveMSPDMP rhos");
-//		plotDataList.add(tdList.get(2));
+//		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages);
+//		tdList.get(0).setDescription("AdaptiveMSPDMP");
+//		plotDataList.add(tdList.get(0));
+////		tdList.get(1).setDescription("AdaptiveMSPDMP alphas");
+////		plotDataList.add(tdList.get(1));
+////		tdList.get(2).setDescription("AdaptiveMSPDMP rhos");
+////		plotDataList.add(tdList.get(2));
 
 		return plotDataList;
 	}
@@ -734,16 +735,16 @@ public class Examples {
 //		dplot.setDescription("AdaptiveMSPDMP alphas");
 //		plots.add(dplot);
 
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages);
-		tds = tdList.get(0).getSubsetData(speciesStates, speciesPlotScales);
-		tds.setDescription("AdaptiveMSPDMP");
-		plotDataList.add(tds);
-//		tds = tdList.get(1).getSubsetData(alphaStates);
-//		tds.setDescription("AdaptiveMSPDMP alphas");
+//		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages);
+//		tds = tdList.get(0).getSubsetData(speciesStates, speciesPlotScales);
+//		tds.setDescription("AdaptiveMSPDMP");
 //		plotDataList.add(tds);
-//		tds = tdList.get(1).getSubsetData(alphaStates);
-//		tds.setDescription("AdaptiveMSPDMP rhos");
-//		plotDataList.add(tds);
+////		tds = tdList.get(1).getSubsetData(alphaStates);
+////		tds.setDescription("AdaptiveMSPDMP alphas");
+////		plotDataList.add(tds);
+////		tds = tdList.get(1).getSubsetData(alphaStates);
+////		tds.setDescription("AdaptiveMSPDMP rhos");
+////		plotDataList.add(tds);
 
 		return plotDataList;
 	}
@@ -847,16 +848,16 @@ public class Examples {
 //		dplot.setDescription("AdaptiveMSPDMP alphas");
 //		plots.add(dplot);
 
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages);
-		tds = tdList.get(0).getSubsetData(speciesStates, nss.plotScales);
-		tds.setDescription("AdaptiveMSPDMP");
-		plotDataList.add(tds);
-		tds = tdList.get(1).getSubsetData(alphaStates);
-		tds.setDescription("AdaptiveMSPDMP alphas");
-		plotDataList.add(tds);
-		tds = tdList.get(2).getSubsetData(alphaStates);
-		tds.setDescription("AdaptiveMSPDMP rhos");
-		plotDataList.add(tds);
+//		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages);
+//		tds = tdList.get(0).getSubsetData(speciesStates, nss.plotScales);
+//		tds.setDescription("AdaptiveMSPDMP");
+//		plotDataList.add(tds);
+//		tds = tdList.get(1).getSubsetData(alphaStates);
+//		tds.setDescription("AdaptiveMSPDMP alphas");
+//		plotDataList.add(tds);
+//		tds = tdList.get(2).getSubsetData(alphaStates);
+//		tds.setDescription("AdaptiveMSPDMP rhos");
+//		plotDataList.add(tds);
 
 		return plotDataList;
 	}
@@ -909,15 +910,15 @@ public class Examples {
 		td.setDescription("Stochastic");
 		plotDataList.add(td);
 
-		tdd = SimulationUtilities.simulatePDMPDistributionCommonsMath(PDMPRuns, nss, tSeries, printMessages);
-		tdd.setDescription("PDMP");
-		plotDataList.add(tdd);
+//		tdd = SimulationUtilities.simulatePDMPDistributionCommonsMath(PDMPRuns, nss, tSeries, printMessages);
+//		tdd.setDescription("PDMP");
+//		plotDataList.add(tdd);
 
-		int[] continuousSpecies = { 0, 1, 2 };
-		nss.deterministicReactions = continuousSpecies;
-		td = SimulationUtilities.simulatePDMPCommonsMath(nss, tSeries, printMessages);
-		td.setDescription("PDMP");
-		plotDataList.add(td);
+//		int[] continuousSpecies = { 0, 1, 2 };
+//		nss.deterministicReactions = continuousSpecies;
+//		td = SimulationUtilities.simulatePDMPCommonsMath(nss, tSeries, printMessages);
+//		td.setDescription("PDMP");
+//		plotDataList.add(td);
 
 		int[] speciesStates = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 //		double[] speciesPlotScales = { (rateParameters[2] / rateParameters[3]) / 5, 1 };
@@ -1672,7 +1673,7 @@ public class Examples {
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> heatShockMassAction() throws ParserConfigurationException, SAXException, IOException {
+	public static List<FinitePlotData> heatShockMassAction() throws ParserConfigurationException, SAXException, IOException, FileFormatException {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
 		File inputFile = new File("models/heat_shock_mass_action.xml");
@@ -1734,7 +1735,7 @@ public class Examples {
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> enzymeKinetics1() throws ParserConfigurationException, SAXException, IOException {
+	public static List<FinitePlotData> enzymeKinetics1() throws ParserConfigurationException, SAXException, IOException, FileFormatException {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
 		File inputFile = new File("models/enzyme_kinetics_1.xml");

@@ -2,9 +2,6 @@ package ch.ethz.khammash.hybridstochasticsimulation.controllers;
 
 import java.util.concurrent.ExecutorService;
 
-import ch.ethz.khammash.hybridstochasticsimulation.factories.CVodeSolverFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.PDMPSimulatorFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.SolverFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 
 
@@ -25,16 +22,17 @@ public class PDMPSimulationController extends AbstractSimulationController<PDMPM
 		construct();
     }
 
+	// TODO
 	final private void construct() {
-		usePDMPSimulatorFactory();
+//		usePDMPSimulatorFactory();
 	}
 
-	final public void usePDMPSimulatorFactory() {
-		usePDMPSimulatorFactory(new CVodeSolverFactory(1e-3, 1e-3));
-	}
-
-	final public void usePDMPSimulatorFactory(SolverFactory solverFactory) {
-		setSimulatorFactory(new PDMPSimulatorFactory(solverFactory));
-	}
+//	final public void usePDMPSimulatorFactory() {
+//		usePDMPSimulatorFactory(new CVodeSolverProvider(1e-3, 1e-3));
+//	}
+//
+//	final public void usePDMPSimulatorFactory(ObjProvider<Solver> solverFactory) {
+//		setSimulatorProvider(new PDMPSimulatorProvider(solverFactory));
+//	}
 
 }

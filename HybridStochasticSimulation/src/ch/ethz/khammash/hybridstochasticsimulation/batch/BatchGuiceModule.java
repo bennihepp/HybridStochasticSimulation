@@ -1,42 +1,43 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.CombiningAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.DummyAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.PseudoLinearAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.ZeroDeficiencyAveragingUnit;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.AdaptiveMSHRNModelFactoryProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.AdaptiveMSHRNProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.CVodeSolverFactoryProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.CombiningAveragingUnitProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.DeterministicModelFactoryProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.FiniteTrajectoryRecorderFactoryProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.MSHybridReactionNetworkModelFactoryProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.MSHybridReactionNetworkProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.MatlabOutputProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.PDMPSimulationControllerProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.PDMPSimulationJobProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.PDMPSimulatorFactoryProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.PseudoLinearAveragingUnitProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.StochasticModelFactoryProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.StochasticSimulationControllerProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.StochasticSimulationJobProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.UnaryBinaryReactionNetworkProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.providers.ZeroDeficiencyAveragingUnitProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.AdaptiveMSHRNModelProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.AdaptiveMSHRNProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.CVodeSolverProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.CombiningAveragingUnitProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.DeterministicModelProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.FiniteTrajectoryRecorderProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.MSHybridReactionNetworkModelProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.MSHybridReactionNetworkProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.MatlabOutputProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.PDMPSimulationControllerProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.PDMPSimulationJobProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.PseudoLinearAveragingUnitProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.StochasticModelProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.StochasticSimulationControllerProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.StochasticSimulationJobProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.UnaryBinaryReactionNetworkProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders.ZeroDeficiencyAveragingUnitProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.DefaultRandomDataGeneratorFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.FiniteTrajectoryRecorderFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.ModelFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.RandomDataGeneratorFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.SimulatorFactory;
-import ch.ethz.khammash.hybridstochasticsimulation.factories.SolverFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.RandomDataGeneratorProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.PDMPSimulatorProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.StochasticSimulatorProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
+import ch.ethz.khammash.ode.Solver;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
@@ -55,7 +56,7 @@ public class BatchGuiceModule extends AbstractModule {
 		bind(HierarchicalConfiguration.class).toInstance(config);
 		// RandomDataGeneratorFactory
 		// TODO: make random data seed configurable
-		RandomDataGeneratorFactory rdgFactory = new DefaultRandomDataGeneratorFactory();
+		RandomDataGeneratorProvider rdgProvider = new RandomDataGeneratorProvider();
 //		RandomDataGeneratorFactory rdgFactory = new RandomDataGeneratorFactory() {
 //			
 //			@Override
@@ -65,7 +66,7 @@ public class BatchGuiceModule extends AbstractModule {
 //				return rdg;
 //			}
 //		};
-		bind(RandomDataGeneratorFactory.class).toInstance(rdgFactory);
+		bind(new TypeLiteral<ObjProvider<RandomDataGenerator>>() {}).toInstance(rdgProvider);
 		// Averaging
 		String averagingType = config.getString("SimulationParameters.averagingType", "Dummy");
 		switch (averagingType) {
@@ -89,20 +90,20 @@ public class BatchGuiceModule extends AbstractModule {
 		String modelType = config.getString("ModelParameters.modelType", "Stochastic");
 		switch (modelType) {
 		case "Stochastic":
-			bind(ModelFactory.class).to(new TypeLiteral<ModelFactory<StochasticReactionNetworkModel>>() {});
-			bind(new TypeLiteral<ModelFactory<StochasticReactionNetworkModel>>() {}).toProvider(StochasticModelFactoryProvider.class);
+			bind(ObjProvider.class).to(new TypeLiteral<ObjProvider<StochasticReactionNetworkModel>>() {});
+			bind(new TypeLiteral<ObjProvider<StochasticReactionNetworkModel>>() {}).to(StochasticModelProvider.class);
 			break;
 		case "AdaptiveMSHRN":
-			bind(ModelFactory.class).to(new TypeLiteral<ModelFactory<PDMPModel>>() {});
-			bind(new TypeLiteral<ModelFactory<PDMPModel>>() {}).toProvider(AdaptiveMSHRNModelFactoryProvider.class);
+			bind(ObjProvider.class).to(new TypeLiteral<ObjProvider<PDMPModel>>() {});
+			bind(new TypeLiteral<ObjProvider<PDMPModel>>() {}).to(AdaptiveMSHRNModelProvider.class);
 			break;
 		case "MSHybridReactionNetwork":
-			bind(ModelFactory.class).to(new TypeLiteral<ModelFactory<PDMPModel>>() {});
-			bind(new TypeLiteral<ModelFactory<PDMPModel>>() {}).toProvider(MSHybridReactionNetworkModelFactoryProvider.class);
+			bind(ObjProvider.class).to(new TypeLiteral<ObjProvider<PDMPModel>>() {});
+			bind(new TypeLiteral<ObjProvider<PDMPModel>>() {}).to(MSHybridReactionNetworkModelProvider.class);
 			break;
 		case "Deterministic":
-			bind(ModelFactory.class).to(new TypeLiteral<ModelFactory<PDMPModel>>() {});
-			bind(new TypeLiteral<ModelFactory<PDMPModel>>() {}).toProvider(DeterministicModelFactoryProvider.class);
+			bind(ObjProvider.class).to(new TypeLiteral<ObjProvider<PDMPModel>>() {});
+			bind(new TypeLiteral<ObjProvider<PDMPModel>>() {}).to(DeterministicModelProvider.class);
 			break;
 		}
 		// Output
@@ -118,24 +119,25 @@ public class BatchGuiceModule extends AbstractModule {
 		bind(CombiningAveragingUnit.class).toProvider(CombiningAveragingUnitProvider.class);
 		switch (modelType) {
 		case "Stochastic":
-			bind(SimulationController.class).to(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {});
 			bind(SimulationJob.class).toProvider(StochasticSimulationJobProvider.class);
+			bind(SimulationController.class).to(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {});
+			bind(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {}).toProvider(StochasticSimulationControllerProvider.class);
+			bind(new TypeLiteral<ObjProvider<Simulator<StochasticReactionNetworkModel>>>() {}).to(StochasticSimulatorProvider.class);
 			break;
 		case "AdaptiveMSHRN":
 		case "MSHybridReactionNetwork":
 		case "Deterministic":
-			bind(SimulationController.class).to(new TypeLiteral<SimulationController<PDMPModel>>() {});
 			bind(SimulationJob.class).toProvider(PDMPSimulationJobProvider.class);
-			bind(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {}).toProvider(StochasticSimulationControllerProvider.class);
+			bind(SimulationController.class).to(new TypeLiteral<SimulationController<PDMPModel>>() {});
 			bind(new TypeLiteral<SimulationController<PDMPModel>>() {}).toProvider(PDMPSimulationControllerProvider.class);
-			bind(new TypeLiteral<SimulatorFactory<PDMPModel>>() {}).toProvider(PDMPSimulatorFactoryProvider.class);
+			bind(new TypeLiteral<ObjProvider<Simulator<PDMPModel>>>() {}).to(PDMPSimulatorProvider.class);
 			break;
 		}
 		String solverType = config.getString("SimulationParameters.solver.type", null);
 		if (solverType != null) {
 			switch (solverType) {
 			case "CVodeSolver":
-				bind(SolverFactory.class).toProvider(CVodeSolverFactoryProvider.class);
+				bind(new TypeLiteral<ObjProvider<Solver>>() {}).to(CVodeSolverProvider.class);
 				break;
 			}
 		}
@@ -144,7 +146,7 @@ public class BatchGuiceModule extends AbstractModule {
 		bind(MSHybridReactionNetwork.class).toProvider(MSHybridReactionNetworkProvider.class);
 		bind(AdaptiveMSHRN.class).toProvider(AdaptiveMSHRNProvider.class);
 		// FiniteTrajectoryRecorderFactory
-		bind(FiniteTrajectoryRecorderFactory.class).toProvider(FiniteTrajectoryRecorderFactoryProvider.class);
+		bind(new TypeLiteral<ObjProvider<FiniteTrajectoryRecorder>>() {}).to(FiniteTrajectoryRecorderProvider.class);
 	}
 
 }

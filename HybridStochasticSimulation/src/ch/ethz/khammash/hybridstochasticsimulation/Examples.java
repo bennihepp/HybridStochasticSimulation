@@ -15,6 +15,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.examples.BacteriophageT7;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfigurationFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.FastDimerization;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.FastIsomerization;
+import ch.ethz.khammash.hybridstochasticsimulation.examples.HaploinsufficiencyNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.HeatShockResponseNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.Repressilator;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.SimulationConfiguration;
@@ -544,7 +545,7 @@ public class Examples {
 	public static List<FinitePlotData> haploinsufficiencyNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Haploinsufficiency");
+		SimulationConfiguration nss = new HaploinsufficiencyNetwork();
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -586,10 +587,10 @@ public class Examples {
 //		tdd.setDescription("Stochastic distribution");
 //		plotDataList.add(tdd);
 
-		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
-		tds = td.getSubsetData(states);
-		tds.setDescription("Stochastic");
-		plotDataList.add(tds);
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+//		tds = td.getSubsetData(states);
+//		tds.setDescription("Stochastic");
+//		plotDataList.add(tds);
 
 //		tdd = simulatePDMPDistribution(PDMPRuns, nss, tVector);
 //		tdd = tdd.getSubsetData(states);
@@ -620,31 +621,33 @@ public class Examples {
 //		tdd.setDescription("AdaptiveMSPDMP distribution");
 //		plotDataList.add(tdd);
 
+		int[] importantSpecies = { 0, 1, 2 };
+		nss.importantSpecies = importantSpecies;
+
 		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, false);
 		tds = tdList.get(0).getSubsetData(states);
 		tds.setDescription("AdaptiveMSPDMP");
 		plotDataList.add(tds);
 		if (tdList.size() > 1) {
 			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alphas");
+			td.setDescription("AdaptiveMSPDMP alpha");
 			plotDataList.add(td);
 			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rhos");
+			td.setDescription("AdaptiveMSPDMP rho");
 			plotDataList.add(td);
 			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP betas");
+			td.setDescription("AdaptiveMSPDMP beta");
 			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP STs");
+			td = tdList.get(4);		td.setDescription("AdaptiveMSPDMP z (scaled state)");
 			plotDataList.add(td);
 			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP RTTs");
+			td.setDescription("AdaptiveMSPDMP SpeciesType");
 			plotDataList.add(td);
 			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP z");
+			td.setDescription("AdaptiveMSPDMP ReactionType");
 			plotDataList.add(td);
 			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP integrator");
+			td.setDescription("AdaptiveMSPDMP Simulation info");
 			plotDataList.add(td);
 		}
 

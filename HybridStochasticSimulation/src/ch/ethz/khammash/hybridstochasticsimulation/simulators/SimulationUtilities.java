@@ -31,8 +31,8 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryStochasticM
 import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
-import ch.ethz.khammash.hybridstochasticsimulation.providers.RandomDataGeneratorProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.RandomDataGeneratorProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ArrayFiniteContinuousTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ArrayFiniteTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ArrayFiniteTrajectoryRecorder;
@@ -535,7 +535,7 @@ public class SimulationUtilities {
 //		HybridReactionNetworkModel model = new HybridReactionNetworkModel(hrn);
 		double[] x0 = nss.x0;
 		StochasticSimulationController ctrl = new StochasticSimulationController();
-		ctrl.setRandomDataGeneratorProvider(new RandomDataGeneratorProvider(nss.rng));
+		ctrl.setDefaultSimulatorProvider(new RandomDataGeneratorProvider(nss.rng));
 		if (printMessages)
 			System.out.println("Stochastic: Evaluating trajectory");
 
@@ -947,7 +947,8 @@ public class SimulationUtilities {
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
 		StochasticSimulationController ctrl = new StochasticSimulationController();
-		ctrl.setRandomDataGeneratorProvider(new RandomDataGeneratorProvider(nss.rng));
+		ctrl.setDefaultSimulatorProvider(new RandomDataGeneratorProvider(nss.rng));
+//		ctrl.setRandomDataGeneratorProvider(new RandomDataGeneratorProvider(nss.rng));
 		if (printMessages)
 			System.out.println("Stochastic: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 

@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch;
 
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
+
 
 public interface SimulationJob {
 
@@ -25,7 +27,7 @@ public interface SimulationJob {
 //
 //	double[] getx0();
 //
-//	int getRuns();
+	int getRuns();
 //
 //	double[] getPlotScales();
 //
@@ -34,5 +36,7 @@ public interface SimulationJob {
 //	Type getSimulationType();
 
 	void runJob();
+
+	FiniteTrajectory runSingleSimulation();
 
 }

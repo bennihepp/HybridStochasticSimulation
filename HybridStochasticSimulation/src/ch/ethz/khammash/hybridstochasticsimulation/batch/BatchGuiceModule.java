@@ -68,8 +68,9 @@ public class BatchGuiceModule extends AbstractModule {
 //		};
 		bind(new TypeLiteral<ObjProvider<RandomDataGenerator>>() {}).toInstance(rdgProvider);
 		// Averaging
-		String averagingType = config.getString("SimulationParameters.averagingType", "Dummy");
+		String averagingType = config.getString("SimulationParameters.averagingType", "None");
 		switch (averagingType) {
+		case "None":
 		case "Dummy":
 			bind(AveragingUnit.class).to(DummyAveragingUnit.class);
 			break;

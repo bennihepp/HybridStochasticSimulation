@@ -1,5 +1,5 @@
 inputfilepath = '../jobs/outputs/';
-inputfilename = 'HeatShockResponse_stoch_10000';
+inputfilename = 'FastIsomerization_adaptive_10000';
 outputfilepath = '../jobs/plots/';
 outputfilename = inputfilename;
 useTransparency = true;

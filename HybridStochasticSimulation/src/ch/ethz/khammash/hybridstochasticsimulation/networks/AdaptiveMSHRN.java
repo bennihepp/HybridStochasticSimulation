@@ -239,7 +239,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			}
 			else
 				if (getPrintMessages())
-					System.out.println(" Keeping reaction types (" + deterministicPropensityMax + "/" + stochasticPropensityMax + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + theta);
+					System.out.println(" Keeping reaction types (" + deterministicPropensityMax + "/" + stochasticPropensityMax + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + theta + ")");
 		}
 
 	}

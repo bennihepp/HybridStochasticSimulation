@@ -20,7 +20,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecord
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFinitePlotData;
 
-public class DefaultSimulationJob<T extends ReactionNetworkModel> implements SimulationJob {
+public class DefaultSimulationJob<T extends ReactionNetworkModel> implements SimulationJobDescription<T> {
 
 	private String name = "<unnamed>";
 	private List<SimulationOutput> outputs;
@@ -67,6 +67,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		Arrays.fill(plotScales, 1.0);
 	}
 
+	@Override
 	public String getName() {
 		return name;
 	}
@@ -75,6 +76,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		this.name = name;
 	}
 
+	@Override
 	public List<SimulationOutput> getOutputs() {
 		return outputs;
 	}
@@ -83,14 +85,17 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		outputs.add(output);
 	}
 
+	@Override
 	public SimulationController<T> getSimulationController() {
 		return simulationController;
 	}
 
+	@Override
 	public T createModel() {
 		return modelProvider.get();
 	}
 
+	@Override
 	public ObjProvider<T> getModelProvider() {
 		return modelProvider;
 	}
@@ -99,26 +104,32 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		return trajectoryRecorderProvider.get();
 	}
 
+	@Override
 	public ObjProvider<FiniteTrajectoryRecorder> getTrajectoryProvider() {
 		return trajectoryRecorderProvider;
 	}
 
+	@Override
 	public double gett0() {
 		return t0;
 	}
 
+	@Override
 	public double gett1() {
 		return t1;
 	}
 
+	@Override
 	public double[] getx0() {
 		return x0;
 	}
 
+	@Override
 	public int getRuns() {
 		return runs;
 	}
 
+	@Override
 	public double[] getPlotScales() {
 		return plotScales;
 	}
@@ -127,10 +138,12 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		this.plotScales = plotScales;
 	}
 
+	@Override
 	public List<String> getLabels() {
 		return modelProvider.get().getNetwork().getSpeciesLabels();
 	}
 
+	@Override
 	public Type getSimulationType() {
 		return simulationType;
 	}
@@ -218,6 +231,15 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 				System.err.println();
 			}
 
+	}
+
+	@Override
+	public FiniteTrajectory runSingleSimulation() {
+		T model = getModelProvider().get();
+		FiniteTrajectoryRecorder tr = getTrajectoryProvider().get();
+		getSimulationController().simulateTrajectory(
+				model, tr, gett0(), getx0(), gett1());
+		return tr;
 	}
 
 }

@@ -5,6 +5,10 @@ import org.apache.commons.math3.ode.sampling.StepInterpolator;
 
 public class ArrayFiniteContinuousTrajectoryRecorder extends ArrayFiniteTrajectoryRecorder implements ContinuousTrajectoryRecorder {
 
+	private static final long serialVersionUID = 6341601501856273860L;
+
+	private int index;
+
 	public ArrayFiniteContinuousTrajectoryRecorder(int numOfTimePoints) {
 		super(numOfTimePoints);
 	}

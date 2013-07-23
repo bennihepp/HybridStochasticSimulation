@@ -8,6 +8,8 @@ import org.apache.commons.math3.stat.descriptive.StatisticalSummary;
 
 public class VectorFiniteStatisticalSummaryPlotData extends VectorFiniteDistributionPlotData implements FiniteStatisticalSummaryTrajectory {
 
+	private static final long serialVersionUID = 988659663487743261L;
+
 	private StatisticalSummary[][] xSeriesStatistics;
 
 	public static FiniteStatisticalSummaryTrajectory createFromStatisticalSummary(

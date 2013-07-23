@@ -4,7 +4,10 @@ package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
 public class ArrayFiniteTrajectoryRecorder extends ArrayFiniteTrajectory implements FiniteTrajectoryRecorder, TrajectoryRecorder {
 
+	private static final long serialVersionUID = -4378311852754715500L;
+
 	private int numOfTimePoints;
+	private int index;
 
 	public ArrayFiniteTrajectoryRecorder(int numOfTimePoints) {
 		super(new double[numOfTimePoints]);

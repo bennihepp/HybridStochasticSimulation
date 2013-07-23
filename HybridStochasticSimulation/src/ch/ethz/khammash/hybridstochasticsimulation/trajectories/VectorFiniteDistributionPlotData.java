@@ -17,6 +17,8 @@ import org.apache.commons.math3.linear.RealVector;
 
 public class VectorFiniteDistributionPlotData extends VectorFinitePlotData implements FiniteDistributionPlotData {
 
+	private static final long serialVersionUID = -5540621224928186053L;
+
 	private List<RealVector> xStdDevVectors;
 
 	public VectorFiniteDistributionPlotData(double[] tSeries) {

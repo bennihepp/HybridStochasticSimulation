@@ -19,6 +19,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.examples.HaploinsufficiencyNe
 import ch.ethz.khammash.hybridstochasticsimulation.examples.HeatShockResponseNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.Repressilator;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.SimulationConfiguration;
+import ch.ethz.khammash.hybridstochasticsimulation.examples.StochasticFocusingNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ToggleSwitch;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.VilarOscillator;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.TrajectoryDistributionPlotChartPanel;
@@ -269,12 +270,12 @@ public class Examples {
 		List<FinitePlotData> ks5plotDataList = new LinkedList<FinitePlotData>();
 		List<FinitePlotData> ks10plotDataList = new LinkedList<FinitePlotData>();
 
-		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Stochastic Focusing");
+		SimulationConfiguration nss = new StochasticFocusingNetwork();
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 10;
 		int numberOfTimePoints = 1001;
-		boolean printMessages = false;
+		boolean printMessages = true;
 
 		// Set 1
 		// Adaptive method faster than stochastic with these parameters (~300ms vs ~4258ms or ~88ms vs 3800ms)
@@ -311,78 +312,78 @@ public class Examples {
 
 		ks = 10.0 * kd;
 		((DefaultUnaryBinaryReactionNetwork)nss.net).setRateParameter(4, ks);
-		td = SimulationUtilities.simulateFiniteStochastic(nss, tSeries, printMessages);
+		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
 		td.setDescription("Stochastic ks=10kd");
 		ks10plotDataList.add(td);
 
-//		ks = 5.0 * kd;
-//		nss.net.setRateParameter(4, ks);
-//		td = SimulationUtilities.simulateFiniteStochastic(nss, tSeries, printMessages);
-//		td.setDescription("Stochastic ks=5kd");
-//		ks5plotDataList.add(td);
+		ks = 5.0 * kd;
+		((DefaultUnaryBinaryReactionNetwork)nss.net).setRateParameter(4, ks);
+		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+		td.setDescription("Stochastic ks=5kd");
+		ks5plotDataList.add(td);
 
 		List<VectorFinitePlotData> tdList;
 		VectorFinitePlotData tds;
 
 		ks = 10.0 * kd;
 		((DefaultUnaryBinaryReactionNetwork)nss.net).setRateParameter(4, ks);
-		tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages);
+		tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, false, false);
 		tds = tdList.get(0);
 		tds.setDescription("AdaptiveMSPDMP ks=10kd");
 		ks10plotDataList.add(tds);
 		if (tdList.size() > 1) {
 			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alphas");
+			td.setDescription("AdaptiveMSPDMP alpha");
 			plotDataList.add(td);
 			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rhos");
+			td.setDescription("AdaptiveMSPDMP rho");
 			plotDataList.add(td);
 			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP betas");
+			td.setDescription("AdaptiveMSPDMP beta");
 			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP STs");
+			td = tdList.get(4);	
+			td.setDescription("AdaptiveMSPDMP z (scaled state)");
 			plotDataList.add(td);
 			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP RTTs");
+			td.setDescription("AdaptiveMSPDMP SpeciesType");
 			plotDataList.add(td);
 			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP z");
+			td.setDescription("AdaptiveMSPDMP ReactionType");
 			plotDataList.add(td);
 			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP integrator");
+			td.setDescription("AdaptiveMSPDMP Simulation info");
 			plotDataList.add(td);
 		}
 
-//		ks = 5.0 * kd;
-//		nss.net.setRateParameter(4, ks);
-//		tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages);
-//		tds = tdList.get(0);
-//		tds.setDescription("AdaptiveMSPDMP ks=5kd");
-//		ks5plotDataList.add(tds);
-//		if (tdList.size() > 1) {
-//			td = tdList.get(1);
-//			td.setDescription("AdaptiveMSPDMP alphas");
-//			plotDataList.add(td);
-//			td = tdList.get(2);
-//			td.setDescription("AdaptiveMSPDMP rhos");
-//			plotDataList.add(td);
-//			td = tdList.get(3);
-//			td.setDescription("AdaptiveMSPDMP betas");
-//			plotDataList.add(td);
-//			td = tdList.get(4);
-//			td.setDescription("AdaptiveMSPDMP STs");
-//			plotDataList.add(td);
-//			td = tdList.get(5);
-//			td.setDescription("AdaptiveMSPDMP RTTs");
-//			plotDataList.add(td);
-//			td = tdList.get(6);
-//			td.setDescription("AdaptiveMSPDMP z");
-//			plotDataList.add(td);
-//			td = tdList.get(7);
-//			td.setDescription("AdaptiveMSPDMP integrator");
-//			plotDataList.add(td);
-//		}
+		ks = 5.0 * kd;
+		((DefaultUnaryBinaryReactionNetwork)nss.net).setRateParameter(4, ks);
+		tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, false, false);
+		tds = tdList.get(0);
+		tds.setDescription("AdaptiveMSPDMP ks=5kd");
+		ks5plotDataList.add(tds);
+		if (tdList.size() > 1) {
+			td = tdList.get(1);
+			td.setDescription("AdaptiveMSPDMP alpha");
+			plotDataList.add(td);
+			td = tdList.get(2);
+			td.setDescription("AdaptiveMSPDMP rho");
+			plotDataList.add(td);
+			td = tdList.get(3);
+			td.setDescription("AdaptiveMSPDMP beta");
+			plotDataList.add(td);
+			td = tdList.get(4);
+			td.setDescription("AdaptiveMSPDMP z (scaled state)");
+			plotDataList.add(td);
+			td = tdList.get(5);
+			td.setDescription("AdaptiveMSPDMP SpeciesType");
+			plotDataList.add(td);
+			td = tdList.get(6);
+			td.setDescription("AdaptiveMSPDMP ReactionType");
+			plotDataList.add(td);
+			td = tdList.get(7);
+			td.setDescription("AdaptiveMSPDMP Simulation info");
+			plotDataList.add(td);
+		}
 
 		VectorFiniteDistributionPlotData tdd;
 
@@ -638,7 +639,8 @@ public class Examples {
 			td = tdList.get(3);
 			td.setDescription("AdaptiveMSPDMP beta");
 			plotDataList.add(td);
-			td = tdList.get(4);		td.setDescription("AdaptiveMSPDMP z (scaled state)");
+			td = tdList.get(4);	
+			td.setDescription("AdaptiveMSPDMP z (scaled state)");
 			plotDataList.add(td);
 			td = tdList.get(5);
 			td.setDescription("AdaptiveMSPDMP SpeciesType");

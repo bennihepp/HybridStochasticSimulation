@@ -1,12 +1,13 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.math3.linear.RealVector;
 
 
-public interface FiniteTrajectory extends Trajectory {
+public interface FiniteTrajectory extends Trajectory, Serializable {
 
 	int getNumberOfStates();
 

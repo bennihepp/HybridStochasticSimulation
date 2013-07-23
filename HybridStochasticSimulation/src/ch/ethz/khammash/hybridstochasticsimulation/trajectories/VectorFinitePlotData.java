@@ -16,6 +16,8 @@ import org.apache.commons.math3.linear.RealVector;
 
 public class VectorFinitePlotData extends VectorFiniteTrajectory implements FinitePlotData {
 
+	private static final long serialVersionUID = -7723258694878731194L;
+
 	private final String DEFAULT_TITLE = "Trajectory";
 
 	private String description;

@@ -70,6 +70,7 @@ public class MainMPJ {
 					pushSimulationTask(result.getSource());
 				FiniteTrajectory tr = result.getFiniteTrajectory();
 				System.out.println("Received trajectory: " + tr.getNumberOfTimePoints() + "x" + tr.getNumberOfStates());
+				System.out.println("jobsDone: " + jobsDone);
 			}
 			for (int target=1; target < mpjSize; target++)
 				pushStopSignal(target);
@@ -148,34 +149,6 @@ public class MainMPJ {
 			System.err.println("Failed to load configuration " + filename);
 			e.printStackTrace();
 			System.exit(1);
-		}
-
-		if (rank == 0) {
-			System.out.println("Hi from <" + rank + ">, got " + (size - 1) + " child(s)");
-			final String[] buf = new String[1];
-			for(int i=1; i < size; ++i) {
-				// Blocks until message of child (i) received
-				MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, i, MPJ_TAG);
-				System.out.println("Received: " + buf[0]);
-			}
-		} else {
-			final StringBuffer sb = new StringBuffer();
-			sb.append("Child ").append(rank);
-			sb.append("  current time:").append(System.currentTimeMillis());
-			sb.append(" host:").append(java.net.InetAddress.getLocalHost().getHostName());
-			final int ms =(int)(1000*Math.random());
-			System.out.println("  Hi from <" + rank + ">, sleeping for " + ms +" milliseconds  ...");
-			// Sleep a bit
-			try {
-				Thread.sleep(ms);
-			} catch (InterruptedException ex) {
-				throw new InternalError(ex.getMessage());
-			}
-			System.out.println("  Sending " + sb);
-			final String[] buf = {sb.toString()};
-			// Send message to parent (0)
-			MPI.COMM_WORLD.Ssend(buf, 0, 1, MPI.OBJECT, 0, MPJ_TAG);
-			System.out.println("  Done sending " + sb);
 		}
 
 		MPI.Finalize();

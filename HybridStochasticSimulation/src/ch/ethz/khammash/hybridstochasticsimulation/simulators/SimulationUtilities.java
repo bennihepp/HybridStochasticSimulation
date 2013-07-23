@@ -312,25 +312,30 @@ public class SimulationUtilities {
 	}
 
 	public static List<VectorFinitePlotData> simulateAdaptiveMSPDMP(SimulationConfiguration nss, double[] tSeries, boolean printMessages, final boolean optionalTrajectory) {
+		return simulateAdaptiveMSPDMP(nss, tSeries, printMessages, optionalTrajectory, true);
+	}
+	public static List<VectorFinitePlotData> simulateAdaptiveMSPDMP(SimulationConfiguration nss, double[] tSeries, boolean printMessages, final boolean optionalTrajectory, boolean doAveraging) {
 		ObjProvider<RandomDataGenerator> rdgFactory = new RandomDataGeneratorProvider(nss.rng);
 		AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		hrn.setPrintMessages(printMessages);
-		ReactionNetworkGraph graph = new ReactionNetworkGraph(hrn);
-		HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
-		for (int s : nss.importantSpecies)
-			importantSpeciesVertices.add(graph.getSpeciesVertex(s));
-		PseudoLinearAveragingUnit pseudoLinearAveragingUnit = new PseudoLinearAveragingUnit(
-				nss.theta, hrn, importantSpeciesVertices);
-		pseudoLinearAveragingUnit.stopIfAveragingBecomesInvalid(false);
-		pseudoLinearAveragingUnit.performPseudoLinearAveragingOnlyOnce(false);
-		ZeroDeficiencyAveragingUnit zeroDeficiencyAveragingUnit = new ZeroDeficiencyAveragingUnit(
-				nss.theta, hrn, importantSpeciesVertices, rdgFactory.get(), printMessages);
-		CombiningAveragingUnit averagingUnit = new CombiningAveragingUnit();
-		averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
-		averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
-		hrn.setAveragingUnit(averagingUnit);
-//		hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
-//		hrn.setAveragingUnit(pseudoLinearAveragingUnit);
+		if (doAveraging) {
+			ReactionNetworkGraph graph = new ReactionNetworkGraph(hrn);
+			HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
+			for (int s : nss.importantSpecies)
+				importantSpeciesVertices.add(graph.getSpeciesVertex(s));
+			PseudoLinearAveragingUnit pseudoLinearAveragingUnit = new PseudoLinearAveragingUnit(
+					nss.theta, hrn, importantSpeciesVertices);
+			pseudoLinearAveragingUnit.stopIfAveragingBecomesInvalid(false);
+			pseudoLinearAveragingUnit.performPseudoLinearAveragingOnlyOnce(false);
+			ZeroDeficiencyAveragingUnit zeroDeficiencyAveragingUnit = new ZeroDeficiencyAveragingUnit(
+					nss.theta, hrn, importantSpeciesVertices, rdgFactory.get(), printMessages);
+			CombiningAveragingUnit averagingUnit = new CombiningAveragingUnit();
+			averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
+			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
+			hrn.setAveragingUnit(averagingUnit);
+//			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
+//			hrn.setAveragingUnit(pseudoLinearAveragingUnit);
+		}
 		hrn.setDelta(nss.delta);
 		hrn.setEta(nss.eta);
 		hrn.setXi(nss.xi);

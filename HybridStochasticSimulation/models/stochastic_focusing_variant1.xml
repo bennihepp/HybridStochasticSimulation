@@ -1,0 +1,103 @@
+<Model>
+  <Description>Stochastic Focusing Variant 1</Description>
+  <NumberOfReactions>6</NumberOfReactions>
+  <NumberOfSpecies>3</NumberOfSpecies>
+  <ParametersList>
+    <Parameter>
+      <Id>kI</Id>
+      <Expression>1e6</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>gammaI</Id>
+      <Expression>100</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>kP</Id>
+      <Expression>100</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>gammaP</Id>
+      <Expression>1</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>kS</Id>
+      <Expression>100</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>gammaS</Id>
+      <Expression>10</Expression>
+    </Parameter>
+  </ParametersList>
+  <ReactionsList>
+    <Reaction>
+      <Id>Reaction1</Id>
+      <Type>mass-action</Type>
+      <Rate>kI</Rate>
+      <Products>
+        <SpeciesReference id="I" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction2</Id>
+      <Type>mass-action</Type>
+      <Rate>gammaI</Rate>
+      <Reactants>
+        <SpeciesReference id="I" stoichiometry="1.000000"/>
+        <SpeciesReference id="S" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction3</Id>
+      <Type>mass-action</Type>
+      <Rate>kP</Rate>
+      <Reactants>
+        <SpeciesReference id="I" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="I" stoichiometry="1.000000"/>
+        <SpeciesReference id="P" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction4</Id>
+      <Type>mass-action</Type>
+      <Rate>gammaP</Rate>
+      <Reactants>
+        <SpeciesReference id="P" stoichiometry="1.000000"/>
+      </Reactants>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction5</Id>
+      <Type>mass-action</Type>
+      <Rate>kS</Rate>
+      <Products>
+        <SpeciesReference id="S" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>Reaction6</Id>
+      <Type>mass-action</Type>
+      <Rate>gammaS</Rate>
+      <Reactants>
+        <SpeciesReference id="S" stoichiometry="1.000000"/>
+      </Reactants>
+    </Reaction>
+  </ReactionsList>
+  <SpeciesList>
+    <Species>
+      <Id>I</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>P</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>S</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+  </SpeciesList>
+</Model>

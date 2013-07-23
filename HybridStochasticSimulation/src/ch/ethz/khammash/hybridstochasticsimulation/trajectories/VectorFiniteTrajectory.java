@@ -14,6 +14,8 @@ import org.apache.commons.math3.linear.RealVector;
 
 public class VectorFiniteTrajectory extends AbstractFiniteTrajectory {
 
+	private static final long serialVersionUID = -55370111917885210L;
+
 	private RealVector tVector;
 	private List<RealVector> xVectors;
 

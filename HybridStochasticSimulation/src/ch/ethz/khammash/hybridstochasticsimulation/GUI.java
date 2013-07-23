@@ -33,11 +33,11 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.conversionCycleNetwork();
 //							List<FinitePlotData> plotDataList = Examples.regulatedTranscriptionNetwork();
 							// Example 2
-//							List<FinitePlotData> plotDataList = Examples.stochasticFocusingNetwork();
+							List<FinitePlotData> plotDataList = Examples.stochasticFocusingNetwork();
 //							List<FinitePlotData> plotDataList = Examples.simpleCrystallizationNetwork();
 //							List<FinitePlotData> plotDataList = Examples.birthDeathTunnelNetwork();
 							// Example 1
-							List<FinitePlotData> plotDataList = Examples.haploinsufficiencyNetwork();
+//							List<FinitePlotData> plotDataList = Examples.haploinsufficiencyNetwork();
 //							List<FinitePlotData> plotDataList = Examples.bacteriumOperatorSiteNetwork();
 //							List<FinitePlotData> plotDataList = Examples.lambdaPhageToggleSwitchNetwork();
 //							List<FinitePlotData> plotDataList = Examples.repressedBacteriumOperonNetwork();

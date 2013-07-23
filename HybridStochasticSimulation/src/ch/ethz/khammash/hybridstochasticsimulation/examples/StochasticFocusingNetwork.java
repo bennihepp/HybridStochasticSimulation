@@ -73,6 +73,7 @@ public class StochasticFocusingNetwork extends SimulationConfiguration {
 		net.setStochiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = { "I", "P", "S" };
+		int[] importantSpecies = { 1 };
 
 		this.net = net;
 		this.deterministicReactions = deterministicReactions;
@@ -85,6 +86,7 @@ public class StochasticFocusingNetwork extends SimulationConfiguration {
 		this.x0 = x0;
 		this.plotScales = plotScales;
 		this.speciesNames = speciesNames;
+		this.importantSpecies = importantSpecies;
 		this.rng = new MersenneTwister();
 		this.rdg = new RandomDataGenerator(this.rng);
 	}

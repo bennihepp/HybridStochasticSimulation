@@ -10,7 +10,7 @@ import org.apache.commons.math3.linear.RealVector;
 
 public abstract class AbstractFiniteTrajectory implements FiniteTrajectory {
 
-	protected int index;
+	private static final long serialVersionUID = 4406350049138131680L;
 
 	// TODO: This is a trivial interpolation (the interpolated state is the state that was recorded before that timepoint)
 	@Override

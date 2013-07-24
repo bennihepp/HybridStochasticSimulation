@@ -1,0 +1,38 @@
+Sender: LSF System <lsfadmin@a9071>
+Subject: Job 26632501: <HA_ada_10k> Done
+
+Job <HA_ada_10k> was submitted from host <brutus3> by user <bhepp> in cluster <brutus>.
+Job was executed on host(s) <16*a9071>, in queue <pub.7d>, as user <bhepp> in cluster <brutus>.
+</cluster/home02/misc/bhepp> was used as the home directory.
+</cluster/home02/misc/bhepp/git/HybridStochasticSimulation/jobs> was used as the working directory.
+Started at Mon Jul 22 22:44:24 2013
+Results reported at Mon Jul 22 22:44:48 2013
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+bash runjob.sh configs/Haploinsufficiency_adaptive_10000.xml
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time   :    274.13 sec.
+    Max Memory :         3 MB
+    Max Swap   :        34 MB
+
+    Max Processes  :         1
+    Max Threads    :         1
+
+The output (if any) follows:
+
+Running simulation "Haploinsufficiency adaptive" [DISTRIBUTION] (10000 runs)
+  Runtime: 19311ms
+
+
+PS:
+
+Read file <logs/Haploinsufficiency_adaptive_10000.err> for stderr output of this job.
+

@@ -19,6 +19,43 @@ import ch.ethz.khammash.ode.TimepointProvider;
 
 public class CVodeSolver implements Solver {
 
+	private static volatile boolean cvodeJNILibraryLoaded = false;
+
+    private static void ensureCVodeJNILibraryLoaded() {
+    	if (!cvodeJNILibraryLoaded) {
+    		synchronized (CVodeSolver.class) {
+    			if (!cvodeJNILibraryLoaded) {
+    				loadCVodeJNILibrary();
+    				cvodeJNILibraryLoaded = true;
+    			}
+    		}
+    	}
+	}
+
+    private static void loadCVodeJNILibrary() {
+        // Load the shared library libcvodejni
+        System.loadLibrary("cvodejni");
+    }
+
+	public static class JniException extends Exception {
+		private static final long serialVersionUID = 4397470726754969807L;
+		private int errorCode;
+
+		public JniException(String message) {
+			super(message);
+			errorCode = 0;
+		}
+
+		public JniException(String message, int errorCode) {
+			super(message + " (error code=" + errorCode + ")");
+			this.errorCode = errorCode;
+		}
+
+		public int getErrorCode() {
+			return errorCode;
+		}
+	}
+
 	public static class InvalidMultistepTypeException extends Exception {
 		private static final long serialVersionUID = 691615125296233066L;
 
@@ -54,11 +91,6 @@ public class CVodeSolver implements Solver {
 			super(message, cause);
 		}
 	}
-
-    static {
-        // Load the shared library libcvodejni
-        System.loadLibrary("cvodejni");
-    }
 
     public static int MULTISTEPTYPE_ADAMS = 1;
     public static int MULTISTEPTYPE_BDF = 2;
@@ -96,11 +128,12 @@ public class CVodeSolver implements Solver {
     };
 
     public CVodeSolver(double relTolerance, double absTolerance) {
+    	ensureCVodeJNILibraryLoaded();
     	this.relTolerance = relTolerance;
     	this.absTolerance = absTolerance;
     };
 
-    public void setMultistepType(int multistepType) throws InvalidMultistepTypeException {
+	public void setMultistepType(int multistepType) throws InvalidMultistepTypeException {
     	if (multistepType != MULTISTEPTYPE_ADAMS && multistepType != MULTISTEPTYPE_BDF)
     		throw new InvalidMultistepTypeException("Multistep type must be either MULTISTEPTYPE_ADAMS or MULTISTEPTYPE_BDF");
     	this.multistepType = multistepType;

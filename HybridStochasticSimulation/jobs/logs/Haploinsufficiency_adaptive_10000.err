@@ -1,0 +1,3 @@
+Picked up _JAVA_OPTIONS: -XX:ParallelGCThreads=1
+log4j:WARN No appenders could be found for logger (org.apache.commons.configuration.ConfigurationUtils).
+log4j:WARN Please initialize the log4j system properly.

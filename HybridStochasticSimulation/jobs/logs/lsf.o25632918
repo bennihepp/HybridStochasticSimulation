@@ -1,0 +1,67 @@
+Sender: LSF System <lsfadmin@a6111>
+Subject: Job 25632918: <bphageT7> Done
+
+Job <bphageT7> was submitted from host <brutus3> by user <bhepp> in cluster <brutus>.
+Job was executed on host(s) <4*a6111>, in queue <pub.36h>, as user <bhepp> in cluster <brutus>.
+</cluster/home02/misc/bhepp> was used as the home directory.
+</cluster/home02/misc/bhepp/git/HybridStochasticSimulation/jobs> was used as the working directory.
+Started at Mon Jul  8 15:49:35 2013
+Results reported at Mon Jul  8 22:14:07 2013
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+bash runjob.sh configBacterioPhageDistributions_100000.xml
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time   :  91966.09 sec.
+    Max Memory :      6801 MB
+    Max Swap   :      9499 MB
+
+    Max Processes  :         4
+    Max Threads    :        19
+
+The output (if any) follows:
+
+Picked up _JAVA_OPTIONS: -XX:ParallelGCThreads=1
+Running simulation fiStochDistSim [DISTRIBUTION] (100000)
+  Runtime: 22281390ms
+Running simulation fiAdaptiveDistSim [DISTRIBUTION] (100000)
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=56.89177282671605
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=197.4624594163499
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=48.001263280246405
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=145.07142031918875
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=187.40075924785506
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=76.82668364647301
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=39.89648265661122
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=49.362341115222094
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=104.734737175015
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=63.091961083944966
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=155.79889536883377
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=97.81746980036114
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=53.24741604441638
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=42.75279920012413
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=114.68155377814553
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=33.93242265110881
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=45.576053801687486
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=37.831890758047365
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=69.49698563380545
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=59.985704861753405
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=123.39014808825343
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=102.03886545294958
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=93.70449335264887
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=53.62640191551568
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=116.62990189054784
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=144.25461384455957
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=71.66701076660628
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=87.58003202287075
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=52.257278627039206
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=79.36770423826609
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=60.44379181855496
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=112.92962813824424
+  Runtime: 785146ms

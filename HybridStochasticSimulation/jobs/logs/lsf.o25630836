@@ -1,0 +1,37 @@
+Sender: LSF System <lsfadmin@a6189>
+Subject: Job 25630836: <bash runjob.sh job2.xml> Done
+
+Job <bash runjob.sh job2.xml> was submitted from host <brutus3> by user <bhepp> in cluster <brutus>.
+Job was executed on host(s) <4*a6189>, in queue <pub.36h>, as user <bhepp> in cluster <brutus>.
+</cluster/home02/misc/bhepp> was used as the home directory.
+</cluster/home02/misc/bhepp/git/HybridStochasticSimulation/jobs> was used as the working directory.
+Started at Mon Jul  8 14:54:56 2013
+Results reported at Mon Jul  8 15:39:28 2013
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+bash runjob.sh job2.xml
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time   :  10652.96 sec.
+    Max Memory :      2837 MB
+    Max Swap   :      9499 MB
+
+    Max Processes  :         4
+    Max Threads    :        19
+
+The output (if any) follows:
+
+Picked up _JAVA_OPTIONS: -XX:ParallelGCThreads=1
+Running simulation fiStochDistSim [DISTRIBUTION] (10000)
+  Runtime: 2590824ms
+Running simulation fiAdaptiveDistSim [DISTRIBUTION] (10000)
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=49.950430031762764
+WARNING: Averaging of pseudo linear subnetwork isn't valid anymore at t=114.30238968267192
+  Runtime: 76968ms

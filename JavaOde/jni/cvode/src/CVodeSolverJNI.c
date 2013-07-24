@@ -71,7 +71,7 @@ int g_bridge(double t, N_Vector y, double* gout, void* user_data) {
 }*/
 
 int throw_java_exception(JNIEnv* env, char* msg) {
-    jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/cvode/CVodeSolver.JniException");
+    jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/cvode/CVodeSolver$JniException");
     if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
         fprintf(stderr, "throw_java_exception: Failed to find class ch.ethz.khammash.ode.cvode.CVodeSolver.JniException\n");
         fprintf(stderr, "Original message: %s\n", msg);
@@ -99,7 +99,7 @@ int throw_java_exception(JNIEnv* env, char* msg) {
 }
 
 int throw_java_exception_error_code(JNIEnv* env, char* msg, int error_code) {
-    jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/cvode/CVodeSolver.JniException");
+    jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/cvode/CVodeSolver$JniException");
     if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
         fprintf(stderr, "throw_java_exception_error_code: Failed to find class ch.ethz.khammash.ode.cvode.CVodeSolver.JniException\n");
         fprintf(stderr, "Original message: %s\n", msg);

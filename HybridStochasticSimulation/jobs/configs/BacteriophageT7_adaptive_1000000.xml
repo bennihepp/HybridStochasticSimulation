@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<Simulation>
+	<SimulationParameters>
+		<name>BacteriophageT7 adaptive</name>
+		<simulationType>DISTRIBUTION</simulationType>
+		<t0>0.0</t0>
+		<t1>200.0</t1>
+		<x0> 1, 0, 0, 0 </x0>
+		<runs>1000000</runs>
+		<numOfThreads>4</numOfThreads>
+		<numOfTimePoints>1001</numOfTimePoints>
+		<averagingType>ZeroDeficiencyAveragingUnit</averagingType>
+		<solver>
+			<type>CVodeSolver</type>
+			<relTolerance>1e-3</relTolerance>
+			<absTolerance>1e-3</absTolerance>
+		</solver>
+		<!-- <plotScales> 1.0, 1.0, 1.0 </plotScales> -->
+		<output>
+			<type>Matlab</type>
+			<overwrite>false</overwrite>
+			<filename>outputs/BacteriophageT7_adaptive_1000000.mat</filename>
+		</output>
+	</SimulationParameters>
+	<AveragingParameters>
+		<!-- <importantSpecies>0, 1, 2</importantSpecies> -->
+		<theta>10</theta>
+	</AveragingParameters>
+	<ModelParameters>
+		<!-- <modelType>AdaptiveMSHRN</modelType> -->
+		<modelType>AdaptiveMSHRN</modelType>
+		<example>BacteriophageT7</example>
+		<N>100</N>
+		<gamma>0</gamma>
+		<delta>1.0</delta>
+		<xi>1.0</xi>
+		<eta>0.5</eta>
+		<!-- <printMessages>true</printMessages> -->
+	</ModelParameters>
+</Simulation>

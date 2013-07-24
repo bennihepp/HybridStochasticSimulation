@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<Simulation>
+	<SimulationParameters>
+		<name>Heat Shock Response adaptive</name>
+		<simulationType>DISTRIBUTION</simulationType>
+		<t0>0.0</t0>
+		<t1>100000</t1>
+		<x0> 10, 1, 1, 93, 172, 54, 7, 50, 0 </x0>
+		<runs>100000</runs>
+		<numOfThreads>4</numOfThreads>
+		<numOfTimePoints>1001</numOfTimePoints>
+		<averagingType>ZeroDeficiencyAveragingUnit</averagingType>
+		<solver>
+			<type>CVodeSolver</type>
+			<relTolerance>1e-3</relTolerance>
+			<absTolerance>1e-3</absTolerance>
+		</solver>
+		<!-- <plotScales> 1.0, 1.0, 1.0 </plotScales> -->
+		<output>
+			<type>Matlab</type>
+			<overwrite>false</overwrite>
+			<filename>outputs/HeatShockResponse_adaptive_100000.mat</filename>
+		</output>
+	</SimulationParameters>
+	<AveragingParameters>
+		<importantSpecies>0, 1</importantSpecies>
+		<theta>10</theta>
+	</AveragingParameters>
+	<ModelParameters>
+		<modelType>AdaptiveMSHRN</modelType>
+		<!-- <modelType>Stochastic</modelType> -->
+		<example>Heat Shock Response</example>
+		<N>100</N>
+		<gamma>0</gamma>
+		<delta>1.0</delta>
+		<xi>1.0</xi>
+		<eta>0.5</eta>
+		<!-- <printMessages>true</printMessages> -->
+	</ModelParameters>
+</Simulation>

@@ -301,21 +301,21 @@ JNIEXPORT jdouble JNICALL Java_ch_ethz_khammash_ode_lsodar_LsodarDirectSolver_jn
             return NAN;
         }
         // dlsodar failed so we throw an exception
-        jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/lsodar/Exception");
+        jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/lsodar$JniException");
         if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-            fprintf(stderr, "jni_integrate: Failed to find class ch.ethz.khammash.ode.lsodar.Exception\n");
+            fprintf(stderr, "jni_integrate: Failed to find class ch.ethz.khammash.ode.lsodar.JniException\n");
             return NAN;
         }
         jmethodID constructorMethodID = (*env)->GetMethodID(env, excpClass, "<init>", "(ID)V");
         if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-            fprintf(stderr, "jni_integrate: Failed to get method ID of constructor for ch.ethz.khammash.ode.lsodar.Exception\n");
+            fprintf(stderr, "jni_integrate: Failed to get method ID of constructor for ch.ethz.khammash.ode.lsodar.JniException\n");
             // Reset istate for next integration
             data->istate = 1;
             return 0;
         }
         jobject excp = (*env)->NewObject(env, excpClass, constructorMethodID, data->istate, data->t);
         if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-            fprintf(stderr, "jni_integrate: Failed to create ch.ethz.khammash.ode.lsodar.Exception object\n");
+            fprintf(stderr, "jni_integrate: Failed to create ch.ethz.khammash.ode.lsodar.JniException object\n");
             // Reset istate for next integration
             data->istate = 1;
             return NAN;

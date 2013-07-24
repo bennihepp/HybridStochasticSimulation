@@ -1,0 +1,33 @@
+Sender: LSF System <lsfadmin@a6283>
+Subject: Job 26600761: <FI_stoch> Done
+
+Job <FI_stoch> was submitted from host <brutus3> by user <bhepp> in cluster <brutus>.
+Job was executed on host(s) <5*a6283>, in queue <pub.7d>, as user <bhepp> in cluster <brutus>.
+</cluster/home02/misc/bhepp> was used as the home directory.
+</cluster/home02/misc/bhepp/git/HybridStochasticSimulation/jobs> was used as the working directory.
+Started at Mon Jul 22 11:37:16 2013
+Results reported at Mon Jul 22 15:18:50 2013
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+bash runjob.sh configs/FastIsomerization_stoch_10000.xml
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time   :  53132.00 sec.
+    Max Memory :      2083 MB
+    Max Swap   :      9555 MB
+
+    Max Processes  :         4
+    Max Threads    :        20
+
+The output (if any) follows:
+
+Picked up _JAVA_OPTIONS: -XX:ParallelGCThreads=1
+Running simulation "FastIsomerization stochastic" [DISTRIBUTION] (10000 runs)
+  Runtime: 13288853ms

@@ -3,16 +3,25 @@ package ch.ethz.khammash.hybridstochasticsimulation;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import mpi.MPI;
-import mpi.Status;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.impl.Log4JLogger;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.BatchGuiceModule;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.mpj.TaskManager;
+import ch.ethz.khammash.hybridstochasticsimulation.mpj.TaskWorker;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -20,110 +29,16 @@ import com.google.inject.Injector;
 
 public class MainMPJ {
 
+	private static final Log log = LogFactory.getLog(MainMPJ.class);
+
+//	private final static Logger log = Logger.getLogger(MainMPJ.class.getName()); 
+
 	private static final String DEFAULT_CONFIG_FILE = "config.xml";
 
-	private static int MPJ_TAG = 83;
-
-	private static enum Task {
-		STOP, SIMULATION,
-	}
-
-	private static class SimulationResultContainer {
-
-		private int source;
-		private FiniteTrajectory tr;
-
-		public SimulationResultContainer(int source, FiniteTrajectory tr) {
-			this.source = source;
-			this.tr = tr;
-		}
-
-		public int getSource() {
-			return source;
-		}
-
-		public FiniteTrajectory getFiniteTrajectory() {
-			return tr;
-		}
-
-	}
-
-	private int mpjRank;
-	private int mpjSize;
-	private SimulationJob simulationJob;
-
-	public MainMPJ(int mpjRank, int mpjSize, SimulationJob simulationJob) {
-		this.mpjRank = mpjRank;
-		this.mpjSize = mpjSize;
-		this.simulationJob = simulationJob;
-	}
-
-	private void run() {
-		int jobsDone = 0;
-		if (mpjRank == 0) {
-			for (int target=1; target < mpjSize; target++)
-				pushSimulationTask(target);
-			while (jobsDone < simulationJob.getRuns()) {
-				SimulationResultContainer result = pullSimulationResult();
-				jobsDone++;
-				if (jobsDone < simulationJob.getRuns())
-					pushSimulationTask(result.getSource());
-				FiniteTrajectory tr = result.getFiniteTrajectory();
-				System.out.println("Received trajectory: " + tr.getNumberOfTimePoints() + "x" + tr.getNumberOfStates());
-				System.out.println("jobsDone: " + jobsDone);
-			}
-			for (int target=1; target < mpjSize; target++)
-				pushStopSignal(target);
-		} else {
-			while (true) {
-				Task task = pullNextTask();
-				if (task == Task.STOP)
-					break;
-				else if (task == Task.SIMULATION) {
-					FiniteTrajectory tr = runSimulation();
-					pushSimulationResult(tr);
-				}
-			}
-		}
-	}
-
-	private SimulationResultContainer pullSimulationResult() {
-		final FiniteTrajectory[] buf = new FiniteTrajectory[1];
-		Status status = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, MPI.ANY_SOURCE, MPJ_TAG);
-		int source = status.source;
-		return new SimulationResultContainer(source, buf[0]);
-	}
-
-	private void pushSimulationResult(FiniteTrajectory tr) {
-		final FiniteTrajectory[] buf = { tr };
-		MPI.COMM_WORLD.Send(buf, 0, 1, MPI.OBJECT, 0, MPJ_TAG);
-	}
-
-	private FiniteTrajectory runSimulation() {
-		FiniteTrajectory tr = simulationJob.runSingleSimulation();
-		return tr;
-	}
-
-	private Task pullNextTask() {
-		final Task[] buf = new Task[1];
-		MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, 0, MPJ_TAG);
-		return buf[0];
-	}
-
-	private void pushStopSignal(int target) {
-		final Task[] buf = { Task.STOP };
-		MPI.COMM_WORLD.Send(buf, 0, 1, MPI.OBJECT, target, MPJ_TAG);
-	}
-
-	private void pushSimulationTask(int target) {
-		final Task[] buf = { Task.SIMULATION };
-		MPI.COMM_WORLD.Send(buf, 0, 1, MPI.OBJECT, target, MPJ_TAG);
-	}
-
-	public static void main(String args[]) throws Exception {
-		args = MPI.Init(args);
-		int rank = MPI.COMM_WORLD.Rank();
-		int size = MPI.COMM_WORLD.Size();
+	public static void main(String mpiArgs[]) throws Exception {
+		String[] args = MPI.Init(mpiArgs);
+		int mpiRank = MPI.COMM_WORLD.Rank();
+		int mpiSize = MPI.COMM_WORLD.Size();
 
 		String filename = DEFAULT_CONFIG_FILE;
 		if (args.length > 0)
@@ -137,13 +52,24 @@ public class MainMPJ {
 				throw new FileNotFoundException(configFile.getAbsolutePath());
 			config = new XMLConfiguration(configFile);
 
+			setupLogging(config, mpiRank);
+
 			// Build object graph using Guice and acquire a SimulationJob instance
 			Injector injector = Guice.createInjector(new BatchGuiceModule(config));
 			SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
 
 			// Run parallel simulations
-			MainMPJ main = new MainMPJ(rank, size, simulationJob);
-			main.run();
+			if (mpiRank == 0) {
+				List<Integer> mpiTargets = new ArrayList<>(mpiSize);
+				for (int i=1; i < mpiSize; i++)
+					mpiTargets.add(i);
+				TaskManager manager = new TaskManager(mpiTargets, simulationJob);
+				manager.run();
+			} else {
+				int mpiManager = 0;
+				TaskWorker worker = new TaskWorker(mpiManager, simulationJob);
+				worker.run();
+			}
 
 		} catch (ConfigurationException | IOException e) {
 			System.err.println("Failed to load configuration " + filename);
@@ -152,6 +78,21 @@ public class MainMPJ {
 		}
 
 		MPI.Finalize();
+	}
+
+	private static void setupLogging(HierarchicalConfiguration config, int rank) throws SecurityException, IOException {
+		String logFilenameFormat = config.getString("Logging.filenameFormat", null);
+		if (logFilenameFormat != null) {
+			String logFilename = String.format(logFilenameFormat, rank);
+			System.out.println("log: " + log);
+			if (log instanceof Log4JLogger) {
+				Log4JLogger log4jLogger = (Log4JLogger)log;
+				Logger logger = log4jLogger.getLogger();
+				PatternLayout layout = new PatternLayout("%d{HH:mm:ss} [%t] {%-5p} %c{36} - %m%n");
+				FileAppender fileAppender = new FileAppender(layout, logFilename);
+				logger.addAppender(fileAppender);
+			}
+		}
 	}
 
 }

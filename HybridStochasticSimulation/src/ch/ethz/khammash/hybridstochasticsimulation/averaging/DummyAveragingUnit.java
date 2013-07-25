@@ -31,4 +31,8 @@ public class DummyAveragingUnit implements AveragingUnit {
 	public void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
 	}
 
+	@Override
+	public void setSubnetworksEnumerator(SubnetworksEnumerator subnetworksEnumerator) {
+	}
+
 }

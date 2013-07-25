@@ -21,6 +21,7 @@ public abstract class AbstractAveragingUnit implements AveragingUnit {
 	protected ReactionNetworkGraph graph;
 	protected Set<SpeciesVertex> importantSpecies;
 	private List<Set<SpeciesVertex>> previousSubnetworksToAverage;
+	private SubnetworksEnumerator subnetworksEnumerator;
 
 	public AbstractAveragingUnit(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
 		init(theta, network, importantSpecies); 
@@ -34,6 +35,11 @@ public abstract class AbstractAveragingUnit implements AveragingUnit {
 		this.importantSpecies = importantSpecies;
 		this.graph = network.getGraph();
 		this.previousSubnetworksToAverage = null;
+		this.subnetworksEnumerator = new AllSubnetworksEnumerator(graph);
+	}
+
+	protected SubnetworksEnumerator getSubnetworksEnumerator() {
+		return subnetworksEnumerator;
 	}
 
 	protected void copyFrom(AbstractAveragingUnit provider) {
@@ -43,6 +49,11 @@ public abstract class AbstractAveragingUnit implements AveragingUnit {
 	@Override
 	public void reset() {
 		previousSubnetworksToAverage = null;
+	}
+
+	@Override
+	public void setSubnetworksEnumerator(SubnetworksEnumerator subnetworksEnumerator) {
+		this.subnetworksEnumerator = subnetworksEnumerator;
 	}
 
 	@Override
@@ -60,7 +71,8 @@ public abstract class AbstractAveragingUnit implements AveragingUnit {
 	protected boolean checkAveragingConditions(Set<SpeciesVertex> subnetworkSpecies, double[] reactionTimescales) {
 		double maxSubnetworkTimescale = computeMaxSubnetworkTimescale(subnetworkSpecies, reactionTimescales);
 		double minOutsideTimescale = computeMinBorderTimescale(subnetworkSpecies, reactionTimescales);
-		return checkAveragingConditions(maxSubnetworkTimescale, minOutsideTimescale);
+		boolean result = checkAveragingConditions(maxSubnetworkTimescale, minOutsideTimescale);
+		return result;
 	}
 
 	protected boolean checkAveragingConditions(double maxSubnetworkTimescale, double minOutsideTimescale) {
@@ -68,7 +80,8 @@ public abstract class AbstractAveragingUnit implements AveragingUnit {
 //		if (Double.isNaN(maxSubnetworkTimescale) || Double.isNaN(minOutsideTimescale))
 //			return false;
 		double subnetworkTimescaleRatio = minOutsideTimescale / maxSubnetworkTimescale;
-		return subnetworkTimescaleRatio >= theta;
+		boolean result = subnetworkTimescaleRatio >= theta;
+		return result;
 	}
 
 	protected double computeMinBorderTimescale(Set<SpeciesVertex> subnetworkSpecies, double[] reactionTimescales) {

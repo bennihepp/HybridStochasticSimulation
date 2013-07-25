@@ -11,6 +11,7 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.CombiningAveragingUnit;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.MaximumSizeSubnetworksEnumerator;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.PseudoLinearAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.ZeroDeficiencyAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationController;
@@ -319,17 +320,22 @@ public class SimulationUtilities {
 		AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		hrn.setPrintMessages(printMessages);
 		if (doAveraging) {
+			int maxSize = 5;
 			ReactionNetworkGraph graph = new ReactionNetworkGraph(hrn);
 			HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
 			for (int s : nss.importantSpecies)
 				importantSpeciesVertices.add(graph.getSpeciesVertex(s));
+			MaximumSizeSubnetworksEnumerator subnetworksEnumerator = new MaximumSizeSubnetworksEnumerator(graph, maxSize);
 			PseudoLinearAveragingUnit pseudoLinearAveragingUnit = new PseudoLinearAveragingUnit(
 					nss.theta, hrn, importantSpeciesVertices);
 			pseudoLinearAveragingUnit.stopIfAveragingBecomesInvalid(false);
 			pseudoLinearAveragingUnit.performPseudoLinearAveragingOnlyOnce(false);
+			pseudoLinearAveragingUnit.setSubnetworksEnumerator(subnetworksEnumerator);
 			ZeroDeficiencyAveragingUnit zeroDeficiencyAveragingUnit = new ZeroDeficiencyAveragingUnit(
 					nss.theta, hrn, importantSpeciesVertices, rdgFactory.get(), printMessages);
+			zeroDeficiencyAveragingUnit.setSubnetworksEnumerator(subnetworksEnumerator);
 			CombiningAveragingUnit averagingUnit = new CombiningAveragingUnit();
+			averagingUnit.setSubnetworksEnumerator(subnetworksEnumerator);
 			averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
 			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
 			hrn.setAveragingUnit(averagingUnit);

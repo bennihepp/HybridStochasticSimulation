@@ -40,7 +40,7 @@ public class TaskManager implements Runnable {
 			if (jobsDone < simulationJob.getRuns())
 				pushSimulationTask(result.getMpiSource());
 			FiniteTrajectory tr = result.getFiniteTrajectory();
-			log.debug("Received trajectory: " + tr.getNumberOfTimePoints() + "x" + tr.getNumberOfStates());
+			log.debug("Received trajectory from " + result.getMpiSource() + ": " + tr.getNumberOfTimePoints() + "x" + tr.getNumberOfStates());
 			log.debug("jobsDone: " + jobsDone);
 		}
 		for (int mpiTarget : mpiTargets)

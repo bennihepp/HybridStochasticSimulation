@@ -32,6 +32,7 @@ public class TaskWorker implements Runnable {
 				pushSimulationResult(tr);
 			}
 		}
+		log.debug("Shutting down");
 	}
 
 	private Task pullNextTask() {

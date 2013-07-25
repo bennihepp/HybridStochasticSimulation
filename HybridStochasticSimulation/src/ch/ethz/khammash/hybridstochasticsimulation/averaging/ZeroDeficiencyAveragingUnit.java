@@ -31,12 +31,10 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryStochasticM
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
-import com.google.common.collect.Sets;
-
 public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 	private RandomDataGenerator rdg;
-	private List<Set<SpeciesVertex>> zeroDeficiencySubnetworks;
+	private List<Set<SpeciesVertex>> zeroDeficiencySubnetworks = null;
 	private Map<Set<SpeciesVertex>, SubnetworkInformation> subnetworkInformationMap;
 	private UnaryBinaryStochasticModel model;
 	private boolean printMessages;
@@ -61,7 +59,6 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 		super(theta, network, importantSpecies);
 		this.printMessages = printMessages;
 		this.subnetworkInformationMap = new HashMap<>();
-		this.zeroDeficiencySubnetworks = findZeroDeficiencySubnetworks();
 		this.model = new UnaryBinaryStochasticModel(network);
 		this.rdg = rdg;
 	}
@@ -72,9 +69,11 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 	private List<Set<SpeciesVertex>> findZeroDeficiencySubnetworks() {
 		List<Set<SpeciesVertex>> zeroDeficiencySubnetworks = new LinkedList<Set<SpeciesVertex>>();
-		Set<SpeciesVertex> allSpecies = graph.vertexSet();
-		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
-		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {
+//		Set<SpeciesVertex> allSpecies = graph.vertexSet();
+//		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
+//		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {
+		SubnetworksEnumerator subnetworksEnumerator = getSubnetworksEnumerator();
+		for (Set<SpeciesVertex> subnetworkSpecies : subnetworksEnumerator) {
 			if (subnetworkSpecies.size() == network.getNumberOfSpecies() || subnetworkSpecies.isEmpty())
 				continue;
 			boolean hasImportantSpecies = false;
@@ -212,6 +211,8 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 	@Override
 	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales) {
+		if (zeroDeficiencySubnetworks == null)
+			this.zeroDeficiencySubnetworks = findZeroDeficiencySubnetworks();
 		// First find a list of subnetworks that could be averaged
 		List<Set<SpeciesVertex>> averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
 		for (Set<SpeciesVertex> subnetwork : zeroDeficiencySubnetworks) {

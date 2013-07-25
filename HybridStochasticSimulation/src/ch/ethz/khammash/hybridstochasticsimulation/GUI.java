@@ -1,12 +1,8 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
-import java.io.IOException;
 import java.util.List;
 
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.commons.math3.util.FastMath;
-import org.xml.sax.SAXException;
 
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent.EventType;
@@ -33,7 +29,7 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.conversionCycleNetwork();
 //							List<FinitePlotData> plotDataList = Examples.regulatedTranscriptionNetwork();
 							// Example 2
-							List<FinitePlotData> plotDataList = Examples.stochasticFocusingNetwork();
+//							List<FinitePlotData> plotDataList = Examples.stochasticFocusingNetwork();
 //							List<FinitePlotData> plotDataList = Examples.simpleCrystallizationNetwork();
 //							List<FinitePlotData> plotDataList = Examples.birthDeathTunnelNetwork();
 							// Example 1
@@ -43,7 +39,7 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.repressedBacteriumOperonNetwork();
 							// Example 3
 //							List<FinitePlotData> plotDataList = Examples.heatShockResponseNetwork();
-//							List<FinitePlotData> plotDataList = Examples.vilarOscillatorNetwork();
+							List<FinitePlotData> plotDataList = Examples.vilarOscillatorNetwork();
 //							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
 //							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
 //							List<FinitePlotData> plotDataList = Examples.fastDimerization();
@@ -66,7 +62,7 @@ public class GUI {
 								window.validate();
 								window.getStatusBar().setText("Finished simulation", 2000);
 //							} catch (ParserConfigurationException
-//									| SAXException | IOException e) {
+//									| SAXException | IOException | FileFormatException e) {
 //								e.printStackTrace();
 //								window.getStatusBar().setText("Simulation failed!");
 //							}

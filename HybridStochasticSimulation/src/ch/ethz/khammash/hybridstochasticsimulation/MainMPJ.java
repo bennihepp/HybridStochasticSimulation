@@ -84,13 +84,12 @@ public class MainMPJ {
 		String logFilenameFormat = config.getString("Logging.filenameFormat", null);
 		if (logFilenameFormat != null) {
 			String logFilename = String.format(logFilenameFormat, rank);
-			System.out.println("log: " + log);
 			if (log instanceof Log4JLogger) {
-				Log4JLogger log4jLogger = (Log4JLogger)log;
-				Logger logger = log4jLogger.getLogger();
+				Log4JLogger logWrapper = (Log4JLogger)log;
+				Logger nativeLogger = logWrapper.getLogger();
 				PatternLayout layout = new PatternLayout("%d{HH:mm:ss} [%t] {%-5p} %c{36} - %m%n");
 				FileAppender fileAppender = new FileAppender(layout, logFilename);
-				logger.addAppender(fileAppender);
+				nativeLogger.addAppender(fileAppender);
 			}
 		}
 	}

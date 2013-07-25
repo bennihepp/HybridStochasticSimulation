@@ -9,11 +9,9 @@ import java.util.Set;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
-import com.google.common.collect.Sets;
-
 public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 
-	private List<Set<SpeciesVertex>> pseudoLinearSubnetworks;
+	private List<Set<SpeciesVertex>> pseudoLinearSubnetworks = null;
 	private List<Set<SpeciesVertex>> averagingCandidates;
 	private boolean averagingInvalid;
 	private boolean _stopIfAveragingBecomesInvalid = true;
@@ -32,7 +30,6 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 
 	public PseudoLinearAveragingUnit(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
 		super(theta, network, importantSpecies);
-		this.pseudoLinearSubnetworks = findPseudoLinearSubnetworks();
 	}
 
 	protected PseudoLinearAveragingUnit() {
@@ -53,9 +50,11 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 
 	private List<Set<SpeciesVertex>> findPseudoLinearSubnetworks() {
 		List<Set<SpeciesVertex>> pseudoLinearSubnetworks = new LinkedList<Set<SpeciesVertex>>();
-		Set<SpeciesVertex> allSpecies = graph.vertexSet();
-		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
-		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {
+//		Set<SpeciesVertex> allSpecies = graph.vertexSet();
+//		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
+//		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {
+		SubnetworksEnumerator subnetworksEnumerator = getSubnetworksEnumerator();
+		for (Set<SpeciesVertex> subnetworkSpecies : subnetworksEnumerator) {
 			if (subnetworkSpecies.size() == network.getNumberOfSpecies() || subnetworkSpecies.isEmpty())
 				continue;
 			boolean hasImportantSpecies = false;
@@ -102,12 +101,14 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 
 	@Override
 	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales) {
+		if (pseudoLinearSubnetworks == null)
+			pseudoLinearSubnetworks = findPseudoLinearSubnetworks();
 		if (!_performPseudoLinearAveragingOnlyOnce)
 			averagingCandidates = null;
 		if (averagingCandidates == null) {
 			averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
 			for (Set<SpeciesVertex> subnetwork : pseudoLinearSubnetworks) {
-				if (checkAveragingConditions(subnetwork, reactionTimescales));
+				if (checkAveragingConditions(subnetwork, reactionTimescales))
 					averagingCandidates.add(subnetwork);
 			}
 		} else {

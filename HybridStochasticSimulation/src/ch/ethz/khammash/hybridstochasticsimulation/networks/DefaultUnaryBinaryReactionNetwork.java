@@ -29,6 +29,7 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 
 	private int numOfSpecies;
 	private int numOfReactions;
+	private double[] initialConditions;
 	private int[][] productionStochiometry;
 	private int[][] consumptionStochiometry;
 	private int[][] stochiometry;
@@ -116,6 +117,7 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 		checkArgument(numOfReactions >= 0, "Expected numOfReactions > 0");
 		this.numOfSpecies = numOfSpecies;
 		this.numOfReactions = numOfReactions;
+		initialConditions = new double[numOfSpecies];
 		productionStochiometry = new int[numOfReactions][numOfSpecies];
 		consumptionStochiometry = new int[numOfReactions][numOfSpecies];
 		stochiometry = new int[numOfReactions][numOfSpecies];
@@ -450,6 +452,17 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 
 	public void setReactionLabels(List<String> reactionLabels) {
 		this.reactionLabels = new ArrayList<>(reactionLabels);
+	}
+
+	@Override
+	public double[] getInitialConditions() {
+		return initialConditions.clone();
+	}
+
+	public void setInitialConditions(double[] initialConditions) {
+		checkArgument(initialConditions.length == getNumberOfSpecies(), "Expected initialConditions.length == getNumberOfSpecies()");
+		System.arraycopy(initialConditions, 0, this.initialConditions, 0, getNumberOfSpecies());
+		this.initialConditions = initialConditions;
 	}
 
 }

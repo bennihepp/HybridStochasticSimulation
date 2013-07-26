@@ -23,7 +23,7 @@ public abstract class AbstractSimulationJobProvider extends AbstractProvider<Sim
 		SimulationOutput output = outputProvider.get();
 		double t0 = config().getDouble("t0");
 		double t1 = config().getDouble("t1");
-		double[] x0 = dataConfig().getDoubleArray("x0");
+		double[] x0 = dataConfig().getDoubleArray("x0", null);
 		int runs = config().getInt("runs", 1);
 		Type simulationType = parseSimulationType(config().getString("simulationType", Type.TRAJECTORY.toString()));
 		DefaultSimulationJob<?> sj = getSimulationJob(t0, t1, x0, runs, simulationType);

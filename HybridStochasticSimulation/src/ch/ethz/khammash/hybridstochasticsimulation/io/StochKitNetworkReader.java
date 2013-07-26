@@ -92,6 +92,8 @@ public class StochKitNetworkReader {
 	    	labels[species] = entry.getKey();
 	    }
 
+	    network.setInitialConditions(x0);
+
 	    SimulationConfiguration nss = new SimulationConfiguration();
 	    nss.net = network;
 	    nss.reset();

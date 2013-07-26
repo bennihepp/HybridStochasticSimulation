@@ -43,4 +43,6 @@ public interface ReactionNetwork {
 
 	List<String> getReactionLabels();
 
+	double[] getInitialConditions();
+
 }

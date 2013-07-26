@@ -1,17 +1,12 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
-import java.io.IOException;
 import java.util.List;
 
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.commons.math3.util.FastMath;
-import org.xml.sax.SAXException;
 
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent.EventType;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.PlotWindow;
-import ch.ethz.khammash.hybridstochasticsimulation.io.StochKitNetworkReader.FileFormatException;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 import com.google.common.eventbus.Subscribe;

@@ -20,7 +20,7 @@ import org.jgraph.graph.GraphConstants;
 import org.jgrapht.ext.JGraphModelAdapter;
 
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionEdge;
-import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.DefaultReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 
@@ -36,14 +36,14 @@ public class GraphWindow extends JFrame {
     private static final Dimension DEFAULT_SIZE = new Dimension( 530, 320 );
 
     private JScrollPane scrollPane;
-    private ReactionNetworkGraph graph;
+    private DefaultReactionNetworkGraph graph;
     private JGraphModelAdapter<SpeciesVertex,ReactionEdge> jgAdapter;
     private JGraph jgraph;
 
     /**
      * @see java.applet.Applet#init().
      */
-    public GraphWindow(ReactionNetworkGraph graph) {
+    public GraphWindow(DefaultReactionNetworkGraph graph) {
     	setPreferredSize(new Dimension(1024, 786));
 
     	this.graph = graph;

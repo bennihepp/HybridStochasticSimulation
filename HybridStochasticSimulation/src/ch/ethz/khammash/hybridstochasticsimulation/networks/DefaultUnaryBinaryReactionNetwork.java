@@ -6,11 +6,16 @@ import static com.google.common.base.Preconditions.checkElementIndex;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.DefaultReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionEdge;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.SubReactionNetworkGraph;
 
 
 /*
@@ -45,10 +50,14 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 	}
 
 	public static DefaultUnaryBinaryReactionNetwork createSubnetwork(UnaryBinaryReactionNetwork network, Set<Integer> subnetworkSpecies) {
+		// TODO
+		Map<Integer, SpeciesVertex> subVerticesMap = new HashMap<>();
+		Map<Integer, List<ReactionEdge>> subEdgesMap = new HashMap<>();
 		Map<Integer, Integer> subSpeciesMap = new HashMap<>(subnetworkSpecies.size());
 		int i = 0;
 		for (int species : subnetworkSpecies) {
 			subSpeciesMap.put(i, species);
+			subVerticesMap.put(i, network.getGraph().getSpeciesVertex(species));
 			i++;
 		}
 		Map<Integer, Integer> subReactions = new HashMap<>(network.getNumberOfReactions());
@@ -63,6 +72,13 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 				}
 			if (interactsWithOutsideSpecies)
 				continue;
+			List<ReactionEdge> edgeList = new LinkedList<>();
+			for (ReactionEdge edge : network.getGraph().getReactionEdges(reaction)) {
+				if (subnetworkSpecies.contains(edge.getSource().getSpecies()) &&
+						subnetworkSpecies.contains(edge.getTarget().getSpecies()))
+						edgeList.add(edge);
+			}
+			subEdgesMap.put(j, edgeList);
 			for (int species : subnetworkSpecies) {
 				if (network.getStochiometry(species, reaction) != 0) {
 					subReactions.put(j, reaction);
@@ -91,6 +107,7 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 			subNetwork.setReactionLabel(subReaction, network.getReactionLabel(entry.getValue()));
 		}
 		subNetwork.setStochiometries(subProductionStochiometries, subConsumptionStochiometries);
+		subNetwork.graph = SubReactionNetworkGraph.createSubReactionNetworkGraph(network, subVerticesMap, subEdgesMap);
 		return subNetwork;
 	}
 
@@ -354,7 +371,7 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 	@Override
 	public ReactionNetworkGraph getGraph() {
 		if (graph == null)
-			graph = new ReactionNetworkGraph(this);
+			graph = new DefaultReactionNetworkGraph(this);
 		return graph;
 	}
 

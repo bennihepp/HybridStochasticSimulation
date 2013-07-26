@@ -108,13 +108,13 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 		if (averagingCandidates == null) {
 			averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
 			for (Set<SpeciesVertex> subnetwork : pseudoLinearSubnetworks) {
-				if (checkAveragingConditions(subnetwork, reactionTimescales))
+				if (checkAveragingConditions(subnetwork, x, reactionTimescales))
 					averagingCandidates.add(subnetwork);
 			}
 		} else {
 			// Check whether the conditions for averaging of the pseudo linear subnetworks are still valid
 			for (Set<SpeciesVertex> subnetwork : averagingCandidates) {
-				boolean satisfied = checkAveragingConditions(subnetwork, reactionTimescales);
+				boolean satisfied = checkAveragingConditions(subnetwork, x, reactionTimescales);
 				if (satisfied && averagingInvalid) {
 					averagingInvalid = false;
 					if (_warnIfAveragingBecomesInvalid)

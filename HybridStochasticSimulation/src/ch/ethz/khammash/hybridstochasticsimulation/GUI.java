@@ -38,8 +38,8 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.lambdaPhageToggleSwitchNetwork();
 //							List<FinitePlotData> plotDataList = Examples.repressedBacteriumOperonNetwork();
 							// Example 3
-//							List<FinitePlotData> plotDataList = Examples.heatShockResponseNetwork();
-							List<FinitePlotData> plotDataList = Examples.vilarOscillatorNetwork();
+							List<FinitePlotData> plotDataList = Examples.heatShockResponseNetwork();
+//							List<FinitePlotData> plotDataList = Examples.vilarOscillatorNetwork();
 //							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
 //							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
 //							List<FinitePlotData> plotDataList = Examples.fastDimerization();

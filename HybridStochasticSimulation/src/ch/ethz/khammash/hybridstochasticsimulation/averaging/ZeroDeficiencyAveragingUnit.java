@@ -118,6 +118,13 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 			subnetworkInformationMap.put(subnetworkSpecies, subnetworkInfo);
 
+			Map<SpeciesVertex, Integer> subnetworkIndexMap = new HashMap<>();
+			for (int i=0; i < subnetwork.getNumberOfSpecies(); i++) {
+				SpeciesVertex v = subnetwork.getGraph().getSpeciesVertex(i);
+				subnetworkIndexMap.put(v, i);
+			}
+			subnetworkInfo.setIndexMap(subnetworkIndexMap);
+
 			ComplexGraph subnetworkComplexGraph = createComplexGraphOfSubnetwork(subnetwork);
 			if (printMessages) {
 				StringBuilder sb = new StringBuilder();
@@ -216,7 +223,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 		// First find a list of subnetworks that could be averaged
 		List<Set<SpeciesVertex>> averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
 		for (Set<SpeciesVertex> subnetwork : zeroDeficiencySubnetworks) {
-			if (checkAveragingConditions(subnetwork, reactionTimescales))
+			if (checkAveragingConditions(subnetwork, x, reactionTimescales))
 				averagingCandidates.add(subnetwork);
 		}
 		return averagingCandidates;
@@ -271,33 +278,73 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 		BroydenRootSolver solver = new BroydenRootSolver(rootFunction);
 		double[] subXSteadyState = solver.findRoot(subX);
 
+		Map<SpeciesVertex, Integer> subnetworkIndexMap = subnetworkInfo.getIndexMap();
 		for (ConservedSpeciesRelation relation : subnetworkInfo.getConservedSpeciesRelations()) {
 			List<SpeciesVertex> speciesList = relation.getConservedSpeciesList();
 			DenseMatrix64F lcVector = relation.getLinearCombination();
 			DenseMatrix64F yVector = new DenseMatrix64F(speciesList.size(), 1);
-			for (SpeciesVertex v : speciesList) {
-				int k = reverseMapping[v.getSpecies()];
-				yVector.set(k, 0, subXSteadyState[k]);
+			int[] alpha = new int[speciesList.size()];
+			for (int j=0; j < speciesList.size(); j++) {
+				SpeciesVertex v = speciesList.get(j);
+				int species = v.getSpecies();
+				int k = reverseMapping[species];
+				int subnetworkIndex = subnetworkIndexMap.get(v);
+				yVector.set(j, 0, subXSteadyState[k]);
+				alpha[j] = (int)lcVector.get(subnetworkIndex, 0);
 			}
-			CommonOps.divide(CommonOps.elementSum(yVector), yVector);
+//			for (SpeciesVertex v : speciesList) {
+//				int species = v.getSpecies();
+//				int k = reverseMapping[species];
+//				yVector.set(k, 0, subXSteadyState[species]);
+//				alpha[k] = (int)lcVector.get(species, 0);
+//			}
+			double elementSum = CommonOps.elementSum(yVector);
+			if (elementSum == 0.0)
+				// All conserved species are zero so we don't need to sample anything
+				continue;
+
+			if (elementSum > 0.0)
+				CommonOps.divide(elementSum, yVector);
 			double[] p = yVector.getData();
-			int[] alpha = new int[lcVector.numRows];
-			for (int j=0; j < alpha.length; j++)
-				alpha[j] = (int)lcVector.get(j, 0);
+//			int[] alpha = new int[lcVector.numRows];
+//			for (int j=0; j < alpha.length; j++)
+//				alpha[j] = (int)lcVector.get(j, 0);
 			int n = 0;
-			for (int j=0; j < subXSteadyState.length; j++)
-				n += alpha[j] * subXSteadyState[j];
+//			for (int j=0; j < subXSteadyState.length; j++)
+//				n += alpha[j] * subXSteadyState[j];
+			for (int j=0; j < speciesList.size(); j++) {
+				SpeciesVertex v = speciesList.get(j);
+				int species = v.getSpecies();
+				int k = reverseMapping[species];
+				n += alpha[j] * subXSteadyState[k];
+			}
+//			for (SpeciesVertex v : speciesList) {
+//				int species = v.getSpecies();
+//				int k = reverseMapping[species];
+//				n += alpha[k] * subXSteadyState[species];
+//			}
 //			double[] y = sampleFromMultinomialDistribution(n, p);
 			int[] y = RandomDataUtilities.sampleFromConstrainedMultinomialLikeDistribution(rdg, n, p, alpha);
-			for (SpeciesVertex v : speciesList) {
-				int k = reverseMapping[v.getSpecies()];
-				x[v.getSpecies()] = y[k];
+			for (int j=0; j < speciesList.size(); j++) {
+				SpeciesVertex v = speciesList.get(j);
+				x[v.getSpecies()] = y[j];
+//				int k = reverseMapping[v.getSpecies()];
+//				x[v.getSpecies()] = y[k];
 			}
+//			for (SpeciesVertex v : speciesList) {
+//				int k = reverseMapping[v.getSpecies()];
+//				x[v.getSpecies()] = y[k];
+//			}
 		}
 
 		for (SpeciesVertex v : subnetworkInfo.getUnconservedSpecies()) {
 			int s = v.getSpecies();
-			long sample = sampleFromPoissonDistribution(subXSteadyState[reverseMapping[s]]);
+			double steadyState = subXSteadyState[reverseMapping[s]];
+			long sample;
+			if (steadyState > 0.0)
+				sample = sampleFromPoissonDistribution(steadyState);
+			else
+				sample = 0;
 			x[s] = sample;
 		}
 	}
@@ -318,13 +365,20 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 					break;
 				}
 				if (v != 0.0)
-					speciesList.add(graph.getSpeciesVertex(row));
+					speciesList.add(network.getGraph().getSpeciesVertex(row));
 			}
 			if (noConservationRelation)
 				continue;
 			DenseMatrix64F lcVector = CommonOps.extract(nullSpace, 0, nullSpace.numRows, col, col + 1);
 			CommonOps.scale(sign, lcVector);
-			CommonOps.divide(CommonOps.elementMin(lcVector), lcVector);
+			double elementMinNeqZero = Double.MAX_VALUE;
+			for (int i=0; i < lcVector.numRows; i++) {
+				double element = lcVector.get(i);
+				if (element < elementMinNeqZero && element > 0.0)
+					elementMinNeqZero = element;
+			}
+//			double elementMin = CommonOps.elementMin(lcVector);
+			CommonOps.divide(elementMinNeqZero, lcVector);
 			ConservedSpeciesRelation conservedSpeciesRelation = new ConservedSpeciesRelation(speciesList, lcVector);
 			conservedSpeciesRelations.add(conservedSpeciesRelation);
 		}
@@ -369,6 +423,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 		private Collection<ConservedSpeciesRelation> conservedSpeciesRelations;
 		private Collection<SpeciesVertex> unconservedSpecies;
 		private Collection<Integer> reactionIndices;
+		private Map<SpeciesVertex, Integer> indexMap;
 
 		public Collection<ConservedSpeciesRelation> getConservedSpeciesRelations() {
 			return conservedSpeciesRelations;
@@ -392,6 +447,14 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 		public void setReactionIndices(Collection<Integer> reactionIndices) {
 			this.reactionIndices = reactionIndices;
+		}
+
+		public void setIndexMap(Map<SpeciesVertex, Integer> indexMap) {
+			this.indexMap = indexMap;
+		}
+
+		public Map<SpeciesVertex, Integer> getIndexMap() {
+			return indexMap;
 		}
 
 	}

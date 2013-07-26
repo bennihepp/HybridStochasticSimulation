@@ -17,7 +17,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.averaging.ZeroDeficiencyAvera
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.StochasticSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.SimulationConfiguration;
-import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.DefaultReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.HybridModel;
@@ -320,8 +320,8 @@ public class SimulationUtilities {
 		AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		hrn.setPrintMessages(printMessages);
 		if (doAveraging) {
-			int maxSize = 5;
-			ReactionNetworkGraph graph = new ReactionNetworkGraph(hrn);
+			int maxSize = 10;
+			DefaultReactionNetworkGraph graph = new DefaultReactionNetworkGraph(hrn);
 			HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
 			for (int s : nss.importantSpecies)
 				importantSpeciesVertices.add(graph.getSpeciesVertex(s));
@@ -338,8 +338,8 @@ public class SimulationUtilities {
 			averagingUnit.setSubnetworksEnumerator(subnetworksEnumerator);
 			averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
 			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
-			hrn.setAveragingUnit(averagingUnit);
-//			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
+//			hrn.setAveragingUnit(averagingUnit);
+			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
 //			hrn.setAveragingUnit(pseudoLinearAveragingUnit);
 		}
 		hrn.setDelta(nss.delta);
@@ -869,7 +869,7 @@ public class SimulationUtilities {
 			final double[] tSeries, boolean printMessages) {
 		final ObjProvider<RandomDataGenerator> rdgFactory = new RandomDataGeneratorProvider(nss.rng);
 		final AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
-		ReactionNetworkGraph graph = new ReactionNetworkGraph(hrn);
+		DefaultReactionNetworkGraph graph = new DefaultReactionNetworkGraph(hrn);
 		HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
 		for (int s : nss.importantSpecies)
 			importantSpeciesVertices.add(graph.getSpeciesVertex(s));

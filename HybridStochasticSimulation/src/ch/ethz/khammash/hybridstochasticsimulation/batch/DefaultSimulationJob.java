@@ -61,9 +61,8 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		this.t0 = t0;
 		this.t1 = t1;
 		if (x0 == null)
-			this.x0 = createModel().getNetwork().getInitialConditions();
-		else
-			this.x0 = x0;
+			x0 = createModel().getNetwork().getInitialConditions();
+		this.x0 = x0;
 		this.runs = runs;
 		this.simulationType = simulationType;
 		this.plotScales = new double[x0.length];

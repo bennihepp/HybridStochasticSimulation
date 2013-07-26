@@ -26,12 +26,10 @@ public class ZeroDeficiencyAveragingUnitProvider extends AbstractAveragingUnitPr
 	}
 
 	@Override
-	protected ZeroDeficiencyAveragingUnit getAveragingUnit(double theta,
-			UnaryBinaryReactionNetwork network,
-			Set<SpeciesVertex> importantSpeciesVertices) {
+	protected ZeroDeficiencyAveragingUnit getAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpeciesVertices) {
 		RandomDataGenerator rdg = rdgFactory.get();
 		boolean printMessages = config().getBoolean("printMessages", false);
-		return new ZeroDeficiencyAveragingUnit(theta, network, importantSpeciesVertices, rdg, printMessages);
+		return new ZeroDeficiencyAveragingUnit(network, importantSpeciesVertices, rdg, printMessages);
 	}
 
 }

@@ -7,45 +7,41 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.math3.util.FastMath;
-
-import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionEdge;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Sets;
 
 public abstract class AbstractAveragingUnit implements AveragingUnit {
 
-	protected double theta;
 	protected UnaryBinaryReactionNetwork network;
 	protected ReactionNetworkGraph graph;
 	protected Set<SpeciesVertex> importantSpecies;
 	private List<Set<SpeciesVertex>> previousSubnetworksToAverage;
-	private SubnetworksEnumerator subnetworksEnumerator;
+	private SubnetworkEnumerator enumerateSubnetworks;
 
-	public AbstractAveragingUnit(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
-		init(theta, network, importantSpecies); 
+	public AbstractAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
+		init(network, importantSpecies); 
 	}
 
 	protected AbstractAveragingUnit() {}
 
-	final private void init(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
-		this.theta = theta;
+	final private void init(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
 		this.network = network;
 		this.importantSpecies = importantSpecies;
 		this.graph = network.getGraph();
 		this.previousSubnetworksToAverage = null;
-		this.subnetworksEnumerator = new AllSubnetworksEnumerator(graph);
+		this.enumerateSubnetworks = new FilteredSubnetworksEnumerator(graph);
 	}
 
-	protected SubnetworksEnumerator getSubnetworksEnumerator() {
-		return subnetworksEnumerator;
+	protected Iterable<Set<SpeciesVertex>> enumerateSubnetworks() {
+		return enumerateSubnetworks;
 	}
 
 	protected void copyFrom(AbstractAveragingUnit provider) {
-		init(provider.theta, provider.network, provider.importantSpecies);
+		init(provider.network, provider.importantSpecies);
 	}
 
 	@Override
@@ -54,13 +50,13 @@ public abstract class AbstractAveragingUnit implements AveragingUnit {
 	}
 
 	@Override
-	public void setSubnetworksEnumerator(SubnetworksEnumerator subnetworksEnumerator) {
-		this.subnetworksEnumerator = subnetworksEnumerator;
+	public void setSubnetworkEnumerator(SubnetworkEnumerator subnetworkEnumerator) {
+		this.enumerateSubnetworks = subnetworkEnumerator;
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales) {
-		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(t, x, reactionTimescales);
+	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
+		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(t, x, filter);
 		List<Set<SpeciesVertex>> subnetworksToAverage = greedySelectSubnetworksToAverage(averagingCandidates);
 
 		if (previousSubnetworksToAverage != null)
@@ -70,75 +66,75 @@ public abstract class AbstractAveragingUnit implements AveragingUnit {
 		return subnetworksToAverage;
 	}
 
-	protected boolean checkAveragingConditions(Set<SpeciesVertex> subnetworkSpecies, double[] x, double[] reactionTimescales) {
-		double maxSubnetworkTimescale = computeMaxSubnetworkTimescale(subnetworkSpecies, x, reactionTimescales);
-		double minOutsideTimescale = computeMinBorderTimescale(subnetworkSpecies, x, reactionTimescales);
-		boolean result = checkAveragingConditions(maxSubnetworkTimescale, minOutsideTimescale);
-		return result;
-	}
+//	protected boolean checkAveragingConditions(Set<SpeciesVertex> subnetworkSpecies, double[] x, double[] reactionTimescales) {
+//		double maxSubnetworkTimescale = computeMaxSubnetworkTimescale(subnetworkSpecies, x, reactionTimescales);
+//		double minOutsideTimescale = computeMinBorderTimescale(subnetworkSpecies, x, reactionTimescales);
+//		boolean result = checkAveragingConditions(maxSubnetworkTimescale, minOutsideTimescale);
+//		return result;
+//	}
 
-	protected boolean checkAveragingConditions(double maxSubnetworkTimescale, double minOutsideTimescale) {
-//		// Checking for NaNs is implicitly taken care for by the following comparison
-//		if (Double.isNaN(maxSubnetworkTimescale) || Double.isNaN(minOutsideTimescale))
-//			return false;
-		double subnetworkTimescaleRatio = minOutsideTimescale / maxSubnetworkTimescale;
-		boolean result = subnetworkTimescaleRatio >= theta;
-		return result;
-	}
+//	protected boolean checkAveragingConditions(double maxSubnetworkTimescale, double minOutsideTimescale) {
+////		// Checking for NaNs is implicitly taken care for by the following comparison
+////		if (Double.isNaN(maxSubnetworkTimescale) || Double.isNaN(minOutsideTimescale))
+////			return false;
+//		double subnetworkTimescaleRatio = minOutsideTimescale / maxSubnetworkTimescale;
+//		boolean result = subnetworkTimescaleRatio >= theta;
+//		return result;
+//	}
 
-	protected double computeMinBorderTimescale(Set<SpeciesVertex> subnetworkSpecies, double[] x, double[] reactionTimescales) {
-		Set<ReactionEdge> borderEdges = new HashSet<ReactionEdge>();
-		for (SpeciesVertex v : subnetworkSpecies) {
-			for (ReactionEdge e : graph.incomingEdgesOf(v)) {
-				if (!subnetworkSpecies.contains(e.getSource()) && !borderEdges.contains(e))
-					borderEdges.add(e);
-			}
-			for (ReactionEdge e : graph.outgoingEdgesOf(v)) {
-				if (!subnetworkSpecies.contains(e.getTarget()) && !borderEdges.contains(e))
-					borderEdges.add(e);
-			}
-		}
-		double minBorderTimescale = Double.POSITIVE_INFINITY;;
-		for (ReactionEdge e : borderEdges) {
-			double timescale = reactionTimescales[e.getReaction()];
-			double xOutside;
-			if (subnetworkSpecies.contains(e.getSource()))
-				xOutside = x[e.getTarget().getSpecies()];
-			else
-				xOutside = x[e.getSource().getSpecies()];
-			timescale /= FastMath.max(xOutside, 1.0);
-			if (timescale < minBorderTimescale)
-				minBorderTimescale = timescale;
-		}
-		return minBorderTimescale;
-	}
+//	protected double computeMinBorderTimescale(Set<SpeciesVertex> subnetworkSpecies, double[] x, double[] reactionTimescales) {
+//		Set<ReactionEdge> borderEdges = new HashSet<ReactionEdge>();
+//		for (SpeciesVertex v : subnetworkSpecies) {
+//			for (ReactionEdge e : graph.incomingEdgesOf(v)) {
+//				if (!subnetworkSpecies.contains(e.getSource()) && !borderEdges.contains(e))
+//					borderEdges.add(e);
+//			}
+//			for (ReactionEdge e : graph.outgoingEdgesOf(v)) {
+//				if (!subnetworkSpecies.contains(e.getTarget()) && !borderEdges.contains(e))
+//					borderEdges.add(e);
+//			}
+//		}
+//		double minBorderTimescale = Double.POSITIVE_INFINITY;;
+//		for (ReactionEdge e : borderEdges) {
+//			double timescale = reactionTimescales[e.getReaction()];
+//			double xOutside;
+//			if (subnetworkSpecies.contains(e.getSource()))
+//				xOutside = x[e.getTarget().getSpecies()];
+//			else
+//				xOutside = x[e.getSource().getSpecies()];
+//			timescale /= FastMath.max(xOutside, 1.0);
+//			if (timescale < minBorderTimescale)
+//				minBorderTimescale = timescale;
+//		}
+//		return minBorderTimescale;
+//	}
 
-	protected double computeMaxSubnetworkTimescale(Set<SpeciesVertex> subnetworkSpecies, double[] x, double[] reactionTimescales) {
-		Set<ReactionEdge> subnetworkEdges = new HashSet<ReactionEdge>();
-		for (SpeciesVertex v : subnetworkSpecies) {
-			for (ReactionEdge e : graph.incomingEdgesOf(v)) {
-				if (subnetworkSpecies.contains(e.getSource()) && !subnetworkEdges.contains(e))
-					subnetworkEdges.add(e);
-			}
-			for (ReactionEdge e : graph.outgoingEdgesOf(v)) {
-				if (subnetworkSpecies.contains(e.getTarget()) && !subnetworkEdges.contains(e))
-					subnetworkEdges.add(e);
-			}
-		}
-		if (subnetworkEdges.size() == 0)
-			return Double.POSITIVE_INFINITY;
-		double maxSubnetworkTimescale = 0.0;
-		for (ReactionEdge e : subnetworkEdges) {
-			double timescale = reactionTimescales[e.getReaction()];
-			double xSource = x[e.getSource().getSpecies()];
-			double xTarget = x[e.getTarget().getSpecies()];
-			double xMin = FastMath.min(xSource, xTarget);
-			timescale /= FastMath.max(xMin, 1.0);
-			if (timescale > maxSubnetworkTimescale)
-				maxSubnetworkTimescale = timescale;
-		}
-		return maxSubnetworkTimescale;
-	}
+//	protected double computeMaxSubnetworkTimescale(Set<SpeciesVertex> subnetworkSpecies, double[] x, double[] reactionTimescales) {
+//		Set<ReactionEdge> subnetworkEdges = new HashSet<ReactionEdge>();
+//		for (SpeciesVertex v : subnetworkSpecies) {
+//			for (ReactionEdge e : graph.incomingEdgesOf(v)) {
+//				if (subnetworkSpecies.contains(e.getSource()) && !subnetworkEdges.contains(e))
+//					subnetworkEdges.add(e);
+//			}
+//			for (ReactionEdge e : graph.outgoingEdgesOf(v)) {
+//				if (subnetworkSpecies.contains(e.getTarget()) && !subnetworkEdges.contains(e))
+//					subnetworkEdges.add(e);
+//			}
+//		}
+//		if (subnetworkEdges.size() == 0)
+//			return Double.POSITIVE_INFINITY;
+//		double maxSubnetworkTimescale = 0.0;
+//		for (ReactionEdge e : subnetworkEdges) {
+//			double timescale = reactionTimescales[e.getReaction()];
+//			double xSource = x[e.getSource().getSpecies()];
+//			double xTarget = x[e.getTarget().getSpecies()];
+//			double xMin = FastMath.min(xSource, xTarget);
+//			timescale /= FastMath.max(xMin, 1.0);
+//			if (timescale > maxSubnetworkTimescale)
+//				maxSubnetworkTimescale = timescale;
+//		}
+//		return maxSubnetworkTimescale;
+//	}
 
 	protected List<Set<SpeciesVertex>> greedySelectSubnetworksToAverage(List<Set<SpeciesVertex>> averagingCandidates) {
 		// Now always choose the candidate subnetworks with the maximum number of species

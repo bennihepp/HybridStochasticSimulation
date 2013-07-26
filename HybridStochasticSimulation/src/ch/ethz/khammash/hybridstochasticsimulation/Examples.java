@@ -1050,7 +1050,7 @@ public class Examples {
 
 		List<VectorFinitePlotData> tdList;
 
-		tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, false);
+		tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, true);
 		td = tdList.get(0);
 		td.setDescription("AdaptiveMSPDMP trajectory");
 		for (int s=0; s < td.getNumberOfStates(); s++)
@@ -1805,6 +1805,75 @@ public class Examples {
 			td.setDescription("AdaptiveMSPDMP Simulation info");
 			plotDataList.add(td);
 		}
+
+		return plotDataList;
+	}
+
+	public static List<FinitePlotData> complexExample1() throws ParserConfigurationException, SAXException, IOException, FileFormatException {
+		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
+
+		File inputFile = new File("models/complex_example1.xml");
+		SimulationConfiguration nss = StochKitNetworkReader.readSimulationConfiguration(inputFile);
+
+		int PDMPRuns = 10;
+		int stochasticRuns = 10;
+		int numberOfTimePoints = 1001;
+		boolean printMessages = true;
+
+		nss.t1 = 100;
+
+		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
+
+		VectorFinitePlotData td;
+
+		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+		td.setDescription("Stochastic");
+		plotDataList.add(td);
+		for (int s=0; s < td.getNumberOfStates(); s++)
+			plotDataList.add(td.getSubsetData(s));
+
+//		td = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
+//		td.setDescription("Stochastic distribution");
+//		plotDataList.add(td);
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+
+		// Set 1
+		nss.N = 100;
+		nss.delta = 1;
+		nss.xi = 1;
+		nss.eta = 0.5;
+		nss.gamma = 0;
+		nss.theta = 10;
+
+//		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, true);
+//		td = tdList.get(0);
+//		td.setDescription("Adaptive");
+////		for (int s=0; s < td.getNumberOfStates(); s++)
+////			plotDataList.add(td.getSubsetData(s));
+//		plotDataList.add(td);
+//		if (tdList.size() > 1) {
+//			td = tdList.get(1);
+//			td.setDescription("AdaptiveMSPDMP alpha");
+//			plotDataList.add(td);
+//			td = tdList.get(2);
+//			td.setDescription("AdaptiveMSPDMP rho");
+//			plotDataList.add(td);
+//			td = tdList.get(3);
+//			td.setDescription("AdaptiveMSPDMP beta");
+//			plotDataList.add(td);
+//			td = tdList.get(4);		td.setDescription("AdaptiveMSPDMP z (scaled state)");
+//			plotDataList.add(td);
+//			td = tdList.get(5);
+//			td.setDescription("AdaptiveMSPDMP SpeciesType");
+//			plotDataList.add(td);
+//			td = tdList.get(6);
+//			td.setDescription("AdaptiveMSPDMP ReactionType");
+//			plotDataList.add(td);
+//			td = tdList.get(7);
+//			td.setDescription("AdaptiveMSPDMP Simulation info");
+//			plotDataList.add(td);
+//		}
 
 		return plotDataList;
 	}

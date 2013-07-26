@@ -8,18 +8,20 @@ import javax.inject.Inject;
 
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
+import com.google.common.base.Predicate;
+
 public class DummyAveragingUnit implements AveragingUnit {
 
 	@Inject
 	public DummyAveragingUnit() {}
 
 	@Override
-	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales) {
+	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
 		return Collections.<Set<SpeciesVertex>>emptyList();
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales) {
+	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
 		return Collections.<Set<SpeciesVertex>>emptyList();
 	}
 
@@ -32,7 +34,7 @@ public class DummyAveragingUnit implements AveragingUnit {
 	}
 
 	@Override
-	public void setSubnetworksEnumerator(SubnetworksEnumerator subnetworksEnumerator) {
+	public void setSubnetworkEnumerator(SubnetworkEnumerator subnetworksEnumerator) {
 	}
 
 }

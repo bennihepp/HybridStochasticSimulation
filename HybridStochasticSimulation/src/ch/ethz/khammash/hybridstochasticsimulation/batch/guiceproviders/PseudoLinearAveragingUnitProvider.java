@@ -20,8 +20,8 @@ public class PseudoLinearAveragingUnitProvider extends AbstractAveragingUnitProv
 	}
 
 	@Override
-	protected PseudoLinearAveragingUnit getAveragingUnit(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpeciesVertices) {
-		PseudoLinearAveragingUnit au = new PseudoLinearAveragingUnit(theta, network, importantSpeciesVertices);
+	protected PseudoLinearAveragingUnit getAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpeciesVertices) {
+		PseudoLinearAveragingUnit au = new PseudoLinearAveragingUnit(network, importantSpeciesVertices);
 		au.stopIfAveragingBecomesInvalid(config().getBoolean("stopIfAveragingBecomesInvalid", true));
 		au.warnIfAveragingBecomesInvalid(config().getBoolean("warnIfAveragingBecomesInvalid", true));
 		au.performPseudoLinearAveragingOnlyOnce(config().getBoolean("performPseudoLinearAveragingOnlyOnce", true));

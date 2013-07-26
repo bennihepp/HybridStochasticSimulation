@@ -10,6 +10,8 @@ import java.util.Set;
 
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
+import com.google.common.base.Predicate;
+
 public class CombiningAveragingUnit extends AbstractAveragingUnit {
 
 	private List<AveragingUnit> averagingUnits;
@@ -33,8 +35,8 @@ public class CombiningAveragingUnit extends AbstractAveragingUnit {
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales) {
-		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(t, x, reactionTimescales);
+	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
+		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(t, x, filter);
 		List<Set<SpeciesVertex>> subnetworksToAverage = greedySelectSubnetworksToAverage(averagingCandidates);
 
 		if (previousSubnetworksToAverage != null)
@@ -45,11 +47,11 @@ public class CombiningAveragingUnit extends AbstractAveragingUnit {
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales) {
+	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
 		previousSubnetworkToAveragingUnitMap = new HashMap<>();
 		List<Set<SpeciesVertex>> allCandidates = new ArrayList<>();
 		for (AveragingUnit au : averagingUnits) {
-			List<Set<SpeciesVertex>> candidates = au.findAveragingCandidates(t, x, reactionTimescales);
+			List<Set<SpeciesVertex>> candidates = au.findAveragingCandidates(t, x, filter);
 			for (Set<SpeciesVertex> candidate : candidates)
 				if (!previousSubnetworkToAveragingUnitMap.containsKey(candidate))
 					previousSubnetworkToAveragingUnitMap.put(candidate, au);

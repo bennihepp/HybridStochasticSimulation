@@ -1,12 +1,17 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
+import java.io.IOException;
 import java.util.List;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.math3.util.FastMath;
+import org.xml.sax.SAXException;
 
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent.EventType;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.PlotWindow;
+import ch.ethz.khammash.hybridstochasticsimulation.io.StochKitNetworkReader.FileFormatException;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 import com.google.common.eventbus.Subscribe;
@@ -48,6 +53,7 @@ public class GUI {
 //							try {
 //								List<FinitePlotData> plotDataList = Examples.heatShockMassAction();
 //								List<FinitePlotData> plotDataList = Examples.enzymeKinetics1();
+//								List<FinitePlotData> plotDataList = Examples.complexExample1();
 								int rows;
 								int cols;
 								if (plotDataList.size() >= 3) {

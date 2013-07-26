@@ -1,0 +1,200 @@
+<Model>
+  <Description>Complex Example 1</Description>
+<!--   <NumberOfReactions>8</NumberOfReactions> -->
+<!--   <NumberOfSpecies>7</NumberOfSpecies> -->
+  <ParametersList>
+    <Parameter>
+      <Id>k0</Id>
+      <Expression>1000.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k1</Id>
+      <Expression>2000.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k2</Id>
+      <Expression>1.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k3</Id>
+      <Expression>1.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k4</Id>
+      <Expression>2000.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k5</Id>
+      <Expression>500.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k6</Id>
+      <Expression>1000.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k7</Id>
+      <Expression>500.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k8</Id>
+      <Expression>1.0</Expression>
+    </Parameter>
+    <Parameter>
+      <Id>k9</Id>
+      <Expression>1.0</Expression>
+    </Parameter>
+  </ParametersList>
+  <ReactionsList>
+    <Reaction>
+      <Id>R0</Id>
+      <Type>mass-action</Type>
+      <Rate>k0</Rate>
+      <Reactants>
+        <SpeciesReference id="S0" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S1" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>R1</Id>
+      <Type>mass-action</Type>
+      <Rate>k1</Rate>
+      <Reactants>
+        <SpeciesReference id="S1" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S0" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>R2</Id>
+      <Type>mass-action</Type>
+      <Rate>k2</Rate>
+      <Reactants>
+        <SpeciesReference id="S1" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S1" stoichiometry="1.000000"/>
+        <SpeciesReference id="S2" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>R3</Id>
+      <Type>mass-action</Type>
+      <Rate>k3</Rate>
+      <Reactants>
+        <SpeciesReference id="S2" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S3" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>R4</Id>
+      <Type>mass-action</Type>
+      <Rate>k4</Rate>
+      <Reactants>
+        <SpeciesReference id="S4" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S5" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>R5</Id>
+      <Type>mass-action</Type>
+      <Rate>k5</Rate>
+      <Reactants>
+        <SpeciesReference id="S5" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S4" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>R6</Id>
+      <Type>mass-action</Type>
+      <Rate>k6</Rate>
+      <Reactants>
+        <SpeciesReference id="S5" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S6" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>R7</Id>
+      <Type>mass-action</Type>
+      <Rate>k7</Rate>
+      <Reactants>
+        <SpeciesReference id="S6" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S5" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>R8</Id>
+      <Type>mass-action</Type>
+      <Rate>k8</Rate>
+      <Reactants>
+        <SpeciesReference id="S3" stoichiometry="1.000000"/>
+      </Reactants>
+    </Reaction>
+    <Reaction>
+      <Id>R9</Id>
+      <Type>mass-action</Type>
+      <Rate>k9</Rate>
+      <Reactants>
+        <SpeciesReference id="S3" stoichiometry="1.000000"/>
+        <SpeciesReference id="S4" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S6" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+    <Reaction>
+      <Id>R9</Id>
+      <Type>mass-action</Type>
+      <Rate>k9</Rate>
+      <Reactants>
+        <SpeciesReference id="S2" stoichiometry="1.000000"/>
+        <SpeciesReference id="S6" stoichiometry="1.000000"/>
+      </Reactants>
+      <Products>
+        <SpeciesReference id="S6" stoichiometry="1.000000"/>
+      </Products>
+    </Reaction>
+  </ReactionsList>
+  <SpeciesList>
+    <Species>
+      <Id>S0</Id>
+      <InitialPopulation>50.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>S1</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>S2</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>S3</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>S4</Id>
+      <InitialPopulation>30.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>S5</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+    <Species>
+      <Id>S6</Id>
+      <InitialPopulation>0.000000</InitialPopulation>
+    </Species>
+  </SpeciesList>
+</Model>

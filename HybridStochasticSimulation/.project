@@ -3,6 +3,7 @@
 	<name>HybridStochasticSimulation</name>
 	<comment></comment>
 	<projects>
+		<project>JavaOde</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

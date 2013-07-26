@@ -31,6 +31,8 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryStochasticM
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
+import com.google.common.base.Predicate;
+
 public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 	private RandomDataGenerator rdg;
@@ -55,8 +57,8 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 		return copy;
 	}
 
-	public ZeroDeficiencyAveragingUnit(double theta, UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies, RandomDataGenerator rdg, boolean printMessages) {
-		super(theta, network, importantSpecies);
+	public ZeroDeficiencyAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies, RandomDataGenerator rdg, boolean printMessages) {
+		super(network, importantSpecies);
 		this.printMessages = printMessages;
 		this.subnetworkInformationMap = new HashMap<>();
 		this.model = new UnaryBinaryStochasticModel(network);
@@ -72,8 +74,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 //		Set<SpeciesVertex> allSpecies = graph.vertexSet();
 //		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
 //		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {
-		SubnetworksEnumerator subnetworksEnumerator = getSubnetworksEnumerator();
-		for (Set<SpeciesVertex> subnetworkSpecies : subnetworksEnumerator) {
+		for (Set<SpeciesVertex> subnetworkSpecies : enumerateSubnetworks()) {
 			if (subnetworkSpecies.size() == network.getNumberOfSpecies() || subnetworkSpecies.isEmpty())
 				continue;
 			boolean hasImportantSpecies = false;
@@ -130,7 +131,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 				StringBuilder sb = new StringBuilder();
 				sb.append("Computing deficiency for {");
 				for (SpeciesVertex v : subnetworkSpecies) {
-					sb.append(v.getSpecies());
+					sb.append(v);
 					sb.append(", ");
 				}
 				sb.delete(sb.length() - 2, sb.length());
@@ -141,8 +142,6 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 			if (deficiency != 0)
 				continue;
 			boolean weaklyReversible = isWeaklyReversible(subnetworkComplexGraph);
-			if (printMessages)
-				System.out.println("  Weakly reversible: " + weaklyReversible);
 			if (!weaklyReversible)
 				continue;
 			zeroDeficiencySubnetworks.add(subnetworkSpecies);
@@ -152,6 +151,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 	private boolean isWeaklyReversible(ComplexGraph complexGraph) {
 		// A chemical reaction network is weakly reversible if and only if all connected components of the complex graph are strongly connected
+		boolean weaklyReversible = true;
 		List<Set<ComplexVertex>> connectedSets = complexGraph.getConnectedSets();
 		for (Set<ComplexVertex> connectedSet : connectedSets) {
 			Set<ComplexEdge> connectedSetEdges = new HashSet<>();
@@ -161,10 +161,14 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 			}
 			DirectedSubgraph<ComplexVertex, ComplexEdge> subgraph = new DirectedSubgraph<>(complexGraph, connectedSet, connectedSetEdges);
 			StrongConnectivityInspector<ComplexVertex, ComplexEdge> sci = new StrongConnectivityInspector<>(subgraph);
-			if (!sci.isStronglyConnected())
-				return false;
+			if (!sci.isStronglyConnected()) {
+				weaklyReversible = false;
+				break;
+			}
 		}
-		return true;
+		if (printMessages)
+			System.out.println("  Weakly reversible: " + weaklyReversible);
+		return weaklyReversible;
 	}
 
 	private int computeDeficiency(UnaryBinaryReactionNetwork network, ComplexGraph complexGraph) {
@@ -217,14 +221,16 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales) {
+	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
 		if (zeroDeficiencySubnetworks == null)
 			this.zeroDeficiencySubnetworks = findZeroDeficiencySubnetworks();
 		// First find a list of subnetworks that could be averaged
 		List<Set<SpeciesVertex>> averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
 		for (Set<SpeciesVertex> subnetwork : zeroDeficiencySubnetworks) {
-			if (checkAveragingConditions(subnetwork, x, reactionTimescales))
+			if (filter.apply(subnetwork))
 				averagingCandidates.add(subnetwork);
+//			if (checkAveragingConditions(subnetwork, x, reactionTimescales))
+//				averagingCandidates.add(subnetwork);
 		}
 		return averagingCandidates;
 	}

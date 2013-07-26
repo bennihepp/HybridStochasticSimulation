@@ -19,6 +19,7 @@ import org.apache.commons.math3.util.FastMath;
 
 import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingCandidateFilter;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 import com.google.common.base.Optional;
@@ -30,7 +31,10 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	// TODO: Does xi make sense or just use the value of delta?
 	private double xi = 0.5;
 	private double eta = 0.1;
+	private double theta = 10.0;
 	private Optional<AveragingUnit> averagingUnitOptional;
+//	private Optional<SubnetworkFilter> subnetworkFilterOptional;
+	private AveragingCandidateFilter subnetworkFilter;
 
 	public static AdaptiveMSHRN createFrom(UnaryBinaryReactionNetwork net, double N, double gamma) {
 		return new AdaptiveMSHRN(net, N, gamma);
@@ -56,7 +60,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 
 	protected AdaptiveMSHRN(AdaptiveMSHRN hrn) {
 		super(hrn);
-		setEta(hrn.getEpsilon());
+		setEta(hrn.getEta());
 		setXi(hrn.getXi());
 		_init();
 		if (hrn.averagingUnitOptional.isPresent())
@@ -64,6 +68,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	}
 
 	final private void _init() {
+		subnetworkFilter = new TimescaleSeparationSubnetworkFilter(this);
 		unsetAveragingUnit();
 		init();
 	}
@@ -76,6 +81,10 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			this.averagingUnitOptional = Optional.of(averagingUnit);
 			averagingUnit.reset();
 		}
+	}
+
+	public void setSubnetworkFilter(AveragingCandidateFilter subnetworkFilter) {
+		this.subnetworkFilter = subnetworkFilter;
 	}
 
 	// Important: reset() must be called after changing the averaging unit
@@ -93,7 +102,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		this.xi = xi;
 	}
 
-	final public double getEpsilon() {
+	final public double getEta() {
 		return eta;
 	}
 
@@ -101,6 +110,15 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		checkArgument(eta > 0);
 //		checkArgument(eta < 1);
 		this.eta = eta;
+	}
+
+	public double getTheta() {
+		return theta;
+	}
+
+	public void setTheta(double theta) {
+		checkArgument(theta > 1);
+		this.theta = theta;
 	}
 
 	final public void init() {
@@ -168,12 +186,14 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		if (getPrintMessages())
 			Utilities.printArray(" alpha=", getAlpha());
 
-		double[] reactionTimescales = computeReactionTimescales(x);
+//		double[] reactionTimescales = computeReactionTimescales(x);
 
 		if (averagingUnitOptional.isPresent()) {
 			AveragingUnit averagingUnit = averagingUnitOptional.get();
+//			List<Set<SpeciesVertex>> subnetworksToAverage
+//				= averagingUnit.getSubnetworksToAverageAndResampleState(t, x, reactionTimescales);
 			List<Set<SpeciesVertex>> subnetworksToAverage
-				= averagingUnit.getSubnetworksToAverageAndResampleState(t, x, reactionTimescales);
+				= averagingUnit.getSubnetworksToAverageAndResampleState(t, x, subnetworkFilter.getFilterPredicate(t, x));
 			averageSubnetworks(subnetworksToAverage);
 		}
 
@@ -206,19 +226,19 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			}
 
 			// Compute waiting times for stochastic and deterministic reactions
-			double stochasticPropensityMax = 0.0;
-			double deterministicPropensityMax = 0.0;
+			double stochasticPropensitySum = 0.0;
+			double deterministicPropensitySum = 0.0;
 			for (int r=0; r < getNumberOfReactions(); r++) {
 				if (propensities[r] > 0) {
 					ReactionType rt = getReactionType(r);
 					if (rt == ReactionType.STOCHASTIC) {
-						if (propensities[r] > stochasticPropensityMax)
-							stochasticPropensityMax = propensities[r];
-//						stochasticPropensity += propensities[r];
+						stochasticPropensitySum += propensities[r];
+//						if (propensities[r] > stochasticPropensitySum)
+//							stochasticPropensitySum = propensities[r];
 					} else if (rt == ReactionType.DETERMINISTIC) {
-						if (propensities[r] > deterministicPropensityMax)
-							deterministicPropensityMax = propensities[r];
-//						deterministicPropensityMax += propensities[r];
+						deterministicPropensitySum += propensities[r];
+//						if (propensities[r] > deterministicPropensitySum)
+//							deterministicPropensitySum = propensities[r];
 					}
 				}
 			}
@@ -226,25 +246,25 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			// If the timescale-separation between stochastic and deterministic reactions is too small
 			// treat all reactions as stochastic
 			double stochasticToDeterministicAvgWaitingTimeRatio = Double.POSITIVE_INFINITY;
-			if (stochasticPropensityMax > 0.0)
-				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensityMax / stochasticPropensityMax;
+			if (stochasticPropensitySum > 0.0)
+				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensitySum / stochasticPropensitySum;
         	// TODO: Make this value configurable
-			double theta = 100;
+			double theta = 50;
 			if (stochasticToDeterministicAvgWaitingTimeRatio < theta) {
 				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
 				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
 				overrideReactionTypes(reactionTypes);
 				if (getPrintMessages())
-					System.out.println(" Overriding reaction types (" + deterministicPropensityMax + "/" + stochasticPropensityMax + "=" + stochasticToDeterministicAvgWaitingTimeRatio + "<" + theta);
+					System.out.println(" Overriding reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + "<" + theta);
 			}
 			else
 				if (getPrintMessages())
-					System.out.println(" Keeping reaction types (" + deterministicPropensityMax + "/" + stochasticPropensityMax + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + theta + ")");
+					System.out.println(" Keeping reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + theta + ")");
 		}
 
 	}
 
-	private double[] computeReactionTimescales(double[] x) {
+	public double[] computeReactionTimescales(double t, double[] x) {
 		double[] reactionTimescales = new double[getNumberOfReactions()];
 		if (getPrintMessages())
 			System.out.println(" Reaction timescales:");

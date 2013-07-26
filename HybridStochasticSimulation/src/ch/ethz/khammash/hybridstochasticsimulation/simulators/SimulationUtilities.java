@@ -11,13 +11,14 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.CombiningAveragingUnit;
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.MaximumSizeSubnetworksEnumerator;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.MaximumSizeSubnetworkEnumerator;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.PseudoLinearAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.ZeroDeficiencyAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.StochasticSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.SimulationConfiguration;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.DefaultReactionNetworkGraph;
+import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.HybridModel;
@@ -321,30 +322,30 @@ public class SimulationUtilities {
 		hrn.setPrintMessages(printMessages);
 		if (doAveraging) {
 			int maxSize = 10;
-			DefaultReactionNetworkGraph graph = new DefaultReactionNetworkGraph(hrn);
+			ReactionNetworkGraph graph = hrn.getGraph();
 			HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
 			for (int s : nss.importantSpecies)
 				importantSpeciesVertices.add(graph.getSpeciesVertex(s));
-			MaximumSizeSubnetworksEnumerator subnetworksEnumerator = new MaximumSizeSubnetworksEnumerator(graph, maxSize);
-			PseudoLinearAveragingUnit pseudoLinearAveragingUnit = new PseudoLinearAveragingUnit(
-					nss.theta, hrn, importantSpeciesVertices);
+			MaximumSizeSubnetworkEnumerator subnetworksEnumerator = new MaximumSizeSubnetworkEnumerator(graph, maxSize);
+			PseudoLinearAveragingUnit pseudoLinearAveragingUnit = new PseudoLinearAveragingUnit(hrn, importantSpeciesVertices);
 			pseudoLinearAveragingUnit.stopIfAveragingBecomesInvalid(false);
 			pseudoLinearAveragingUnit.performPseudoLinearAveragingOnlyOnce(false);
-			pseudoLinearAveragingUnit.setSubnetworksEnumerator(subnetworksEnumerator);
+			pseudoLinearAveragingUnit.setSubnetworkEnumerator(subnetworksEnumerator);
 			ZeroDeficiencyAveragingUnit zeroDeficiencyAveragingUnit = new ZeroDeficiencyAveragingUnit(
-					nss.theta, hrn, importantSpeciesVertices, rdgFactory.get(), printMessages);
-			zeroDeficiencyAveragingUnit.setSubnetworksEnumerator(subnetworksEnumerator);
+					hrn, importantSpeciesVertices, rdgFactory.get(), printMessages);
+			zeroDeficiencyAveragingUnit.setSubnetworkEnumerator(subnetworksEnumerator);
 			CombiningAveragingUnit averagingUnit = new CombiningAveragingUnit();
-			averagingUnit.setSubnetworksEnumerator(subnetworksEnumerator);
+			averagingUnit.setSubnetworkEnumerator(subnetworksEnumerator);
 			averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
 			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
-//			hrn.setAveragingUnit(averagingUnit);
+			hrn.setAveragingUnit(averagingUnit);
 			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
-//			hrn.setAveragingUnit(pseudoLinearAveragingUnit);
+			hrn.setAveragingUnit(pseudoLinearAveragingUnit);
 		}
 		hrn.setDelta(nss.delta);
 		hrn.setEta(nss.eta);
 		hrn.setXi(nss.xi);
+		hrn.setTheta(nss.theta);
 		hrn.setTolerance(nss.tolerance);
 		AdaptiveMSHRNModel model = new AdaptiveMSHRNModel(hrn);
 		model.setExposeOptionalState(optionalTrajectory);
@@ -877,11 +878,12 @@ public class SimulationUtilities {
 //		nss.theta, hrn, hrn.getReactionNetworkGraph(), importantSpeciesVertices);
 //		averagingUnit.performPseudoLinearAveragingOnlyOnce(false);
 		final ZeroDeficiencyAveragingUnit averagingUnit = new ZeroDeficiencyAveragingUnit(
-				nss.theta, hrn, importantSpeciesVertices, rdgFactory.get(), true);
+				hrn, importantSpeciesVertices, rdgFactory.get(), true);
 		hrn.setAveragingUnit(averagingUnit);
 		hrn.setDelta(nss.delta);
 		hrn.setEta(nss.eta);
 		hrn.setXi(nss.xi);
+		hrn.setTheta(nss.theta);
 		hrn.setTolerance(nss.tolerance);
 		final double[] x0 = nss.x0;
 		double[] z0 = hrn.scaleState(x0);

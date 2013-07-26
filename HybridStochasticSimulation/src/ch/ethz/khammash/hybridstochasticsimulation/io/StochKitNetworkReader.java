@@ -30,6 +30,15 @@ public class StochKitNetworkReader {
 		}
 	}
 
+	public static class NoSuchParameterException extends FileFormatException {
+
+		private static final long serialVersionUID = 4373584458629447987L;
+
+		public NoSuchParameterException(String message) {
+			super(message);
+		}
+	}
+
 	private StochKitNetworkReader() {}
 
 	public static UnaryBinaryReactionNetwork readUnaryBinaryNetworkFromFile(File inputFile) throws ParserConfigurationException, SAXException, IOException, FileFormatException {
@@ -41,12 +50,20 @@ public class StochKitNetworkReader {
 	    DocumentBuilder builder = factory.newDocumentBuilder();
 	    Document document = builder.parse(inputFile);
 
+	    int numOfReactions;
+	    int numOfSpecies;
 	    NodeList nodeList = document.getElementsByTagName("NumberOfReactions");
-	    int numOfReactions = Integer.parseInt(nodeList.item(0).getTextContent());
+	    if (nodeList.getLength() > 0)
+	    	numOfReactions = Integer.parseInt(nodeList.item(0).getTextContent());
+	    else
+	    	numOfReactions = document.getElementsByTagName("Reaction").getLength();
 	    nodeList = document.getElementsByTagName("NumberOfSpecies");
-	    int numOfSpecies = Integer.parseInt(nodeList.item(0).getTextContent());
+	    if (nodeList.getLength() > 0)
+		    numOfSpecies = Integer.parseInt(nodeList.item(0).getTextContent());
+	    else
+	    	numOfSpecies = document.getElementsByTagName("Species").getLength();
 
-	    DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(numOfSpecies, numOfReactions);
+	    DefaultUnaryBinaryReactionNetwork network = new DefaultUnaryBinaryReactionNetwork(numOfSpecies, numOfReactions);
 
 	    HashMap<String, Double> parameterMap = new HashMap<>();
 	    nodeList = document.getElementsByTagName("ParametersList");
@@ -63,47 +80,52 @@ public class StochKitNetworkReader {
 
 	    nodeList = document.getElementsByTagName("ReactionsList");
 	    for (int i=0; i < nodeList.getLength(); i++)
-	    	parseReactions(net, speciesMap, parameterMap, (Element)nodeList.item(i));
+	    	parseReactions(network, speciesMap, parameterMap, (Element)nodeList.item(i));
 
-	    double[] x0 = new double[net.getNumberOfSpecies()];
-	    String[] labels = new String[net.getNumberOfSpecies()];
+	    double[] x0 = new double[network.getNumberOfSpecies()];
+	    String[] labels = new String[network.getNumberOfSpecies()];
 	    for (Map.Entry<String, Integer> entry : speciesMap.entrySet()) {
 	    	int species = entry.getValue();
 	    	double value = initialPopulationMap.get(entry.getKey());
 	    	x0[species] = value;
+	    	network.setSpeciesLabel(species, entry.getKey());
 	    	labels[species] = entry.getKey();
 	    }
 
 	    SimulationConfiguration nss = new SimulationConfiguration();
-	    nss.net = net;
+	    nss.net = network;
 	    nss.reset();
 	    nss.x0 = x0;
 	    nss.speciesNames = labels;
 	    return nss;
 	}
 
-	private static void parseReactions(DefaultUnaryBinaryReactionNetwork net,
+	private static void parseReactions(DefaultUnaryBinaryReactionNetwork network,
 			Map<String, Integer> speciesMap, Map<String, Double> parameterMap, Element element) throws FileFormatException {
 		NodeList nodeList = element.getElementsByTagName("Reaction");
 		for (int reaction=0; reaction < nodeList.getLength(); reaction++) {
 			Element childElement = (Element)nodeList.item(reaction);
+			String id = childElement.getElementsByTagName("Id").item(0).getTextContent();
+	    	network.setReactionLabel(reaction, id);
 			String type = childElement.getElementsByTagName("Type").item(0).getTextContent();
 			if (!type.equals("mass-action"))
 				throw new FileFormatException("Unsupported reaction type: " + type);
 			String rateString = childElement.getElementsByTagName("Rate").item(0).getTextContent();
+			if (!parameterMap.containsKey(rateString))
+				throw new NoSuchParameterException(rateString);
 			double rate = parameterMap.get(rateString);
-			net.setRateParameter(reaction, rate);
+			network.setRateParameter(reaction, rate);
 			Map<String,Integer> reactantMap = readReactants(childElement);
 			for (Entry<String, Integer> entry : reactantMap.entrySet()) {
 				int species = speciesMap.get(entry.getKey());
 				int consumption = entry.getValue();
-				net.setConsumptionStochiometry(species, reaction, consumption);
+				network.setConsumptionStochiometry(species, reaction, consumption);
 			}
 			Map<String,Integer> productMap = readProducts(childElement);
 			for (Entry<String, Integer> entry : productMap.entrySet()) {
 				int species = speciesMap.get(entry.getKey());
 				int production = entry.getValue();
-				net.setProductionStochiometry(species, reaction, production);
+				network.setProductionStochiometry(species, reaction, production);
 			}
 		}
 	}

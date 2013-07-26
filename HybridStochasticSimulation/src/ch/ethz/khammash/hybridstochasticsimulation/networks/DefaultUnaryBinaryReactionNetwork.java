@@ -45,13 +45,8 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 	final private Object involvedReactionsListMutex = new Object();
 	final private Object graphMutex = new Object();
 
-	public static DefaultUnaryBinaryReactionNetwork createFromNetwork(UnaryBinaryReactionNetwork net) {
-		DefaultUnaryBinaryReactionNetwork newNet = new DefaultUnaryBinaryReactionNetwork(net.getNumberOfSpecies(), net.getNumberOfReactions());
-		newNet.setSpeciesLabels(net.getSpeciesLabels());
-		newNet.setReactionLabels(net.getReactionLabels());
-		newNet.setRateParameters(net.getRateParameters());
-		newNet.setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
-		return newNet;
+	public static DefaultUnaryBinaryReactionNetwork createFromNetwork(UnaryBinaryReactionNetwork network) {
+		return new DefaultUnaryBinaryReactionNetwork(network);
 	}
 
 	public static DefaultUnaryBinaryReactionNetwork createSubnetwork(UnaryBinaryReactionNetwork network, Set<Integer> subnetworkSpecies) {
@@ -126,6 +121,14 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 		stochiometry = new int[numOfReactions][numOfSpecies];
 		rateParameters = new double[numOfReactions];
 		initLabels();
+	}
+
+	protected DefaultUnaryBinaryReactionNetwork(UnaryBinaryReactionNetwork network) {
+		this(network.getNumberOfSpecies(), network.getNumberOfReactions());
+		setSpeciesLabels(network.getSpeciesLabels());
+		setReactionLabels(network.getReactionLabels());
+		setRateParameters(network.getRateParameters());
+		setStochiometries(network.getProductionStochiometries(), network.getConsumptionStochiometries());
 	}
 
 	final private void initLabels() {

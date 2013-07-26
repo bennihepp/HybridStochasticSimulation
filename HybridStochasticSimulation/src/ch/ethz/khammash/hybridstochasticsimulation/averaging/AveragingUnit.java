@@ -5,13 +5,17 @@ import java.util.Set;
 
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
+import com.google.common.base.Predicate;
+
 public interface AveragingUnit {
 
-	void setSubnetworksEnumerator(SubnetworksEnumerator subnetworksEnumerator);
+	void setSubnetworkEnumerator(SubnetworkEnumerator subnetworkEnumerator);
 
-	List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales);
+	List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, Predicate<Set<SpeciesVertex>> filter);
+//	List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales);
 
-	List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales);
+	List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter);
+//	List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales);
 
 	void reset();
 

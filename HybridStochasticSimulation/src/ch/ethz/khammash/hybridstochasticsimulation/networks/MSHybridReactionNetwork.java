@@ -50,6 +50,28 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 	protected MSHybridReactionNetwork(
 			int numOfSpecies, int numOfReactions, double N, double gamma, double[] alpha, double[] beta) {
 		super(numOfSpecies, numOfReactions);
+		init(N, gamma, alpha, beta);
+	}
+
+	protected MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N, double gamma) {
+		this(net, N, gamma, null, null);
+	}
+
+	protected MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
+//		this(net.getNumberOfSpecies(), net.getNumberOfReactions(), N, gamma, alpha, beta);
+//		setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
+//		setRateParameters(net.getRateParameters());
+		super(net);
+		init(N, gamma, alpha, beta);
+	}
+
+	protected MSHybridReactionNetwork(MSHybridReactionNetwork hrn) {
+		this(hrn, hrn.getN(), hrn.getGamma(), hrn.getAlpha(), hrn.getBeta());
+		setDelta(hrn.getDelta());
+		setTolerance(hrn.getTolerance());
+	}
+
+	private final void init(double N, double gamma, double[] alpha, double[] beta) {
 		checkArgument(N > 0, "Expected N > 0");
 		this.N = N;
 		this.gamma = gamma;
@@ -77,22 +99,6 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		reactionTypes = new ReactionType[getNumberOfReactions()];
 		reactionTermTypesInvalid = true;
 		updateScaleFactors();
-	}
-
-	protected MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N, double gamma) {
-		this(net, N, gamma, null, null);
-	}
-
-	protected MSHybridReactionNetwork(UnaryBinaryReactionNetwork net, double N, double gamma, double[] alpha, double[] beta) {
-		this(net.getNumberOfSpecies(), net.getNumberOfReactions(), N, gamma, alpha, beta);
-		setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
-		setRateParameters(net.getRateParameters());
-	}
-
-	protected MSHybridReactionNetwork(MSHybridReactionNetwork hrn) {
-		this(hrn, hrn.getN(), hrn.getGamma(), hrn.getAlpha(), hrn.getBeta());
-		setDelta(hrn.getDelta());
-		setTolerance(hrn.getTolerance());
 	}
 
 	public void setPrintMessages(boolean printMessages) {

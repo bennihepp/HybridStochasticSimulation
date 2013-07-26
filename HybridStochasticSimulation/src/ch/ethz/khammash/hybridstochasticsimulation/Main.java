@@ -15,7 +15,7 @@ import com.google.inject.Injector;
 
 public class Main {
 
-	private static final String DEFAULT_CONFIG_FILE = "config.xml";
+	private static final String DEFAULT_CONFIG_FILE = "configs";
 
 	public static void main(String[] args) {
 		String filename = DEFAULT_CONFIG_FILE;

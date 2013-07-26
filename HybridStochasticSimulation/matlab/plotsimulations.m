@@ -1,5 +1,5 @@
 inputfilepath = '../jobs/outputs/';
-inputfilename = 'FastIsomerization_adaptive_10000';
+inputfilename = 'StochasticFocusing_var2_adaptive_10000';
 outputfilepath = '../jobs/plots/';
 outputfilename = inputfilename;
 useTransparency = true;

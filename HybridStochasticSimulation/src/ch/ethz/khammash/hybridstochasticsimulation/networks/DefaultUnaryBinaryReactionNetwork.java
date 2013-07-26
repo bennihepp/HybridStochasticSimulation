@@ -33,12 +33,17 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 	private int[][] consumptionStochiometry;
 	private int[][] stochiometry;
 	private double[] rateParameters;
-	private List<int[]> choiceIndicesList;
-	private List<List<Integer>> involvedSpecies;
-	private List<List<Integer>> involvedReactions;
-	private ReactionNetworkGraph graph;
+	private volatile List<int[]> choiceIndicesList;
+	private volatile List<List<Integer>> involvedSpeciesList;
+	private volatile List<List<Integer>> involvedReactionsList;
+	private volatile ReactionNetworkGraph graph;
 	private List<String> speciesLabels;
 	private List<String> reactionLabels;
+
+	final private Object choiceIndicesListMutex = new Object();
+	final private Object involvedSpeciesListMutex = new Object();
+	final private Object involvedReactionsListMutex = new Object();
+	final private Object graphMutex = new Object();
 
 	public static DefaultUnaryBinaryReactionNetwork createFromNetwork(UnaryBinaryReactionNetwork net) {
 		DefaultUnaryBinaryReactionNetwork newNet = new DefaultUnaryBinaryReactionNetwork(net.getNumberOfSpecies(), net.getNumberOfReactions());
@@ -144,8 +149,8 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 
 	final protected void invalidate() {
 		choiceIndicesList = null;
-		involvedSpecies = null;
-		involvedReactions = null;
+		involvedSpeciesList = null;
+		involvedReactionsList = null;
 	}
 
 	public void setStochiometry(int species, int reaction, int production, int consumption) {
@@ -275,20 +280,27 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 	@Override
 	public int[] getChoiceIndices(int reaction) {
 		checkElementIndex(reaction, getNumberOfReactions());
-		if (choiceIndicesList == null)
-			computeChoiceIndices();
-		return choiceIndicesList.get(reaction);
+		return getModifieableChoiceIndicesList().get(reaction);
 	}
 
 	@Override
 	public List<int[]> getChoiceIndicesList() {
-		if (choiceIndicesList == null)
-			computeChoiceIndices();
+		return Collections.unmodifiableList(getModifieableChoiceIndicesList());
+	}
+
+	private List<int[]> getModifieableChoiceIndicesList() {
+		if (choiceIndicesList == null) {
+			synchronized (choiceIndicesListMutex) {
+				if (choiceIndicesList == null) {
+					choiceIndicesList = computeChoiceIndices();
+				}
+			}
+		}
 		return choiceIndicesList;
 	}
 
-	private void computeChoiceIndices() {
-		choiceIndicesList = new ArrayList<int[]>();
+	private List<int[]> computeChoiceIndices() {
+		List<int[]> choiceIndicesList = new ArrayList<>();
 		for (int r=0; r < getNumberOfReactions(); r++) {
 			int s1 = -1;
 			int s2 = -1;
@@ -330,24 +342,27 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 			}
 			choiceIndicesList.add(choiceIndices);
 		}
+		return choiceIndicesList;
 	}
 
 	@Override
 	public List<Integer> getInvolvedSpecies(int reaction) {
-		if (involvedSpecies == null)
-			updateInvolvedSpecies();
-		return involvedSpecies.get(reaction);
+		return getInvolvedSpeciesList().get(reaction);
 	}
 
-	@Override
-	public List<Integer> getInvolvedReactions(int species) {
-		if (involvedReactions == null)
-			updateInvolvedReactions();
-		return involvedReactions.get(species);
+	private List<List<Integer>> getInvolvedSpeciesList() {
+		if (involvedSpeciesList == null) {
+			synchronized (involvedSpeciesListMutex) {
+				if (involvedSpeciesList == null) {
+					involvedSpeciesList = computeInvolvedSpeciesList();
+				}
+			}
+		}
+		return involvedSpeciesList;
 	}
 
-	private void updateInvolvedSpecies() {
-		involvedSpecies = new ArrayList<List<Integer>>(getNumberOfReactions());
+	private List<List<Integer>> computeInvolvedSpeciesList() {
+		List<List<Integer>> involvedSpecies = new ArrayList<>(getNumberOfReactions());
 		for (int r=0; r < getNumberOfReactions(); r++) {
 			ArrayList<Integer> is = new ArrayList<Integer>();
 			for (int s=0; s < getNumberOfSpecies(); s++)
@@ -355,23 +370,46 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 					is.add(s);
 			involvedSpecies.add(Collections.unmodifiableList(is));
 		}
+		return involvedSpecies;
 	}
 
-	private void updateInvolvedReactions() {
-		involvedReactions = new ArrayList<List<Integer>>(getNumberOfSpecies());
+	@Override
+	public List<Integer> getInvolvedReactions(int species) {
+		return getInvolvedReactionsList().get(species);
+	}
+
+	private List<List<Integer>> getInvolvedReactionsList() {
+		if (involvedReactionsList == null) {
+			synchronized (involvedReactionsListMutex) {
+				if (involvedReactionsList == null) {
+					involvedReactionsList = computeInvolvedReactionsList();
+				}
+			}
+		}
+		return involvedReactionsList;
+	}
+
+	private List<List<Integer>> computeInvolvedReactionsList() {
+		List<List<Integer>> involvedReactionsList = new ArrayList<>(getNumberOfSpecies());
 		for (int s=0; s < getNumberOfSpecies(); s++) {
 			ArrayList<Integer> ir = new ArrayList<Integer>();
 			for (int r=0; r < getNumberOfReactions(); r++)
 				if (getProductionStochiometry(s, r) != 0 || getConsumptionStochiometry(s, r) != 0)
 					ir.add(r);
-			involvedReactions.add(Collections.unmodifiableList(ir));
+			involvedReactionsList.add(Collections.unmodifiableList(ir));
 		}
+		return involvedReactionsList;
 	}
 
 	@Override
 	public ReactionNetworkGraph getGraph() {
-		if (graph == null)
-			graph = new DefaultReactionNetworkGraph(this);
+		if (graph == null) {
+			synchronized (graphMutex) {
+				if (graph == null) {
+					graph = new DefaultReactionNetworkGraph(this);
+				}
+			}
+		}
 		return graph;
 	}
 

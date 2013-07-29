@@ -44,9 +44,9 @@ public class GUI {
 
 //							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
 //							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
-//							List<FinitePlotData> plotDataList = Examples.fastDimerization();
+							List<FinitePlotData> plotDataList = Examples.fastDimerization();
 //							List<FinitePlotData> plotDataList = Examples.haploinsufficiencyNetwork();
-							List<FinitePlotData> plotDataList = Examples.simpleCrystallizationNetwork();
+//							List<FinitePlotData> plotDataList = Examples.simpleCrystallizationNetwork();
 //							List<FinitePlotData> plotDataList = Examples.stochasticFocusingNetwork();
 //							List<FinitePlotData> plotDataList = Examples.conversionCycleNetwork();
 

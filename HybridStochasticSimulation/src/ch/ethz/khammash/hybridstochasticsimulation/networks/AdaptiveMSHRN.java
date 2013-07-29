@@ -117,7 +117,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	}
 
 	public void setTheta(double theta) {
-		checkArgument(theta > 0);
+		checkArgument(theta >= 0, String.format("Expected theta >= 0 (theta=%f)", theta));
 		this.theta = theta;
 	}
 

@@ -44,7 +44,7 @@ public class GUI {
 
 //							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
 //							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
-							List<FinitePlotData> plotDataList = Examples.fastDimerization();
+//							List<FinitePlotData> plotDataList = Examples.fastDimerization();
 //							List<FinitePlotData> plotDataList = Examples.haploinsufficiencyNetwork();
 //							List<FinitePlotData> plotDataList = Examples.simpleCrystallizationNetwork();
 //							List<FinitePlotData> plotDataList = Examples.stochasticFocusingNetwork();
@@ -52,10 +52,10 @@ public class GUI {
 
 //							List<FinitePlotData> plotDataList = Examples.repressilator();
 //							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
-//							try {
+							try {
 //								List<FinitePlotData> plotDataList = Examples.heatShockMassAction();
 //								List<FinitePlotData> plotDataList = Examples.enzymeKinetics1();
-//								List<FinitePlotData> plotDataList = Examples.complexExample1();
+								List<FinitePlotData> plotDataList = Examples.complexExample1();
 								int rows;
 								int cols;
 								if (plotDataList.size() >= 3) {
@@ -69,11 +69,11 @@ public class GUI {
 								window.setPlotData(plotDataList, rows, cols);
 								window.validate();
 								window.getStatusBar().setText("Finished simulation", 2000);
-//							} catch (ParserConfigurationException
-//									| SAXException | IOException | FileFormatException e) {
-//								e.printStackTrace();
-//								window.getStatusBar().setText("Simulation failed!");
-//							}
+							} catch (ParserConfigurationException
+									| SAXException | IOException | FileFormatException e) {
+								e.printStackTrace();
+								window.getStatusBar().setText("Simulation failed!");
+							}
 						}
 					};
 					t.start();

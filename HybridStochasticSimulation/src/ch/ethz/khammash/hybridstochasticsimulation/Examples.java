@@ -2,17 +2,20 @@ package ch.ethz.khammash.hybridstochasticsimulation;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.util.FastMath;
 import org.xml.sax.SAXException;
 
 import ch.ethz.khammash.hybridstochasticsimulation.examples.BacteriophageT7;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.BirthDeathTunnelNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.examples.ConversionCycleNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfigurationFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.FastDimerization;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.FastIsomerization;
@@ -30,6 +33,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.io.StochKitNetworkReader;
 import ch.ethz.khammash.hybridstochasticsimulation.io.StochKitNetworkReader.FileFormatException;
 import ch.ethz.khammash.hybridstochasticsimulation.math.MathUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetworkUtils;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.SimulationUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
@@ -81,7 +85,7 @@ public class Examples {
 	public static List<FinitePlotData> conversionCycleNetwork() {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		SimulationConfiguration nss = ExampleConfigurationFactory.getInstance().createExampleConfiguration("Conversion Cycle");
+		SimulationConfiguration nss = new ConversionCycleNetwork();
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -117,9 +121,9 @@ public class Examples {
 
 		VectorFinitePlotData td;
 
-//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
-//		td.setDescription("Stochastic");
-//		plotDataList.add(td);
+		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+		td.setDescription("Stochastic");
+		plotDataList.add(td);
 
 //		td = SimulationUtilities.simulateMSPDMP(nss, tVector);
 //		td.setDescription("MSPDMP");
@@ -129,36 +133,36 @@ public class Examples {
 //		td.setDescription("PDMP");
 //		plotDataList.add(td);
 
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, false);
-//		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages, false);
-		td = tdList.get(0);
-		td.setDescription("Adaptive");
-//		for (int s=0; s < td.getNumberOfStates(); s++)
-//			plotDataList.add(td.getSubsetData(s));
-		plotDataList.add(td);
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alphas");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rhos");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP betas");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP STs");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP RTTs");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP z");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP integrator");
-			plotDataList.add(td);
-		}
+//		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, false);
+////		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMPCommonsMath(nss, tSeries, printMessages, false);
+//		td = tdList.get(0);
+//		td.setDescription("Adaptive");
+////		for (int s=0; s < td.getNumberOfStates(); s++)
+////			plotDataList.add(td.getSubsetData(s));
+//		plotDataList.add(td);
+//		if (tdList.size() > 1) {
+//			td = tdList.get(1);
+//			td.setDescription("AdaptiveMSPDMP alphas");
+//			plotDataList.add(td);
+//			td = tdList.get(2);
+//			td.setDescription("AdaptiveMSPDMP rhos");
+//			plotDataList.add(td);
+//			td = tdList.get(3);
+//			td.setDescription("AdaptiveMSPDMP betas");
+//			plotDataList.add(td);
+//			td = tdList.get(4);
+//			td.setDescription("AdaptiveMSPDMP STs");
+//			plotDataList.add(td);
+//			td = tdList.get(5);
+//			td.setDescription("AdaptiveMSPDMP RTTs");
+//			plotDataList.add(td);
+//			td = tdList.get(6);
+//			td.setDescription("AdaptiveMSPDMP z");
+//			plotDataList.add(td);
+//			td = tdList.get(7);
+//			td.setDescription("AdaptiveMSPDMP integrator");
+//			plotDataList.add(td);
+//		}
 
 //		TrajectoryDistributionPlotData tdd;
 //		tdd = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tVector);
@@ -1869,6 +1873,11 @@ public class Examples {
 
 		File inputFile = new File("models/complex_example1.xml");
 		SimulationConfiguration nss = StochKitNetworkReader.readSimulationConfiguration(inputFile);
+		String[] importantSpeciesNames = { "S2", "S3" };
+		List<Integer> importantSpecies = new ArrayList<>(importantSpeciesNames.length);
+		for (String speciesName : importantSpeciesNames)
+			importantSpecies.add(ReactionNetworkUtils.getSpeciesIndex(nss.net, speciesName));
+		nss.importantSpecies = ArrayUtils.toPrimitive(importantSpecies.toArray(new Integer[0]));
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
@@ -1881,11 +1890,11 @@ public class Examples {
 
 		VectorFinitePlotData td;
 
-//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
-//		td.setDescription("Stochastic");
-//		plotDataList.add(td);
-//		for (int s=0; s < td.getNumberOfStates(); s++)
-//			plotDataList.add(td.getSubsetData(s));
+		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+		td.setDescription("Stochastic");
+		plotDataList.add(td);
+		for (int s=0; s < td.getNumberOfStates(); s++)
+			plotDataList.add(td.getSubsetData(s));
 
 //		td = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
 //		td.setDescription("Stochastic distribution");

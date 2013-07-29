@@ -7,6 +7,12 @@ for i = 1:length(listing)
 
     file = listing(i);
     if (file.isdir == 0)
+        pattern = '^(?<filename>.+)_traj\.(mat|m)$';
+        [matchStart, matchEnd, tokenIndices, matchStrings, ...
+            tokenStrings, tokenName, splitStrings] = regexpi(file.name, pattern, 'tokens');
+        if length(matchStart) > 0
+            continue;
+        end
         pattern = '^(?<filename>.+)\.(mat|m)$';
         [matchStart, matchEnd, tokenIndices, matchStrings, ...
             tokenStrings, tokenName, splitStrings] = regexpi(file.name, pattern, 'tokens');

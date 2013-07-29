@@ -1,15 +1,19 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.inject.Provider;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.lang3.ArrayUtils;
 
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.MaximumSizeSubnetworkEnumerator;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetworkUtils;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 import com.google.inject.Inject;
@@ -27,9 +31,22 @@ public abstract class AbstractAveragingUnitProvider<T extends AveragingUnit> ext
 	@Override
 	public T get() {
 		UnaryBinaryReactionNetwork network = networkProvider.get();
-		int[] importantSpecies = dataConfig().getIntArray("importantSpecies");
+		int[] importantSpeciesIndices = new int[0];
+		String importantSpeciesKey = "importantSpecies";
+		String[] importantSpecies = null;
+		if (config().getMaxIndex(importantSpeciesKey) >= 0)
+				importantSpecies = config().getStringArray(importantSpeciesKey);
+		if (importantSpecies != null) {
+			List<Integer> importantSpeciesList = new ArrayList<>(importantSpecies.length);
+			for (String name : importantSpecies) {
+				importantSpeciesList.add(ReactionNetworkUtils.getSpeciesIndex(network, name));
+			}
+			importantSpeciesIndices = ArrayUtils.toPrimitive(importantSpeciesList.toArray(new Integer[0]));
+		} else {
+			importantSpeciesIndices = dataConfig().getIntArray("importantSpeciesIndices", importantSpeciesIndices);
+		}
 		Set<SpeciesVertex> importantSpeciesVertices = new HashSet<>();
-		for (int s : importantSpecies)
+		for (int s : importantSpeciesIndices)
 			importantSpeciesVertices.add(network.getGraph().getSpeciesVertex(s));
 		T averagingUnit = getAveragingUnit(network, importantSpeciesVertices);
 		int maxSize = config().getInt("maxSize", -1);

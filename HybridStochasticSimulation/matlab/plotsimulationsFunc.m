@@ -2,7 +2,7 @@ function [] = plotsimulationsFunc(inputfilepath, inputfilename, ...
     outputfilepath, outputfilename, ...
     useTransparency, drawStdDevOutlines, linkAxes, ...
     writeOutput, writeToExtraFolder, ...
-    writeFig, writePdf, writeEps, writeTikz)
+    writeFig, writePdf, writeEps, writeTikz, writeTikzTex)
 
     S = load([inputfilepath, inputfilename,'.mat'], 'simulations');
 
@@ -15,7 +15,7 @@ function [] = plotsimulationsFunc(inputfilepath, inputfilename, ...
     % set(gcf, 'Renderer', 'opengl');
 
     clear plotScales;
-    % plotScales = [2000, 1];
+    %plotScales = [1000, 1000, 1];
 
     xlimMin = 0;
     ylimMin = 0;
@@ -161,6 +161,13 @@ function [] = plotsimulationsFunc(inputfilepath, inputfilename, ...
             % matfig2pgf('filename', [outputfilepath, outputfilename, '.pgf'], 'figwidth', paperSize(1));
             matlab2tikz('filename', [outputfilepath, outputfilename, '.tikz'], ...
                         'checkForUpdates', false, 'showInfo', false);
+            %             'width', [int2str(round(paperSize(1))), 'cm']
+            %             'standalone', true
+        end
+        if writeTikzTex
+            % matfig2pgf('filename', [outputfilepath, outputfilename, '.pgf'], 'figwidth', paperSize(1));
+            matlab2tikz('filename', [outputfilepath, outputfilename, '.tex'], ...
+                        'checkForUpdates', false, 'showInfo', false, 'standalone', true);
             %             'width', [int2str(round(paperSize(1))), 'cm']
             %             'standalone', true
         end

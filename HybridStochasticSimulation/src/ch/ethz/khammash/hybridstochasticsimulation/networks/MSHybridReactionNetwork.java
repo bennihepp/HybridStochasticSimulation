@@ -69,6 +69,8 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		this(hrn, hrn.getN(), hrn.getGamma(), hrn.getAlpha(), hrn.getBeta());
 		setDelta(hrn.getDelta());
 		setTolerance(hrn.getTolerance());
+		setPrintMessages(hrn.getPrintMessages());
+		setTolerance(hrn.getTolerance());
 	}
 
 	private final void init(double N, double gamma, double[] alpha, double[] beta) {

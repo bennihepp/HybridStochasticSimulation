@@ -62,6 +62,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 		super(hrn);
 		setEta(hrn.getEta());
 		setXi(hrn.getXi());
+		setTheta(hrn.getTheta());
 		_init();
 		if (hrn.averagingUnitOptional.isPresent())
 			setAveragingUnit(hrn.averagingUnitOptional.get());

@@ -131,6 +131,7 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 		setReactionLabels(network.getReactionLabels());
 		setRateParameters(network.getRateParameters());
 		setStochiometries(network.getProductionStochiometries(), network.getConsumptionStochiometries());
+		setInitialConditions(network.getInitialConditions());
 	}
 
 	final private void initLabels() {

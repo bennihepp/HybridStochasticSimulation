@@ -1,5 +1,7 @@
 inputfilepath = '../jobs/outputs/';
-outputfilepath = '../jobs/plots2/';
+inputfilepattern = '^(?<filename>.+)\.(mat|m)$'
+inputfilefilter = '^(?<filename>.+)_traj\.(mat|m)$';
+outputfilepath = '../jobs/plots/';
 
 listing = dir(inputfilepath);
 
@@ -7,15 +9,15 @@ for i = 1:length(listing)
 
     file = listing(i);
     if (file.isdir == 0)
-        pattern = '^(?<filename>.+)_traj\.(mat|m)$';
+        %inputfilefilter = '^(?<filename>.+)_traj\.(mat|m)$';
         [matchStart, matchEnd, tokenIndices, matchStrings, ...
-            tokenStrings, tokenName, splitStrings] = regexpi(file.name, pattern, 'tokens');
+            tokenStrings, tokenName, splitStrings] = regexpi(file.name, inputfilefilter, 'tokens');
         if length(matchStart) > 0
             continue;
         end
-        pattern = '^(?<filename>.+)\.(mat|m)$';
+        %inputfilepattern = '^(?<filename>.+)\.(mat|m)$';
         [matchStart, matchEnd, tokenIndices, matchStrings, ...
-            tokenStrings, tokenName, splitStrings] = regexpi(file.name, pattern, 'tokens');
+            tokenStrings, tokenName, splitStrings] = regexpi(file.name, inputfilepattern, 'tokens');
         if length(matchStart) > 0
 
             inputfilename = tokenName.filename;
@@ -31,12 +33,13 @@ for i = 1:length(listing)
             writePdf = false;
             writeEps = false;
             writeTikz = true;
+            writeTikzTex = true;
 
             plotsimulationsFunc(inputfilepath, inputfilename, ...
                 outputfilepath, outputfilename, ...
                 useTransparency, drawStdDevOutlines, linkAxes, ...
                 writeOutput, writeToExtraFolder, ...
-                writeFig, writePdf, writeEps, writeTikz);
+                writeFig, writePdf, writeEps, writeTikz, writeTikzTex);
 
             close;
 
@@ -46,12 +49,13 @@ for i = 1:length(listing)
             writePdf = true;
             writeEps = true;
             writeTikz = false;
+            writeTikzTex = false;
 
             plotsimulationsFunc(inputfilepath, inputfilename, ...
                 outputfilepath, outputfilename, ...
                 useTransparency, drawStdDevOutlines, linkAxes, ...
                 writeOutput, writeToExtraFolder, ...
-                writeFig, writePdf, writeEps, writeTikz);
+                writeFig, writePdf, writeEps, writeTikz, writeTikzTex);
 
             close;
 

@@ -1,5 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation.mpj;
 
+import java.io.IOException;
 import java.util.List;
 
 import mpi.MPI;
@@ -39,12 +40,23 @@ public class TaskManager implements Runnable {
 			jobsDone++;
 			if (jobsDone < simulationJob.getRuns())
 				pushSimulationTask(result.getMpiSource());
+			handleSimulationResult(result);
 			FiniteTrajectory tr = result.getFiniteTrajectory();
 			log.debug("Received trajectory from " + result.getMpiSource() + ": " + tr.getNumberOfTimePoints() + "x" + tr.getNumberOfStates());
 			log.debug("jobsDone: " + jobsDone);
 		}
 		for (int mpiTarget : mpiTargets)
 			pushStopSignal(mpiTarget);
+		try {
+			simulationJob.writeOutputs();
+		} catch (IOException e) {
+			log.error("Failed to write outputs", e);
+		}
+	}
+
+	private void handleSimulationResult(SimulationResultContainer result) {
+		FiniteTrajectory tr = result.getFiniteTrajectory();
+		simulationJob.outputTrajectory(tr);
 	}
 
 	private void pushStopSignal(int mpiTarget) {

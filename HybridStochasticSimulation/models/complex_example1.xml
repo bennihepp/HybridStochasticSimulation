@@ -43,6 +43,10 @@
       <Id>k9</Id>
       <Expression>1.0</Expression>
     </Parameter>
+    <Parameter>
+      <Id>k10</Id>
+      <Expression>1.0</Expression>
+    </Parameter>
   </ParametersList>
   <ReactionsList>
     <Reaction>
@@ -151,13 +155,13 @@
         <SpeciesReference id="S4" stoichiometry="1.000000"/>
       </Reactants>
       <Products>
-        <SpeciesReference id="S6" stoichiometry="1.000000"/>
+        <SpeciesReference id="S4" stoichiometry="1.000000"/>
       </Products>
     </Reaction>
     <Reaction>
-      <Id>R9</Id>
+      <Id>R10</Id>
       <Type>mass-action</Type>
-      <Rate>k9</Rate>
+      <Rate>k10</Rate>
       <Reactants>
         <SpeciesReference id="S2" stoichiometry="1.000000"/>
         <SpeciesReference id="S6" stoichiometry="1.000000"/>

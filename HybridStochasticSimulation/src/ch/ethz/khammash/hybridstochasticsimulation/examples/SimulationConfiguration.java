@@ -25,7 +25,7 @@ public class SimulationConfiguration {
 	public double eta = 0.1;
 	public double delta = 0.5;
 	public double xi = 0.5;
-	public double theta = 1000;
+	public double theta = 1;
 	// How many reactions should occur before the copy number bounds are checked manually
 	public int zeta = 100;
 	public double tolerance = 1e-6;

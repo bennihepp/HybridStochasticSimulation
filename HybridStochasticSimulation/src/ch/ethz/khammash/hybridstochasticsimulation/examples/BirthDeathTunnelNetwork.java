@@ -39,10 +39,10 @@ public class BirthDeathTunnelNetwork extends SimulationConfiguration {
 //				1e-2,
 //		};
 		double[] rateParameters = {
-				1,
-				10.0,
-				10.0,
 				1e-1,
+				100.0,
+				100.0,
+				1e-2,
 		};
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
 		net.setStochiometries(productionStochiometries, consumptionStochiometries);

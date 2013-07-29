@@ -122,6 +122,7 @@ public class VilarOscillator extends SimulationConfiguration {
 //	//		gammaR = 0.1;
 //	//		thetaR = 10.0;
 		}
+
 		// Reaction propensities
 		rateParameters[0] = alphaA;            // 50.0
 		rateParameters[1] = alpha_a * alphaA;  // 500.0

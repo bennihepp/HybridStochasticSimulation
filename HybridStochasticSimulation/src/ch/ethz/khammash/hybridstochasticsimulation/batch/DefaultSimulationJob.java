@@ -33,6 +33,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	private int runs;
 	private Type simulationType;
 	private double[] plotScales;
+	private int outputCounter = 0;
 
 	public static <T extends ReactionNetworkModel> DefaultSimulationJob<T> createTrajectorySimulation(
 			ObjProvider<T> modelProvider, ObjProvider<FiniteTrajectoryRecorder> trajectoryRecorderProvider,
@@ -242,6 +243,32 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		getSimulationController().simulateTrajectory(
 				model, tr, gett0(), getx0(), gett1());
 		return tr;
+	}
+
+	@Override
+	public void outputTrajectory(FiniteTrajectory tr) {
+		VectorFinitePlotData plotData = new VectorFinitePlotData(tr.gettSeries(), tr.getxSeries());
+		if (getLabels() != null)
+			plotData.setStateNames(getLabels());
+		if (getPlotScales() != null)
+			plotData.setPlotScales(getPlotScales());
+		if (getRuns() > 1)
+			plotData.setDescription(getName() + "(" + outputCounter + ")");
+		else
+			plotData.setDescription(getName());
+		outputCounter++;
+		List<SimulationOutput> outputs = getOutputs();
+		for (SimulationOutput output : outputs) {
+			output.add(getName(), plotData);
+		}
+	}
+
+	@Override
+	public void writeOutputs() throws IOException {
+		List<SimulationOutput> outputs = getOutputs();
+		for (SimulationOutput output : outputs) {
+			output.write();
+		}
 	}
 
 }

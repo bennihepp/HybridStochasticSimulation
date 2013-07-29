@@ -21,16 +21,7 @@ public class DummyAveragingUnit implements AveragingUnit {
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
-		return Collections.<Set<SpeciesVertex>>emptyList();
-	}
-
-	@Override
 	public void reset() {
-	}
-
-	@Override
-	public void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
 	}
 
 	@Override

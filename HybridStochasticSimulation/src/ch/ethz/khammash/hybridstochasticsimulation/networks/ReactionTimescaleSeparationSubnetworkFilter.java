@@ -9,13 +9,13 @@ import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 import com.google.common.base.Predicate;
 
-public class TimescaleSeparationSubnetworkFilter implements AveragingCandidateFilter {
+public class ReactionTimescaleSeparationSubnetworkFilter implements AveragingCandidateFilter {
 
 	private AdaptiveMSHRN hrn;
 	double t;
 	double[] x;
 
-	public TimescaleSeparationSubnetworkFilter(AdaptiveMSHRN hrn) {
+	public ReactionTimescaleSeparationSubnetworkFilter(AdaptiveMSHRN hrn) {
 		this.hrn = hrn;
 	}
 

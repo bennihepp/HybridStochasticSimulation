@@ -14,7 +14,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionN
 import com.google.common.base.Predicate;
 import com.google.common.collect.Sets;
 
-public abstract class AbstractAveragingUnit implements AveragingUnit {
+public abstract class AbstractAveragingUnit implements ModularAveragingUnit {
 
 	protected UnaryBinaryReactionNetwork network;
 	protected ReactionNetworkGraph graph;
@@ -136,7 +136,7 @@ public abstract class AbstractAveragingUnit implements AveragingUnit {
 //		return maxSubnetworkTimescale;
 //	}
 
-	protected List<Set<SpeciesVertex>> greedySelectSubnetworksToAverage(List<Set<SpeciesVertex>> averagingCandidates) {
+	static List<Set<SpeciesVertex>> greedySelectSubnetworksToAverage(List<Set<SpeciesVertex>> averagingCandidates) {
 		// Now always choose the candidate subnetworks with the maximum number of species
 		// as long as they don't share any species with already chosen subnetworks
 		// (this is a simple greedy strategy but should be good enough).

@@ -18,8 +18,8 @@ import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
 import org.apache.commons.math3.util.FastMath;
 
 import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingCandidateFilter;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 import com.google.common.base.Optional;
@@ -68,7 +68,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	}
 
 	final private void _init() {
-		subnetworkFilter = new TimescaleSeparationSubnetworkFilter(this);
+		subnetworkFilter = new SpeciesTimescaleSeparationSubnetworkFilter(this);
 		unsetAveragingUnit();
 		init();
 	}
@@ -117,7 +117,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	}
 
 	public void setTheta(double theta) {
-		checkArgument(theta > 1);
+		checkArgument(theta > 0);
 		this.theta = theta;
 	}
 
@@ -197,11 +197,6 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			averageSubnetworks(subnetworksToAverage);
 		}
 
-		// Scale copy numbers with new species scale factors.
-		for (int s=0; s < getNumberOfSpecies(); s++) {
-			x[s] *= getInverseSpeciesScaleFactor(s);
-		}
-
 		if (propensities != null) {
 
 			if (getPrintMessages()) {
@@ -249,7 +244,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			if (stochasticPropensitySum > 0.0)
 				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensitySum / stochasticPropensitySum;
         	// TODO: Make this value configurable
-			double theta = 50;
+			double theta = 100;
 			if (stochasticToDeterministicAvgWaitingTimeRatio < theta) {
 				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
 				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
@@ -262,33 +257,151 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 					System.out.println(" Keeping reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + theta + ")");
 		}
 
+		// Scale copy numbers with new species scale factors.
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			x[s] *= getInverseSpeciesScaleFactor(s);
+		}
+
 	}
 
 	public double[] computeReactionTimescales(double t, double[] x) {
 		double[] reactionTimescales = new double[getNumberOfReactions()];
-		if (getPrintMessages())
-			System.out.println(" Reaction timescales:");
 		for (int r=0; r < getNumberOfReactions(); r++) {
+			String rLabel = getReactionLabel(r);
 			int[] choiceIndices = getChoiceIndices(r);
-			double propensity = 1.0;
+			// This is unnecessary as the scales are only compared to each other so the constant
+			// offset of gamma doesn't change anything.
+			double propensityScale = getGamma();
 			for (int i=0; i < choiceIndices.length; i++) {
-				if (x[choiceIndices[i]] > 0.0)
-					propensity *= x[choiceIndices[i]];
-//					q *= FastMath.pow(getN(), getAlpha(choiceIndices[i]));
+				String sLabel = getSpeciesLabel(choiceIndices[i]);
+//				propensityScale += getAlpha(choiceIndices[i]);
+				double copyNumber = x[choiceIndices[i]];
+				if (copyNumber > 0)
+					propensityScale += FastMath.log(copyNumber) / FastMath.log(getN());
 			}
-			propensity *= getRateParameter(r);
-			int maxStochiometry = 0;
-			for (int s=0; s < getNumberOfSpecies(); s++) {
-				int stochiometry = FastMath.abs(getStochiometry(s, r));
-				if (stochiometry > maxStochiometry)
-					maxStochiometry = stochiometry;
-			}
-			propensity *= maxStochiometry;
-			reactionTimescales[r] = 1.0 / propensity;
-			if (getPrintMessages())
-				System.out.println("  " + r + ": " + reactionTimescales[r]);
+			propensityScale += FastMath.log(getRateParameter(r)) / FastMath.log(getN());
+			reactionTimescales[r] = - propensityScale;
 		}
 		return reactionTimescales;
+//		double[] reactionTimescales = new double[getNumberOfReactions()];
+//		if (getPrintMessages())
+//			System.out.println(" Reaction timescales:");
+//		for (int r=0; r < getNumberOfReactions(); r++) {
+//			int[] choiceIndices = getChoiceIndices(r);
+//			double propensity = 1.0;
+//			for (int i=0; i < choiceIndices.length; i++) {
+//				if (x[choiceIndices[i]] > 0.0)
+//					propensity *= x[choiceIndices[i]];
+////					q *= FastMath.pow(getN(), getAlpha(choiceIndices[i]));
+//			}
+//			propensity *= getRateParameter(r);
+//			int maxStochiometry = 0;
+//			for (int s=0; s < getNumberOfSpecies(); s++) {
+//				int stochiometry = FastMath.abs(getStochiometry(s, r));
+//				if (stochiometry > maxStochiometry)
+//					maxStochiometry = stochiometry;
+//			}
+//			propensity *= maxStochiometry;
+//			reactionTimescales[r] = 1.0 / propensity;
+//			if (getPrintMessages())
+//				System.out.println("  " + r + ": " + reactionTimescales[r]);
+//		}
+//		return reactionTimescales;
+	}
+
+	public double[][] computeNetworkTimescales(double t, double[] x) {
+		double[] propensityScales = new double[getNumberOfReactions()];
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			int[] choiceIndices = getChoiceIndices(r);
+			double propensityScale = getGamma();
+			for (int i=0; i < choiceIndices.length; i++)
+				propensityScale += getAlpha(choiceIndices[i]);
+			propensityScale += FastMath.log(getRateParameter(r)) / FastMath.log(getN());
+			propensityScales[r] = propensityScale;
+		}
+		double[][] networkTimescales = new double[getNumberOfSpecies()][getNumberOfReactions()];
+		Arrays.fill(networkTimescales, Double.NaN);
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			List<Integer> reactions = getInvolvedReactions(s);
+			for (int r : reactions) {
+				if (getStochiometry(s, r) != 0) {
+					double timescale = - propensityScales[r];
+					networkTimescales[s][r] = timescale;
+				}
+			}
+		}
+		return networkTimescales;
+	}
+
+	public double[] computeMinSpeciesTimescales(double t, double[] x) {
+		double[] propensityScales = new double[getNumberOfReactions()];
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			int[] choiceIndices = getChoiceIndices(r);
+			double propensityScale = getGamma();
+			for (int i=0; i < choiceIndices.length; i++) {
+				propensityScale += getAlpha(choiceIndices[i]);
+//				if (x[choiceIndices[i]] > 0.0)
+//					propensityScale *= x[choiceIndices[i]];
+			}
+			propensityScale += FastMath.log(getRateParameter(r)) / FastMath.log(getN());
+//			propensityScale *= getRateParameter(r);
+			propensityScales[r] = propensityScale;
+//			if (getPrintMessages())
+//				System.out.println("  " + r + ": " + propensityScale);
+		}
+		double[] speciesTimescales = new double[getNumberOfSpecies()];
+		if (getPrintMessages())
+			System.out.println(" Min Species timescales:");
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			List<Integer> reactions = getInvolvedReactions(s);
+			double minTimescale = Double.POSITIVE_INFINITY;
+			for (int r : reactions) {
+//				double timescale = 1.0 / (propensityScales[r] * FastMath.abs(getStochiometry(s, r)));
+				double timescale = - propensityScales[r];
+				if (timescale < minTimescale)
+						minTimescale = timescale;
+			}
+			speciesTimescales[s] = minTimescale;
+			if (getPrintMessages())
+				System.out.println("  " + s + ": " + speciesTimescales[s]);
+		}
+		return speciesTimescales;
+	}
+
+	public double[] computeMaxSpeciesTimescales(double t, double[] x) {
+		double[] propensityScales = new double[getNumberOfReactions()];
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			int[] choiceIndices = getChoiceIndices(r);
+			double propensityScale = getGamma();
+			for (int i=0; i < choiceIndices.length; i++) {
+				propensityScale += getAlpha(choiceIndices[i]);
+//				if (x[choiceIndices[i]] > 0.0)
+//					propensityscale *= x[choiceIndices[i]];
+//					q *= FastMath.pow(getN(), getAlpha(choiceIndices[i]));
+			}
+			propensityScale += FastMath.log(getRateParameter(r)) / FastMath.log(getN());
+//			propensityscale *= getRateParameter(r);
+			propensityScales[r] = propensityScale;
+			if (getPrintMessages())
+				System.out.println("  " + r + ": " + propensityScale);
+		}
+		double[] speciesTimescales = new double[getNumberOfSpecies()];
+		if (getPrintMessages())
+			System.out.println(" Max Species timescales:");
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			List<Integer> reactions = getInvolvedReactions(s);
+			double maxTimescale = Double.NEGATIVE_INFINITY;
+			for (int r : reactions) {
+//				double timescale = 1.0 / (propensityScales[r] * FastMath.abs(getStochiometry(s, r)));
+				double timescale = - propensityScales[r];
+				if (timescale > maxTimescale)
+						maxTimescale = timescale;
+			}
+			speciesTimescales[s] = maxTimescale;
+			if (getPrintMessages())
+				System.out.println("  " + s + ": " + speciesTimescales[s]);
+		}
+		return speciesTimescales;
 	}
 
 	// TODO: not necessary

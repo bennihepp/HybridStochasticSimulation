@@ -2,8 +2,8 @@ package ch.ethz.khammash.hybridstochasticsimulation.batch.guiceproviders;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.CombiningAveragingUnit;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.ModularAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.PseudoLinearAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.ZeroDeficiencyAveragingUnit;
 
@@ -26,7 +26,7 @@ public class CombiningAveragingUnitProvider extends AbstractProvider<CombiningAv
 		CombiningAveragingUnit au = new CombiningAveragingUnit();
 		String[] averagingUnitsStrings = dataConfig().getStringArray("averagingUnits");
 		for (String averagingUnitString : averagingUnitsStrings) {
-			AveragingUnit subAu = null;
+			ModularAveragingUnit subAu = null;
 			switch (averagingUnitString) {
 			case "ZeroDeficiencyAveragingUnit":
 				subAu = injector.getInstance(ZeroDeficiencyAveragingUnit.class);

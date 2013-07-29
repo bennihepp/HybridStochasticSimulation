@@ -1,9 +1,21 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch;
 
+import java.io.IOException;
+
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
 
 
 public interface SimulationJob {
+
+	public static class OutputAlreadyWrittenException extends RuntimeException {
+
+		private static final long serialVersionUID = -1303336105879923868L;
+
+		public OutputAlreadyWrittenException(String msg) {
+			super(msg);
+		}
+
+	}
 
 	public enum Type {
 		TRAJECTORY, DISTRIBUTION
@@ -38,5 +50,9 @@ public interface SimulationJob {
 	void runJob();
 
 	FiniteTrajectory runSingleSimulation();
+
+	void outputTrajectory(FiniteTrajectory tr);
+
+	void writeOutputs() throws IOException;
 
 }

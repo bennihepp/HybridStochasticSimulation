@@ -12,21 +12,23 @@ import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 import com.google.common.base.Predicate;
 
-public class CombiningAveragingUnit extends AbstractAveragingUnit {
+public class CombiningAveragingUnit implements AveragingUnit {
 
-	private List<AveragingUnit> averagingUnits;
-	private List<Set<SpeciesVertex>> previousSubnetworksToAverage;
-	private Map<Set<SpeciesVertex>, AveragingUnit> previousSubnetworkToAveragingUnitMap;
+	private List<ModularAveragingUnit> averagingUnits;
+	private List<Set<SpeciesVertex>> lastSubnetworksToAverage;
+	private Map<Set<SpeciesVertex>, ModularAveragingUnit> lastSubnetworkToAveragingUnitMap;
+	private SubnetworkEnumerator subnetworkEnumerator;
 
 	public CombiningAveragingUnit() {
 		averagingUnits = new LinkedList<>();
 	}
 
-	public void addAveragingUnit(AveragingUnit ap) {
-		averagingUnits.add(ap);
+	public void addAveragingUnit(ModularAveragingUnit au) {
+		au.setSubnetworkEnumerator(subnetworkEnumerator);
+		averagingUnits.add(au);
 	}
 
-	public void removeAveragingUnit(AveragingUnit ap) {
+	public void removeAveragingUnit(ModularAveragingUnit ap) {
 		averagingUnits.remove(ap);
 	}
 
@@ -35,53 +37,62 @@ public class CombiningAveragingUnit extends AbstractAveragingUnit {
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
-		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(t, x, filter);
-		List<Set<SpeciesVertex>> subnetworksToAverage = greedySelectSubnetworksToAverage(averagingCandidates);
-
-		if (previousSubnetworksToAverage != null)
-			resamplePreviouslyAveragedSubnetworks(t, x, subnetworksToAverage, previousSubnetworksToAverage);
-
-		previousSubnetworksToAverage = subnetworksToAverage;
-		return subnetworksToAverage;
+	public void setSubnetworkEnumerator(SubnetworkEnumerator subnetworkEnumerator) {
+		this.subnetworkEnumerator = subnetworkEnumerator;
+		for (ModularAveragingUnit au : averagingUnits)
+			au.setSubnetworkEnumerator(subnetworkEnumerator);
+		
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
-		previousSubnetworkToAveragingUnitMap = new HashMap<>();
-		List<Set<SpeciesVertex>> allCandidates = new ArrayList<>();
-		for (AveragingUnit au : averagingUnits) {
+	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
+		Map<Set<SpeciesVertex>, ModularAveragingUnit> subnetworkToAveragingUnitMap = findAveragingCandidates(t, x, filter);
+		List<Set<SpeciesVertex>> averagingCandidates = new ArrayList<>(subnetworkToAveragingUnitMap.keySet());
+		List<Set<SpeciesVertex>> subnetworksToAverage = AbstractAveragingUnit.greedySelectSubnetworksToAverage(averagingCandidates);
+
+		if (lastSubnetworksToAverage != null && lastSubnetworksToAverage.size() > 0)
+			resampleLastAveragedSubnetworks(t, x, subnetworksToAverage);
+
+		lastSubnetworksToAverage = subnetworksToAverage;
+		lastSubnetworkToAveragingUnitMap = subnetworkToAveragingUnitMap;
+
+		return subnetworksToAverage;
+	}
+
+	private Map<Set<SpeciesVertex>, ModularAveragingUnit> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
+		Map<Set<SpeciesVertex>, ModularAveragingUnit> subnetworkToAveragingUnitMap = new HashMap<>();
+//		List<Set<SpeciesVertex>> allCandidates = new ArrayList<>();
+		for (ModularAveragingUnit au : averagingUnits) {
 			List<Set<SpeciesVertex>> candidates = au.findAveragingCandidates(t, x, filter);
 			for (Set<SpeciesVertex> candidate : candidates)
-				if (!previousSubnetworkToAveragingUnitMap.containsKey(candidate))
-					previousSubnetworkToAveragingUnitMap.put(candidate, au);
-			allCandidates.addAll(candidates);
+				if (!subnetworkToAveragingUnitMap.containsKey(candidate)) {
+					subnetworkToAveragingUnitMap.put(candidate, au);
+//					allCandidates.add(candidate);
+				}
 		}
-		return allCandidates;
+		return subnetworkToAveragingUnitMap;
+//		return allCandidates;
 	}
 
 	@Override
 	public void reset() {
-		previousSubnetworksToAverage = null;
-		previousSubnetworkToAveragingUnitMap = null;
+		lastSubnetworksToAverage = null;
+		lastSubnetworkToAveragingUnitMap = null;
 	}
 
-	@Override
-	public void resamplePreviouslyAveragedSubnetworks(double t, double[] x,
-			List<Set<SpeciesVertex>> subnetworksToAverage, List<Set<SpeciesVertex>> previousSubnetworksToAverage) {
+	private void resampleLastAveragedSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
 		// Resample states that have been averaged before but are no longer averaged
 		Set<SpeciesVertex> allAveragingSpecies = new HashSet<SpeciesVertex>();
 		for (Set<SpeciesVertex> subnetwork : subnetworksToAverage)
 			allAveragingSpecies.addAll(subnetwork);
-		for (Set<SpeciesVertex> subnetworkSpecies : previousSubnetworksToAverage)
+		for (Set<SpeciesVertex> subnetworkSpecies : lastSubnetworksToAverage)
 			if (!allAveragingSpecies.containsAll(subnetworkSpecies)) {
 				resampleFromSteadyStateDistribution(t, x, subnetworkSpecies);
 			}
 	}
 
-	@Override
-	public void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
-		AveragingUnit ap = previousSubnetworkToAveragingUnitMap.get(subnetworkSpecies);
+	private void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
+		ModularAveragingUnit ap = lastSubnetworkToAveragingUnitMap.get(subnetworkSpecies);
 		ap.resampleFromSteadyStateDistribution(t, x, subnetworkSpecies);
 	}
 

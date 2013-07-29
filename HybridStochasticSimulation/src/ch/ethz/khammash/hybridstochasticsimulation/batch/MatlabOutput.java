@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob.OutputAlreadyWrittenException;
 import ch.ethz.khammash.hybridstochasticsimulation.matlab.MatlabDataExporter;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
@@ -21,6 +22,7 @@ public class MatlabOutput implements SimulationOutput {
     private File outputFile;
     private int rows = -1;
     private int cols = -1;
+    private boolean outputWritten = false;
 
     public MatlabOutput(String outputFilename, boolean overwrite) throws IOException {
         this(new File(outputFilename), overwrite);
@@ -62,7 +64,15 @@ public class MatlabOutput implements SimulationOutput {
     }
 
     @Override
-    public void write() throws IOException {
+    public void finalize() throws IOException, OutputAlreadyWrittenException {
+    	if (!outputWritten)
+    		write();
+    }
+
+    @Override
+    public void write() throws IOException, OutputAlreadyWrittenException {
+    	if (outputWritten)
+    		throw new OutputAlreadyWrittenException("The output has already been written to the file");
         MatlabDataExporter mde = new MatlabDataExporter();
         List<MLArray> matlabData = mde.buildMatlabSimulationList(plotDataListMap);
         if (getRows() > 0)

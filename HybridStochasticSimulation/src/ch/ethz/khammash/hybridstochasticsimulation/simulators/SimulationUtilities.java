@@ -339,8 +339,8 @@ public class SimulationUtilities {
 			averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
 			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
 			hrn.setAveragingUnit(averagingUnit);
-			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
-			hrn.setAveragingUnit(pseudoLinearAveragingUnit);
+//			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
+//			hrn.setAveragingUnit(pseudoLinearAveragingUnit);
 		}
 		hrn.setDelta(nss.delta);
 		hrn.setEta(nss.eta);
@@ -874,8 +874,7 @@ public class SimulationUtilities {
 		HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
 		for (int s : nss.importantSpecies)
 			importantSpeciesVertices.add(graph.getSpeciesVertex(s));
-//		PseudoLinearAveragingUnit averagingUnit = new PseudoLinearAveragingUnit(
-//		nss.theta, hrn, hrn.getReactionNetworkGraph(), importantSpeciesVertices);
+//		final PseudoLinearAveragingUnit averagingUnit = new PseudoLinearAveragingUnit(hrn, importantSpeciesVertices);
 //		averagingUnit.performPseudoLinearAveragingOnlyOnce(false);
 		final ZeroDeficiencyAveragingUnit averagingUnit = new ZeroDeficiencyAveragingUnit(
 				hrn, importantSpeciesVertices, rdgFactory.get(), true);
@@ -935,8 +934,8 @@ public class SimulationUtilities {
 			@Override
 			public PDMPModel get() {
 				AdaptiveMSHRN hrnCopy = AdaptiveMSHRN.createCopy(hrn);
-				ZeroDeficiencyAveragingUnit averagingUnitClone
-					= ZeroDeficiencyAveragingUnit.createCopy(averagingUnit, rdgFactory.get());
+				ZeroDeficiencyAveragingUnit averagingUnitClone = ZeroDeficiencyAveragingUnit.createCopy(averagingUnit, rdgFactory.get());
+//				PseudoLinearAveragingUnit averagingUnitClone = PseudoLinearAveragingUnit.createCopy(averagingUnit);
 				hrnCopy.setAveragingUnit(averagingUnitClone);
 				return new AdaptiveMSHRNModel(hrnCopy);
 			}

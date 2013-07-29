@@ -12,13 +12,7 @@ public interface AveragingUnit {
 	void setSubnetworkEnumerator(SubnetworkEnumerator subnetworkEnumerator);
 
 	List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, Predicate<Set<SpeciesVertex>> filter);
-//	List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, double[] reactionTimescales);
-
-	List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter);
-//	List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, double[] reactionTimescales);
 
 	void reset();
-
-	void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies);
 
 }

@@ -1,17 +1,21 @@
-function [] = plotsimulationsFunc(inputfilepath, inputfilename, ...
-    outputfilepath, outputfilename, ...
+function [hlist] = plotsimulationsFunc(inputfilepath, inputfilename, ...
+    outputfilepath, outputfileprefix, ...
     useTransparency, drawStdDevOutlines, linkAxes, ...
-    writeOutput, writeToExtraFolder, ...
+    writeOutput, writeToOwnFolder, ...
     writeFig, writePdf, writeEps, writeTikz, writeTikzTex)
 
-    S = load([inputfilepath, inputfilename,'.mat'], 'simulations');
+    hlist = [];
 
-    figure;
+    S = load([inputfilepath, inputfilename], 'simulations');
+
+    h = figure;
+    set(h, 'Visible', 'off');
+    hlist(end+1) = h;
     clf;
     orient landscape;
-    set(gcf, 'PaperUnits', 'centimeters');
-    set(gcf, 'PaperType', 'A4');
-    paperSize = get(gcf, 'PaperSize');
+    set(h, 'PaperUnits', 'centimeters');
+    set(h, 'PaperType', 'A4');
+    paperSize = get(h, 'PaperSize');
     % set(gcf, 'Renderer', 'opengl');
 
     clear plotScales;
@@ -136,37 +140,37 @@ function [] = plotsimulationsFunc(inputfilepath, inputfilename, ...
         %opts = struct('width', 7, 'height', 7, 'Resolution', 600, 'Color', 'CMYK');
         % 11.7 x 8.3
         %opts = struct('Resolution', 600, 'Color', 'CMYK');
-        %exportfig(gcf, [outputfilepath, outputfilename, '.eps'], opts);
-        %exportfig(gcf, [outputfilepath, outputfilename, '.pdf'], opts);
+        %exportfig(gcf, [outputfilepath, outputfileprefix, '.eps'], opts);
+        %exportfig(gcf, [outputfilepath, outputfileprefix, '.pdf'], opts);
 
-        if writeToExtraFolder
-            outputfilepath = [outputfilepath, outputfilename, '/'];
+        if writeToOwnFolder
+            outputfilepath = [outputfilepath, outputfileprefix, '/'];
             tf = isdir(outputfilepath);
             if ~tf
                 mkdir(outputfilepath);
             end
-            outputfilename = 'plot';
+            outputfileprefix = 'plot';
         end
 
         if writeFig
-            saveas(gcf(), [outputfilepath, outputfilename, '.fig'], 'fig');
+            saveas(gcf(), [outputfilepath, outputfileprefix, '.fig'], 'fig');
         end
         if writePdf
-            print(gcf(), [outputfilepath, outputfilename, '.pdf'], '-dpdf', '-r600', '-cmyk', '-painters');
+            print(gcf(), [outputfilepath, outputfileprefix, '.pdf'], '-dpdf', '-r600', '-cmyk', '-painters');
         end
         if writeEps
-            print(gcf(), [outputfilepath, outputfilename, '.eps'], '-depsc2', '-r600', '-cmyk', '-painters');
+            print(gcf(), [outputfilepath, outputfileprefix, '.eps'], '-depsc2', '-r600', '-cmyk', '-painters');
         end
         if writeTikz
-            % matfig2pgf('filename', [outputfilepath, outputfilename, '.pgf'], 'figwidth', paperSize(1));
-            matlab2tikz('filename', [outputfilepath, outputfilename, '.tikz'], ...
+            % matfig2pgf('filename', [outputfilepath, outputfileprefix, '.pgf'], 'figwidth', paperSize(1));
+            matlab2tikz('filename', [outputfilepath, outputfileprefix, '.tikz'], ...
                         'checkForUpdates', false, 'showInfo', false);
             %             'width', [int2str(round(paperSize(1))), 'cm']
             %             'standalone', true
         end
         if writeTikzTex
-            % matfig2pgf('filename', [outputfilepath, outputfilename, '.pgf'], 'figwidth', paperSize(1));
-            matlab2tikz('filename', [outputfilepath, outputfilename, '.tex'], ...
+            % matfig2pgf('filename', [outputfilepath, outputfileprefix, '.pgf'], 'figwidth', paperSize(1));
+            matlab2tikz('filename', [outputfilepath, outputfileprefix, '.tex'], ...
                         'checkForUpdates', false, 'showInfo', false, 'standalone', true);
             %             'width', [int2str(round(paperSize(1))), 'cm']
             %             'standalone', true

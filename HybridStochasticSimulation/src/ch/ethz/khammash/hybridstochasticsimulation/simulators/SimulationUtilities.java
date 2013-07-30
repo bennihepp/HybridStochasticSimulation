@@ -338,8 +338,8 @@ public class SimulationUtilities {
 			averagingUnit.setSubnetworkEnumerator(subnetworksEnumerator);
 			averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
 			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
-//			hrn.setAveragingUnit(averagingUnit);
-			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
+			hrn.setAveragingUnit(averagingUnit);
+//			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
 //			hrn.setAveragingUnit(pseudoLinearAveragingUnit);
 		}
 		hrn.setDelta(nss.delta);

@@ -40,6 +40,8 @@ public class MainMPJ {
 		int mpiRank = MPI.COMM_WORLD.Rank();
 		int mpiSize = MPI.COMM_WORLD.Size();
 
+		log.info(String.format("Rank %d is up", mpiRank));
+
 		String filename = DEFAULT_CONFIG_FILE;
 		if (args.length > 0)
 			filename = args[0];

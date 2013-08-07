@@ -98,7 +98,7 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 			reactionIndexedStochiometries[r] = ArrayUtils.toPrimitive(indexedStochiometriesList.toArray(new Double[0]));
 			switch (reactionType) {
 			case EXPLODING:
-//				throw new UnsupportedOperationException("Exploding reaction term encountered!");
+				throw new UnsupportedOperationException("Exploding reaction term encountered!");
 			case DETERMINISTIC:
 				deterministicReactionIndicesList.add(Integer.valueOf(r));
 				break;

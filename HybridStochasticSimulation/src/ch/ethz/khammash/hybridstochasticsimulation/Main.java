@@ -7,8 +7,8 @@ import java.io.IOException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
 
-import ch.ethz.khammash.hybridstochasticsimulation.batch.BatchGuiceModule;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
+import ch.ethz.khammash.hybridstochasticsimulation.injection.BatchGuiceModule;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;

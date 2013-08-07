@@ -25,7 +25,6 @@ import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import com.google.common.base.Optional;
 
 
-
 public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 
 	// TODO: Does xi make sense or just use the value of delta?
@@ -33,7 +32,6 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 	private double eta = 0.1;
 	private double theta = 10.0;
 	private Optional<AveragingUnit> averagingUnitOptional;
-//	private Optional<SubnetworkFilter> subnetworkFilterOptional;
 	private AveragingCandidateFilter subnetworkFilter;
 
 	public static AdaptiveMSHRN createFrom(UnaryBinaryReactionNetwork net, double N, double gamma) {
@@ -245,7 +243,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			if (stochasticPropensitySum > 0.0)
 				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensitySum / stochasticPropensitySum;
         	// TODO: Make this value configurable
-			double theta = 100;
+			double theta = 10;
 			if (stochasticToDeterministicAvgWaitingTimeRatio < theta) {
 				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
 				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);

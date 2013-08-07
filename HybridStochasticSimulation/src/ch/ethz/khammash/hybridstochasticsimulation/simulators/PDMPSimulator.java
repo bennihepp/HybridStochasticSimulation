@@ -60,16 +60,16 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 	}
 
 	private class DefaultSimulationInformation implements SimulationInformation {
-    	private long integrationCounter;
-    	private long reactionCounter;
-    	private boolean integrating;
+    	private long integrationCount = 0;
+    	private long reactionCount = 0;
+    	private boolean integrating = false;
 		@Override
 		public long getIntegrationCount() {
-			return integrationCounter;
+			return integrationCount;
 		}
 		@Override
 		public long getReactionCount() {
-			return reactionCounter;
+			return reactionCount;
 		}
 		@Override
 		public boolean isIntegrating() {
@@ -79,8 +79,8 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 		public double[] computeInformationState() {
 			double[] state = new double[3];
 			state[0] = integrating ? 1.0 : -1.0;
-			state[1] = integrationCounter;
-			state[2] = reactionCounter;
+			state[1] = integrationCount;
+			state[2] = reactionCount;
 			return state;
 		}
 	}
@@ -98,13 +98,13 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 
     	// Simulation information
 		StateObserverAdapter stateObserver;
-		boolean recordSimulationInformation = simulationInformationTrajectoryRecorders.size() > 0;
+		boolean recordSimulationInformation = simulationInformationTrajectoryRecorders.size() > 0 || printMessages;
     	DefaultSimulationInformation simInfo = null;
 		if (recordSimulationInformation) {
 	    	simInfo = new DefaultSimulationInformation();
-	    	simInfo.integrationCounter = 0;
-	    	simInfo.reactionCounter = 0;
-	    	simInfo.integrating = false;
+//	    	simInfo.integrationCount = 0;
+//	    	simInfo.reactionCount = 0;
+//	    	simInfo.integrating = false;
 			stateObserver = new ExtendedStateObserverAdapter(simInfo, model, trajectoryRecorders, optionalTrajectoryRecorders, simulationInformationTrajectoryRecorders);
 		} else
 			stateObserver = new StateObserverAdapter(model, trajectoryRecorders, optionalTrajectoryRecorders);
@@ -173,7 +173,7 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 		        	while (true) {
 			        	t = solver.integrate();
 			        	if (recordSimulationInformation)
-			        		simInfo.integrationCounter++;
+			        		simInfo.integrationCount++;
 			        	if (showProgress)
 							while (t > nextMsgT) {
 								System.out.println("Progress: " + (100 * (nextMsgT - t0)/(t1 - t0)) + "%");
@@ -226,7 +226,7 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 //		        }
 		        if (reaction >= 0) {
 		        	if (recordSimulationInformation)
-		        		simInfo.reactionCounter++;
+		        		simInfo.reactionCount++;
 		        	reactionCounterArray[reaction]++;
 		        	stateObserver.report(t, x);
 		        	// TODO: Make this value configurable (coupled to N?)
@@ -238,15 +238,15 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 		        }
 			}
 			if (printMessages) {
-				System.out.println("Integrator invocations: " + simInfo.integrationCounter);
+				System.out.println("Integrator invocations: " + simInfo.getIntegrationCount());
 				System.out.println("Observed " + eventObserver.getEventCount() + " events");
 				final long endTime = System.currentTimeMillis();
 				System.out.println("Execution time: " + (endTime - startTime));
 		    	long evaluationCounter = ode.getEvaluations();
-				System.out.println("Total of " + evaluationCounter + " evaluations and " + simInfo.reactionCounter + " reactions performed");
+				System.out.println("Total of " + evaluationCounter + " evaluations and " + simInfo.getReactionCount() + " reactions performed");
 				Utilities.printArray("Total reaction counts", reactionCounterArray);
 				for (int r=0; r < reactionCounterArray.length; r++)
-					reactionCounterArray[r] /= simInfo.reactionCounter;
+					reactionCounterArray[r] /= simInfo.getReactionCount();
 				Utilities.printArray("Relative reaction counts", reactionCounterArray);
 			}
 			for (int i=0; i < x1.length; i++)

@@ -51,8 +51,8 @@ public interface SimulationJob {
 
 	FiniteTrajectory runSingleSimulation();
 
-	void outputTrajectory(FiniteTrajectory tr);
-
 	void writeOutputs() throws IOException;
+
+	void addSimulationResult(FiniteTrajectory tr);
 
 }

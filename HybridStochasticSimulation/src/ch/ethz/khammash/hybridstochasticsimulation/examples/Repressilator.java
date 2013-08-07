@@ -64,21 +64,21 @@ public class Repressilator extends SimulationConfiguration {
 
 		double[] rateParameters = new double[productionStochiometries[0].length];
 		// Reaction propensities
-		rateParameters[0]  = 2.0;
+		rateParameters[0]  = 0.1;
 		rateParameters[1]  = 50.0;
-		rateParameters[2]  = 0.1;
+		rateParameters[2]  = 0.01;
 		rateParameters[3]  = 50.0;
-		rateParameters[4]  = 0.1;
-		rateParameters[5]  = 2.0;
+		rateParameters[4]  = 0.01;
+		rateParameters[5]  = 0.1;
 		rateParameters[6]  = 50.0;
-		rateParameters[7]  = 0.1;
+		rateParameters[7]  = 0.01;
 		rateParameters[8]  = 50.0;
-		rateParameters[9]  = 0.1;
-		rateParameters[10] = 2.0;
+		rateParameters[9]  = 0.01;
+		rateParameters[10] = 0.1;
 		rateParameters[11] = 50.0;
-		rateParameters[12] = 0.1;
+		rateParameters[12] = 0.01;
 		rateParameters[13] = 50.0;
-		rateParameters[14] = 0.1;
+		rateParameters[14] = 0.01;
 
 		double t0 = 0.0;
 		double t1 = 100.0;

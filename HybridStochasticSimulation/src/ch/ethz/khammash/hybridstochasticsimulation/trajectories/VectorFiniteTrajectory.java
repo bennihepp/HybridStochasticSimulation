@@ -86,6 +86,11 @@ public class VectorFiniteTrajectory extends AbstractFiniteTrajectory {
 	}
 
 	@Override
+	public double getxState(int state, int timePointIndex) {
+		return xVectors.get(state).getEntry(timePointIndex);
+	}
+
+	@Override
 	public double getInitialtime() {
 		return tVector.getEntry(0);
 	}

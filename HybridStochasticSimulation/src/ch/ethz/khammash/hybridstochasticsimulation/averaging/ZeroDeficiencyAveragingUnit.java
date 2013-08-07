@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,14 +45,14 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 //		return new ZeroDeficiencyAveragingProvider(theta, network, graph, importantSpecies, rdg, printMessages);
 //	}
 
-	public static ZeroDeficiencyAveragingUnit createCopy(ZeroDeficiencyAveragingUnit provider, RandomDataGenerator rdg) {
+	public static ZeroDeficiencyAveragingUnit createCopy(ZeroDeficiencyAveragingUnit averagingUnit, RandomDataGenerator rdg) {
 		ZeroDeficiencyAveragingUnit copy = new ZeroDeficiencyAveragingUnit();
-		copy.copyFrom(provider);
+		copy.copyFrom(averagingUnit);
 		copy.rdg = rdg;
-		copy.zeroDeficiencySubnetworks = provider.zeroDeficiencySubnetworks;
-		copy.subnetworkInformationMap = provider.subnetworkInformationMap;
-		copy.model = provider.model;
-		copy.printMessages = provider.printMessages;
+		copy.zeroDeficiencySubnetworks = averagingUnit.zeroDeficiencySubnetworks;
+		copy.subnetworkInformationMap = averagingUnit.subnetworkInformationMap;
+		copy.model = averagingUnit.model;
+		copy.printMessages = averagingUnit.printMessages;
 		return copy;
 	}
 
@@ -70,7 +69,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 	}
 
 	private List<Set<SpeciesVertex>> findZeroDeficiencySubnetworks() {
-		List<Set<SpeciesVertex>> zeroDeficiencySubnetworks = new LinkedList<Set<SpeciesVertex>>();
+		List<Set<SpeciesVertex>> zeroDeficiencySubnetworks = new ArrayList<Set<SpeciesVertex>>();
 //		Set<SpeciesVertex> allSpecies = graph.vertexSet();
 //		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
 //		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {
@@ -357,7 +356,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 	private List<ConservedSpeciesRelation> getConservedSpeciesRelations(UnaryBinaryReactionNetwork network) {
 		DenseMatrix64F nullSpace = computeNullSpaceOfReactionNetwork(network);
-		List<ConservedSpeciesRelation> conservedSpeciesRelations = new LinkedList<>();
+		List<ConservedSpeciesRelation> conservedSpeciesRelations = new ArrayList<>();
 		for (int col=0; col < nullSpace.numCols; col++) {
 			List<SpeciesVertex> speciesList = new ArrayList<SpeciesVertex>();
 			boolean noConservationRelation = false;

@@ -1,7 +1,5 @@
 package ch.ethz.khammash.hybridstochasticsimulation.providers;
 
-import javax.inject.Inject;
-
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -11,9 +9,12 @@ public class RandomDataGeneratorProvider implements ObjProvider<RandomDataGenera
 	private RandomGenerator baseRandomGenerator;
 	private RandomDataGenerator baseRandomDataGenerator;
 
-	@Inject
 	public RandomDataGeneratorProvider() {
 		baseRandomGenerator = new MersenneTwister();
+	}
+
+	public RandomDataGeneratorProvider(long seed) {
+		baseRandomGenerator = new MersenneTwister(seed);
 	}
 
 	public RandomDataGeneratorProvider(RandomGenerator rnd) {

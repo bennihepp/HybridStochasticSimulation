@@ -77,6 +77,11 @@ public class ArrayFiniteTrajectory extends AbstractFiniteTrajectory {
 	}
 
 	@Override
+	public double getxState(int state, int timePointIndex) {
+		return xSeries[state][timePointIndex];
+	}
+
+	@Override
 	public double getInitialtime() {
 		return tSeries[0];
 	}

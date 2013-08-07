@@ -9,30 +9,14 @@ public class PDMPSimulationController extends AbstractSimulationController<PDMPM
 
     public PDMPSimulationController() {
     	super();
-		construct();
     }
 
 	public PDMPSimulationController(int numOfThreads) {
 		super(numOfThreads);
-		construct();
     }
 
 	public PDMPSimulationController(ExecutorService executor) {
 		super(executor);
-		construct();
     }
-
-	// TODO
-	final private void construct() {
-//		usePDMPSimulatorFactory();
-	}
-
-//	final public void usePDMPSimulatorFactory() {
-//		usePDMPSimulatorFactory(new CVodeSolverProvider(1e-3, 1e-3));
-//	}
-//
-//	final public void usePDMPSimulatorFactory(ObjProvider<Solver> solverFactory) {
-//		setSimulatorProvider(new PDMPSimulatorProvider(solverFactory));
-//	}
 
 }

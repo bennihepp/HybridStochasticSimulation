@@ -12,12 +12,17 @@ import java.util.Set;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.DummyTrajectoryMapper;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteDistributionTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteDistributionTrajectoryBuilder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryMapper;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionTrajectoryBuilder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFinitePlotData;
 
 public class DefaultSimulationJob<T extends ReactionNetworkModel> implements SimulationJobDescription<T> {
@@ -27,6 +32,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	private ObjProvider<T> modelProvider;
 	private ObjProvider<FiniteTrajectoryRecorder> trajectoryRecorderProvider;
 	private SimulationController<T> simulationController;
+	private FiniteTrajectoryMapper mapper;
 	private double t0;
 	private double t1;
 	private double[] x0;
@@ -34,6 +40,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	private Type simulationType;
 	private double[] plotScales;
 	private int outputCounter = 0;
+	private FiniteDistributionTrajectoryBuilder trajectoryBuilder;
 
 	public static <T extends ReactionNetworkModel> DefaultSimulationJob<T> createTrajectorySimulation(
 			ObjProvider<T> modelProvider, ObjProvider<FiniteTrajectoryRecorder> trajectoryRecorderProvider,
@@ -59,6 +66,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		this.modelProvider = modelProvider;
 		this.trajectoryRecorderProvider = trajectoryRecorderProvider;
 		this.simulationController = simulationController;
+		mapper = new DummyTrajectoryMapper();
 		this.t0 = t0;
 		this.t1 = t1;
 		if (x0 == null)
@@ -68,6 +76,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		this.simulationType = simulationType;
 		this.plotScales = new double[x0.length];
 		Arrays.fill(plotScales, 1.0);
+		trajectoryBuilder = new VectorFiniteDistributionTrajectoryBuilder();
 	}
 
 	@Override
@@ -112,6 +121,10 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		return trajectoryRecorderProvider;
 	}
 
+	public void setTrajectoryMapper(FiniteTrajectoryMapper mapper) {
+		this.mapper = mapper;
+	}
+
 	@Override
 	public double gett0() {
 		return t0;
@@ -151,6 +164,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		return simulationType;
 	}
 
+	// TODO: Restructure trajectory mapping
 	@Override
 	public void runJob() {
 		Set<SimulationOutput> usedOutputs = new LinkedHashSet<>();
@@ -183,6 +197,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 					gett0(), getx0(), gett1());
 			for (int i=0; i < trList.size(); i++) {
 				FiniteTrajectory tr = (FiniteTrajectory)trList.get(i);
+				tr = mapper.map(tr);
 				VectorFinitePlotData pd = new VectorFinitePlotData(tr.gettSeries(), tr.getxSeries());
 				if (getLabels() != null)
 					pd.setStateNames(getLabels());
@@ -200,7 +215,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 				modelProvider = getModelProvider();
 				trProvider = getTrajectoryProvider();
 				FiniteStatisticalSummaryTrajectory tr = getSimulationController().simulateTrajectoryDistribution(
-						getRuns(), modelProvider, trProvider,
+						getRuns(), modelProvider, trProvider, mapper,
 						gett0(), getx0(), gett1());
 				VectorFiniteDistributionPlotData pd = new VectorFiniteDistributionPlotData(tr);
 				if (getLabels() != null)
@@ -246,7 +261,20 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	}
 
 	@Override
-	public void outputTrajectory(FiniteTrajectory tr) {
+	public void addSimulationResult(FiniteTrajectory tr) {
+		switch (getSimulationType()) {
+		case TRAJECTORY:
+			FinitePlotData plotData = createFinitePlotData(getName() + "(" + outputCounter + ")", tr);
+			outputCounter++;
+			outputPlotData(plotData);
+			break;
+		case DISTRIBUTION:
+			trajectoryBuilder.addTrajectory(tr);
+			break;
+		}
+	}
+
+	private FinitePlotData createFinitePlotData(String string, FiniteTrajectory tr) {
 		VectorFinitePlotData plotData = new VectorFinitePlotData(tr.gettSeries(), tr.getxSeries());
 		if (getLabels() != null)
 			plotData.setStateNames(getLabels());
@@ -256,18 +284,32 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 			plotData.setDescription(getName() + "(" + outputCounter + ")");
 		else
 			plotData.setDescription(getName());
-		outputCounter++;
-		List<SimulationOutput> outputs = getOutputs();
-		for (SimulationOutput output : outputs) {
-			output.add(getName(), plotData);
-		}
+		return plotData;
 	}
 
 	@Override
 	public void writeOutputs() throws IOException {
+		switch (getSimulationType()) {
+		case TRAJECTORY:
+			break;
+		case DISTRIBUTION:
+			if (trajectoryBuilder.getNumberOfAddedTrajectories() > 0) {
+				FiniteDistributionTrajectory tr = trajectoryBuilder.getDistributionTrajectory();
+				FinitePlotData plotData = createFinitePlotData(getName(), tr);
+				outputPlotData(plotData);
+			}
+			break;
+		}
 		List<SimulationOutput> outputs = getOutputs();
 		for (SimulationOutput output : outputs) {
 			output.write();
+		}
+	}
+
+	private void outputPlotData(FinitePlotData plotData) {
+		List<SimulationOutput> outputs = getOutputs();
+		for (SimulationOutput output : outputs) {
+			output.add(getName(), plotData);
 		}
 	}
 

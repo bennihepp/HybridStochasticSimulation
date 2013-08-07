@@ -2,7 +2,6 @@ package ch.ethz.khammash.hybridstochasticsimulation.averaging;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -51,7 +50,7 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 	}
 
 	private List<Set<SpeciesVertex>> findPseudoLinearSubnetworks() {
-		List<Set<SpeciesVertex>> pseudoLinearSubnetworks = new LinkedList<Set<SpeciesVertex>>();
+		List<Set<SpeciesVertex>> pseudoLinearSubnetworks = new ArrayList<Set<SpeciesVertex>>();
 //		Set<SpeciesVertex> allSpecies = graph.vertexSet();
 //		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
 //		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {

@@ -29,7 +29,7 @@ public class StochasticSimulationController extends AbstractSimulationController
 	}
 
 	public void setDefaultSimulatorProvider(RandomDataGeneratorProvider rdgProvider) {
-		setRandomDataGeneratorProvider(rdgProvider);
+//		setRandomDataGeneratorProvider(rdgProvider);
 		setSimulatorProvider(new StochasticSimulatorProvider(rdgProvider));
 		
 	}

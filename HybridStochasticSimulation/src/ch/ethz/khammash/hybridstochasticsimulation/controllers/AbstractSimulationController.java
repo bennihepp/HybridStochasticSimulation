@@ -11,17 +11,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
-import ch.ethz.khammash.hybridstochasticsimulation.providers.RandomDataGeneratorProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.DummyTrajectoryMapper;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryMapper;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteStatisticalSummaryPlotData;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionTrajectoryBuilder;
 
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.FutureCallback;
@@ -38,10 +39,7 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	private static final int MAX_QUEUED_JOBS = 100;
 
 	private ListeningExecutorService executor;
-	private Optional<ObjProvider<Simulator<T>>> simulatorProviderOptional;
-//	private Optional<TrajectoryRecorderFactory<E>> trajectoryRecorderFactoryOptional;
-	// TODO: rdgProvider is not used anymore
-	private Optional<ObjProvider<RandomDataGenerator>> rdgProviderOptional;
+	private Optional<ObjProvider<? extends Simulator<T>>> simulatorProviderOptional;
 
 	public AbstractSimulationController() {
 		this(DEFAULT_NUMBER_OF_THREADS);
@@ -54,9 +52,6 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	public AbstractSimulationController(ExecutorService executor) {
 		this.executor = MoreExecutors.listeningDecorator(executor);
 		simulatorProviderOptional = Optional.absent();
-//		trajectoryRecorderFactoryOptional = Optional.absent();
-		ObjProvider<RandomDataGenerator> rdgProvider = new RandomDataGeneratorProvider();
-		rdgProviderOptional = Optional.of(rdgProvider);
 	}
 
 	protected SimulationWorker createSimulationWorker(T model, TrajectoryRecorder tr, double t0, double[] x0, double t1) {
@@ -82,13 +77,13 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		this.executor = MoreExecutors.listeningDecorator(executor);
 	}
 
-	protected Optional<ObjProvider<Simulator<T>>> getSimulatorFactoryOptional() {
+	protected Optional<ObjProvider<? extends Simulator<T>>> getSimulatorFactoryOptional() {
 		return simulatorProviderOptional;
 	}
 
 	@Override
-	final public void setSimulatorProvider(ObjProvider<Simulator<T>> simulatorProvider) {
-		simulatorProviderOptional = Optional.of(simulatorProvider);
+	final public void setSimulatorProvider(ObjProvider<? extends Simulator<T>> simulatorProvider) {
+		simulatorProviderOptional = Optional.<ObjProvider<? extends Simulator<T>>>of(simulatorProvider);
 	}
 
 //	@Override
@@ -96,11 +91,6 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 //			TrajectoryRecorderFactory<E> trajectoryRecorderFactory) {
 //		trajectoryRecorderFactoryOptional = Optional.of(trajectoryRecorderFactory);
 //	}
-
-	@Override
-	final public void setRandomDataGeneratorProvider(ObjProvider<RandomDataGenerator> rdgProvider) {
-		rdgProviderOptional = Optional.of(rdgProvider);
-	}
 
 	protected Simulator<T> createSimulator() {
         // We want to have different random number sequences for each run
@@ -123,13 +113,6 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 //		else
 //			throw new UnsupportedOperationException("The TrajectoryRecorderFactory has not been set yet");
 //	}
-
-	protected RandomDataGenerator createRandomDataGenerator() {
-		if (rdgProviderOptional.isPresent())
-			return rdgProviderOptional.get().get();
-		else
-			throw new UnsupportedOperationException("The RandomDataGeneratorProvider has not been set yet");
-	}
 
 //	@Override
 //	public E simulateTrajectory(T model, double t0, double[] x0, double t1) {
@@ -193,18 +176,27 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	public FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
 			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends FiniteTrajectoryRecorder> trProvider,
 			double t0, double[] x0, double t1) {
+		DummyTrajectoryMapper mapper = new DummyTrajectoryMapper();
+		return simulateTrajectoryDistribution(runs, modelProvider, trProvider, mapper, t0, x0, t1);
+	}
+
+	@Override
+	public FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
+			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends FiniteTrajectoryRecorder> trProvider,
+			final FiniteTrajectoryMapper mapper, double t0, double[] x0, double t1) {
 		checkArgument(runs > 0, "Expected runs > 0");
 //		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
 
-		FiniteTrajectoryRecorder dummyTr = trProvider.get();
-		dummyTr.beginRecording(t0, x0, t1);
-		int numOfStates = dummyTr.getNumberOfStates();
-		int numOfTimePoints = dummyTr.getNumberOfTimePoints();
-		double[] tSeries = dummyTr.gettSeries();
-		final SynchronizedSummaryStatistics[][] xSeriesStatistics = new SynchronizedSummaryStatistics[numOfStates][numOfTimePoints];
-        for (int s=0; s < numOfStates; s++)
-        	for (int i=0; i < dummyTr.getNumberOfTimePoints(); i++)
-				xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
+//		FiniteTrajectoryRecorder dummyTr = trProvider.get();
+//		dummyTr.beginRecording(t0, x0, t1);
+//		int numOfStates = dummyTr.getNumberOfStates();
+//		int numOfTimePoints = dummyTr.getNumberOfTimePoints();
+//		double[] tSeries = dummyTr.gettSeries();
+//		final SynchronizedSummaryStatistics[][] xSeriesStatistics = new SynchronizedSummaryStatistics[numOfStates][numOfTimePoints];
+//        for (int s=0; s < numOfStates; s++)
+//        	for (int i=0; i < dummyTr.getNumberOfTimePoints(); i++)
+//				xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
+		final VectorFiniteDistributionTrajectoryBuilder trajectoryDistributionBuilder = new VectorFiniteDistributionTrajectoryBuilder();
 
         final Semaphore jobQueueCounter = new Semaphore(MAX_QUEUED_JOBS);
 //        final AtomicInteger queuedJobs = new AtomicInteger(0);
@@ -230,12 +222,14 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 					jobQueueCounter.release();
 //					releaseSubmission(queuedJobs);
 					FiniteTrajectoryRecorder ftr = (FiniteTrajectoryRecorder)tr;
-					double[][] xSeries = ftr.getxSeries();
-					for (int s = 0; s < ftr.getNumberOfStates(); s++) {
-						for (int i = 0; i < ftr.getNumberOfTimePoints(); i++) {
-							xSeriesStatistics[s][i].addValue(xSeries[s][i]);
-						}
-					}
+					FiniteTrajectory mappedTr = mapper.map(ftr);
+					trajectoryDistributionBuilder.addTrajectory(mappedTr);
+//					double[][] xSeries = ftr.getxSeries();
+//					for (int s = 0; s < ftr.getNumberOfStates(); s++) {
+//						for (int i = 0; i < ftr.getNumberOfTimePoints(); i++) {
+//							xSeriesStatistics[s][i].addValue(xSeries[s][i]);
+//						}
+//					}
 				}
 
     		});
@@ -246,7 +240,8 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
         		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 	        } catch (InterruptedException e) { }
         } while (!executor.isTerminated());
-        return VectorFiniteStatisticalSummaryPlotData.createFromStatisticalSummary(tSeries, xSeriesStatistics);
+        return trajectoryDistributionBuilder.getDistributionTrajectory();
+//        return VectorFiniteStatisticalSummaryPlotData.createFromStatisticalSummary(tSeries, xSeriesStatistics);
 	}
 
 //	private void makeSubmission(AtomicInteger queuedJobs) {

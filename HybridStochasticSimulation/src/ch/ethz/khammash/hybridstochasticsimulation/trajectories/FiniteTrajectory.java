@@ -15,7 +15,9 @@ public interface FiniteTrajectory extends Trajectory, Serializable {
 
 	double[] gettSeries();
 
-	double[] getxState(int timePoint);
+	double[] getxState(int timePointIndex);
+
+	double getxState(int state, int timePointIndex);
 
 	double[][] getxSeries();
 

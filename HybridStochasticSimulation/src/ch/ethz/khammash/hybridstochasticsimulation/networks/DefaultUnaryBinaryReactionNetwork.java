@@ -51,7 +51,6 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 	}
 
 	public static DefaultUnaryBinaryReactionNetwork createSubnetwork(UnaryBinaryReactionNetwork network, Set<Integer> subnetworkSpecies) {
-		// TODO
 		Map<Integer, SpeciesVertex> subVerticesMap = new HashMap<>();
 		Map<Integer, List<ReactionEdge>> subEdgesMap = new HashMap<>();
 		Map<Integer, Integer> subSpeciesMap = new HashMap<>(subnetworkSpecies.size());

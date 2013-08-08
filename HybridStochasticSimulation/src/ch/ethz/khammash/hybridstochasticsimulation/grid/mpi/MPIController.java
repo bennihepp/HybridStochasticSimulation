@@ -1,5 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation.grid.mpi;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -66,6 +67,16 @@ public class MPIController implements Runnable {
 			RankIndexPair ri = it.next();
 			int target = ri.getRank();
 			sendShutdownSignal(target);
+		}
+		try {
+			if (log.isDebugEnabled())
+				log.debug("Writing output...");
+			simulationJob.writeOutputs();
+			if (log.isDebugEnabled())
+				log.debug("Output written");
+		} catch (IOException e) {
+			if (log.isErrorEnabled())
+				log.error("Error while writing output", e);
 		}
 		if (log.isDebugEnabled())
 			log.debug("Controller shutting down");

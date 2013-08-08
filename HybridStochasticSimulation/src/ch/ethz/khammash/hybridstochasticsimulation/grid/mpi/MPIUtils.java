@@ -5,6 +5,16 @@ import mpi.Status;
 
 public class MPIUtils {
 
+	public static class InvalidObjectTypeException extends RuntimeException {
+
+		private static final long serialVersionUID = -4680126741076955169L;
+
+		public InvalidObjectTypeException(String msg) {
+			super(msg);
+		}
+
+	}
+
 	public static enum Message {
 		RUN_SIMULATION, SHUTDOWN,
 	}
@@ -20,8 +30,12 @@ public class MPIUtils {
 	}
 
 	public void sendMessage(int target, Message msg) {
+		sendMessage(target, msg, 0);
+	}
+
+	public void sendMessage(int target, Message msg, int mpiTagOffset) {
 		Message[] msgBuf = { msg };
-		MPI.COMM_WORLD.Send(msgBuf, 0, 1, MPI.OBJECT, target, mpiTag);
+		MPI.COMM_WORLD.Send(msgBuf, 0, 1, MPI.OBJECT, target, mpiTag + mpiTagOffset);
 	}
 
 	public MPIContainer<Message> receiveMessage() {
@@ -29,9 +43,11 @@ public class MPIUtils {
 	}
 
 	public MPIContainer<Message> receiveMessage(int source) {
-		Message[] buf = new Message[1];
-		Status status = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, source, mpiTag);
-		return new MPIContainer<>(status.source, buf[0]);
+		return receiveMessage(source, 0);
+	}
+
+	public MPIContainer<Message> receiveMessage(int source, int mpiTagOffset) {
+		return receiveObject(source, mpiTagOffset);
 	}
 
 	public <T> void sendObject(T payload) {
@@ -39,20 +55,38 @@ public class MPIUtils {
 	}
 
 	public <T> void sendObject(int target, T payload) {
-		Object[] buf = { payload };
-		MPI.COMM_WORLD.Send(buf, 0, 1, MPI.OBJECT, target, mpiTag + 1);
+		sendObject(target, payload, 0);
 	}
 
-	protected <T> MPIContainer<T> receiveObject() {
+	public <T> void sendObject(int target, T payload, int mpiTagOffset) {
+		Object[] buf = { payload };
+		MPI.COMM_WORLD.Send(buf, 0, 1, MPI.OBJECT, target, mpiTag + mpiTagOffset);
+	}
+
+	public <T> MPIContainer<T> receiveObject() {
 		return receiveObject(MPI.ANY_SOURCE);
 	}
 
-	protected <T> MPIContainer<T> receiveObject(int source) {
+	public <T> MPIContainer<T> receiveObject(int source) {
+		return receiveObject(source, 0);
+	}
+
+	public <T> MPIContainer<T> receiveObject(int source, int mpiTagOffset) {
 		Object[] buf = new Object[1];
-		Status status = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, source, mpiTag + 1);
+		Status status = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, source, mpiTag + mpiTagOffset);
 		@SuppressWarnings("unchecked")
 		T payload = (T)buf[0];
 		return new MPIContainer<>(status.source, payload);
+	}
+
+	public <T> MPIContainer<T> receiveObject(int source, int mpiTagOffset, T check) {
+		MPIContainer<Object> cont = receiveObject(source, mpiTagOffset);
+		Object obj = cont.getPayload();
+		if (!check.getClass().isAssignableFrom(obj.getClass()))
+			throw new InvalidObjectTypeException("The received object is of the wrong type");
+		@SuppressWarnings("unchecked")
+		T payload = (T)obj;
+		return new MPIContainer<>(cont.getSource(), payload);
 	}
 
 }

@@ -10,6 +10,7 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.DummyAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.ModularAveragingUnit;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.DummyOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
@@ -53,12 +54,18 @@ import com.google.inject.multibindings.Multibinder;
 
 public class BatchGuiceModule extends AbstractModule {
 
-	private HierarchicalConfiguration config;
-	private DataConfiguration dataConfig;
+	private final HierarchicalConfiguration config;
+	private final DataConfiguration dataConfig;
+	private final boolean useDummyOutput;
 
 	public BatchGuiceModule(HierarchicalConfiguration config) {
+		this(config, false);
+	}
+
+	public BatchGuiceModule(HierarchicalConfiguration config, boolean useDummyOutput) {
 		this.config = config;
 		this.dataConfig = new DataConfiguration(config);
+		this.useDummyOutput = useDummyOutput;
 	}
 
 	@Override
@@ -144,10 +151,17 @@ public class BatchGuiceModule extends AbstractModule {
 		}
 		// Output
 		String outputType = config.getString("OutputParameters.type");
-		switch (outputType) {
-		case "Matlab":
-			bind(SimulationOutput.class).toProvider(MatlabOutputProvider.class);
-			break;
+		if (useDummyOutput) {
+			bind(SimulationOutput.class).to(DummyOutput.class);
+		} else {
+			switch (outputType) {
+			case "Matlab":
+				bind(SimulationOutput.class).toProvider(MatlabOutputProvider.class);
+				break;
+			case "Dummy":
+				bind(SimulationOutput.class).to(DummyOutput.class);
+				break;
+			}
 		}
 		// Output mapper
 		String mapperType = config.getString("OutputParameters.trajectoryMapper.type");

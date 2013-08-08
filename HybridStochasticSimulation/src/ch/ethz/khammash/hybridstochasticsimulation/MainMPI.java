@@ -54,7 +54,8 @@ public class MainMPI {
 //			setupLogging(config, mpiRank);
 
 			// Build object graph using Guice and acquire a SimulationJob instance
-			Injector injector = Guice.createInjector(new BatchGuiceModule(config));
+			boolean useDummyOutput = mpiRank != 0;
+			Injector injector = Guice.createInjector(new BatchGuiceModule(config, useDummyOutput));
 
 			int numOfWorkerThreads = config.getInt("GridParameters.numOfWorkerThreads", 1);
 			int numOfThreads;

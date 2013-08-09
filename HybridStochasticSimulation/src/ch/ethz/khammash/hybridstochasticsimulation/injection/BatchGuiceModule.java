@@ -19,6 +19,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.Adap
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.CVodeSolverProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.CombiningAveragingUnitProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.DeterministicModelProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.FiniteMarkovChainAveragingUnitProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.FiniteTrajectoryRecorderProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.MSHybridReactionNetworkModelProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.MSHybridReactionNetworkProvider;
@@ -56,16 +57,10 @@ public class BatchGuiceModule extends AbstractModule {
 
 	private final HierarchicalConfiguration config;
 	private final DataConfiguration dataConfig;
-	private final boolean useDummyOutput;
 
 	public BatchGuiceModule(HierarchicalConfiguration config) {
-		this(config, false);
-	}
-
-	public BatchGuiceModule(HierarchicalConfiguration config, boolean useDummyOutput) {
 		this.config = config;
 		this.dataConfig = new DataConfiguration(config);
-		this.useDummyOutput = useDummyOutput;
 	}
 
 	@Override
@@ -123,6 +118,9 @@ public class BatchGuiceModule extends AbstractModule {
 		case "Dummy":
 			bind(AveragingUnit.class).to(DummyAveragingUnit.class);
 			break;
+		case "FiniteMarkovChainAveragingUnit":
+			bind(AveragingUnit.class).toProvider(FiniteMarkovChainAveragingUnitProvider.class);
+			break;
 		case "ZeroDeficiencyAveragingUnit":
 			bind(AveragingUnit.class).toProvider(ZeroDeficiencyAveragingUnitProvider.class);
 			break;
@@ -140,6 +138,9 @@ public class BatchGuiceModule extends AbstractModule {
 			String[] averagingUnitsStrings = dataConfig.getStringArray(averagingUnitsKey);
 			for (String averagingUnitString : averagingUnitsStrings) {
 				switch (averagingUnitString) {
+				case "FiniteMarkovChainAveragingUnit":
+					auBinder.addBinding().to(FiniteMarkovChainAveragingUnitProvider.class);
+					break;
 				case "ZeroDeficiencyAveragingUnit":
 					auBinder.addBinding().to(ZeroDeficiencyAveragingUnitProvider.class);
 					break;
@@ -150,18 +151,14 @@ public class BatchGuiceModule extends AbstractModule {
 			}
 		}
 		// Output
-		String outputType = config.getString("OutputParameters.type");
-		if (useDummyOutput) {
+		String outputType = config.getString("OutputParameters.type", "Dummy");
+		switch (outputType) {
+		case "Matlab":
+			bind(SimulationOutput.class).toProvider(MatlabOutputProvider.class);
+			break;
+		case "Dummy":
 			bind(SimulationOutput.class).to(DummyOutput.class);
-		} else {
-			switch (outputType) {
-			case "Matlab":
-				bind(SimulationOutput.class).toProvider(MatlabOutputProvider.class);
-				break;
-			case "Dummy":
-				bind(SimulationOutput.class).to(DummyOutput.class);
-				break;
-			}
+			break;
 		}
 		// Output mapper
 		String mapperType = config.getString("OutputParameters.trajectoryMapper.type");

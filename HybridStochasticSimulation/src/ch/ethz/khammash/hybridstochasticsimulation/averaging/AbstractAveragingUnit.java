@@ -51,6 +51,7 @@ public abstract class AbstractAveragingUnit implements ModularAveragingUnit {
 
 	@Override
 	public void setSubnetworkEnumerator(SubnetworkEnumerator subnetworkEnumerator) {
+		// TODO: possible subnetworks should be searched for again after changing the enumerator
 		this.enumerateSubnetworks = subnetworkEnumerator;
 	}
 
@@ -59,12 +60,16 @@ public abstract class AbstractAveragingUnit implements ModularAveragingUnit {
 		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(t, x, filter);
 		List<Set<SpeciesVertex>> subnetworksToAverage = greedySelectSubnetworksToAverage(averagingCandidates);
 
+		computeAverageStateOfSubnetworks(t, x, subnetworksToAverage);
+
 		if (previousSubnetworksToAverage != null)
 			resamplePreviouslyAveragedSubnetworks(t, x, subnetworksToAverage, previousSubnetworksToAverage);
 
 		previousSubnetworksToAverage = subnetworksToAverage;
 		return subnetworksToAverage;
 	}
+
+	protected abstract void computeAverageStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage);
 
 //	protected boolean checkAveragingConditions(Set<SpeciesVertex> subnetworkSpecies, double[] x, double[] reactionTimescales) {
 //		double maxSubnetworkTimescale = computeMaxSubnetworkTimescale(subnetworkSpecies, x, reactionTimescales);

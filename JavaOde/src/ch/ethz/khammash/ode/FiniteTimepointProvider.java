@@ -1,3 +1,6 @@
+/**
+ * @author      Benjamin Hepp <benjamin.hepp@bsse.ethz.ch>
+ */
 package ch.ethz.khammash.ode;
 
 

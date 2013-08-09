@@ -9,6 +9,7 @@ import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.random.RandomDataGenerator;
+import org.apache.commons.math3.random.RandomGenerator;
 
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.CombiningAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.MaximumSizeSubnetworkEnumerator;
@@ -35,6 +36,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwor
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.RandomDataGeneratorProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.StochasticSimulatorProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ArrayFiniteContinuousTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ArrayFiniteTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ArrayFiniteTrajectoryRecorder;
@@ -108,8 +110,7 @@ public class SimulationUtilities {
 				}
 
 		};
-		PDMPSimulationController ctrl = new PDMPSimulationController();
-		ctrl.setSimulatorProvider(simulatorProvider);
+		PDMPSimulationController ctrl = new PDMPSimulationController(simulatorProvider);
 //		ctrl.setRandomDataGeneratorProvider(rdgProvider);
 
 		ArrayFiniteContinuousTrajectoryRecorder tr = new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
@@ -194,8 +195,7 @@ public class SimulationUtilities {
 				}
 
 		};
-		PDMPSimulationController ctrl = new PDMPSimulationController();
-		ctrl.setSimulatorProvider(simulatorProvider);
+		PDMPSimulationController ctrl = new PDMPSimulationController(simulatorProvider);
 
 		ArrayFiniteContinuousTrajectoryRecorder tr = new ArrayFiniteContinuousTrajectoryRecorder(tSeries.length);
 		final long startTime = System.currentTimeMillis();
@@ -392,8 +392,7 @@ public class SimulationUtilities {
 				}
 
 		};
-		PDMPSimulationController ctrl = new PDMPSimulationController();
-		ctrl.setSimulatorProvider(simulatorProvider);
+		PDMPSimulationController ctrl = new PDMPSimulationController(simulatorProvider);
 //		ctrl.setRandomDataGeneratorProvider(rdgProvider);
 
 		if (printMessages)
@@ -509,8 +508,6 @@ public class SimulationUtilities {
 		double[] x0 = nss.x0;
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
-		PDMPSimulationController ctrl = new PDMPSimulationController();
-//		ctrl.setRandomDataGeneratorProvider(new RandomDataGeneratorProvider(nss.rng));
 		if (printMessages)
 			System.out.println("Deterministic: Evaluating trajectory");
 
@@ -526,7 +523,7 @@ public class SimulationUtilities {
 				}
 
 		};
-		ctrl.setSimulatorProvider(simulatorProvider);
+		PDMPSimulationController ctrl = new PDMPSimulationController(simulatorProvider);
 
 		UnaryBinaryDeterministicModel hybridModel = new UnaryBinaryDeterministicModel(nss.net);
 		PDMPModel model = new PDMPModelAdapter<HybridModel>(hybridModel);
@@ -552,8 +549,6 @@ public class SimulationUtilities {
 //		HybridReactionNetwork hrn = new HybridReactionNetwork(nss.net);
 //		HybridReactionNetworkModel model = new HybridReactionNetworkModel(hrn);
 		double[] x0 = nss.x0;
-		StochasticSimulationController ctrl = new StochasticSimulationController();
-//		ctrl.setDefaultSimulatorProvider(new RandomDataGeneratorProvider(nss.rng));
 		final RandomDataGeneratorProvider rdgProvider = new RandomDataGeneratorProvider(nss.rng);
 		ObjProvider<StochasticSimulator> simulatorProvider
 			= new ObjProvider<StochasticSimulator>() {
@@ -566,8 +561,7 @@ public class SimulationUtilities {
 				}
 
 		};
-		ctrl.setSimulatorProvider(simulatorProvider);
-//		ctrl.setRandomDataGeneratorProvider(rdgProvider);
+		StochasticSimulationController ctrl = new StochasticSimulationController(simulatorProvider);
 
 		if (printMessages)
 			System.out.println("Stochastic: Evaluating trajectory");
@@ -616,8 +610,7 @@ public class SimulationUtilities {
 	public static VectorFinitePlotData simulateFiniteStochastic(SimulationConfiguration nss, double[] tSeries, boolean printMessages) {
 		UnaryBinaryStochasticModel model = new UnaryBinaryStochasticModel(nss.net);
 		double[] x0 = nss.x0;
-		StochasticSimulationController ctrl = new StochasticSimulationController();
-//		ctrl.setRandomDataGeneratorProvider(new RandomDataGeneratorProvider(nss.rng));
+		StochasticSimulationController ctrl = createDefaultStochasticSimulationController(nss.rng);
 		if (printMessages)
 			System.out.println("Stochastic: Evaluating trajectory");
 
@@ -675,14 +668,18 @@ public class SimulationUtilities {
 //		return pd;
 //	}
 
+	private static StochasticSimulationController createDefaultStochasticSimulationController(RandomGenerator rng) {
+		RandomDataGeneratorProvider rdgProvider = new RandomDataGeneratorProvider(rng);
+		StochasticSimulatorProvider simulatorProvider = new StochasticSimulatorProvider(rdgProvider);
+		return new StochasticSimulationController(simulatorProvider);
+	}
+
 	public static VectorFiniteDistributionPlotData simulatePDMPDistribution(int runs, SimulationConfiguration nss,
 			final double[] tSeries, boolean printMessages) {
 		final HybridReactionNetwork hrn = new HybridReactionNetwork(nss.net, nss.deterministicReactions);
 		double[] x0 = nss.x0;
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
-		PDMPSimulationController ctrl = new PDMPSimulationController();
-//		ctrl.setRandomDataGeneratorProvider(new RandomDataGeneratorProvider(nss.rng));
 		if (printMessages)
 			System.out.println("PDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 
@@ -701,7 +698,7 @@ public class SimulationUtilities {
 				}
 
 		};
-		ctrl.setSimulatorProvider(simulatorProvider);
+		PDMPSimulationController ctrl = new PDMPSimulationController(simulatorProvider);
 
 		ObjProvider<FiniteTrajectoryRecorder> trProvider
 				= new ObjProvider<FiniteTrajectoryRecorder>() {
@@ -783,8 +780,6 @@ public class SimulationUtilities {
 		double[] z0 = hrn.scaleState(x0);
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
-		PDMPSimulationController ctrl = new PDMPSimulationController();
-//		ctrl.setRandomDataGeneratorProvider(new RandomDataGeneratorProvider(nss.rng));
 		if (printMessages)
 			System.out.println("MSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 //		RealVector tauVector = tVector.mapMultiply(hrn.getTimeScaleFactor());
@@ -804,7 +799,7 @@ public class SimulationUtilities {
 				}
 
 		};
-		ctrl.setSimulatorProvider(simulatorProvider);
+		PDMPSimulationController ctrl = new PDMPSimulationController(simulatorProvider);
 
 		ObjProvider<FiniteTrajectoryRecorder> trProvider
 				= new ObjProvider<FiniteTrajectoryRecorder>() {
@@ -913,7 +908,6 @@ public class SimulationUtilities {
 //		final RealVector tauVector = tVector.mapMultiply(hrn.getInverseTimeScaleFactor());
 //		double tau0 = tauVector.getEntry(0);
 //		double tau1 = tauVector.getEntry(tauVector.getDimension() - 1);
-		PDMPSimulationController ctrl = new PDMPSimulationController();
 		ObjProvider<Simulator<PDMPModel>> simulatorProvider
 			= new ObjProvider<Simulator<PDMPModel>>() {
 
@@ -937,8 +931,7 @@ public class SimulationUtilities {
 				}
 
 		};
-//		ctrl.setRandomDataGeneratorProvider(rdgProvider);
-		ctrl.setSimulatorProvider(simulatorProvider);
+		PDMPSimulationController ctrl = new PDMPSimulationController(simulatorProvider);
 
 		if (printMessages)
 			System.out.println("AdaptiveMSPDMP: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
@@ -979,9 +972,7 @@ public class SimulationUtilities {
 		double[] x0 = nss.x0;
 		double t0 = tSeries[0];
 		double t1 = tSeries[tSeries.length - 1];
-		StochasticSimulationController ctrl = new StochasticSimulationController();
-		ctrl.setDefaultSimulatorProvider(new RandomDataGeneratorProvider(nss.rng));
-//		ctrl.setRandomDataGeneratorProvider(new RandomDataGeneratorProvider(nss.rng));
+		StochasticSimulationController ctrl = createDefaultStochasticSimulationController(nss.rng);
 		if (printMessages)
 			System.out.println("Stochastic: Evaluating " + runs + " trajectories at " + tSeries.length + " time points");
 

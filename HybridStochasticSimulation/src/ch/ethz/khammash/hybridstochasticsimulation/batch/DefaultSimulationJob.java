@@ -2,13 +2,13 @@ package ch.ethz.khammash.hybridstochasticsimulation.batch;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput.OutputException;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
@@ -243,7 +243,7 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		for (SimulationOutput output : usedOutputs)
 			try {
 				output.write();
-			} catch (IOException e) {
+			} catch (OutputException e) {
 				System.err.println("ERROR: Could not output results to " + output);
 				e.printStackTrace();
 				System.err.println();
@@ -257,7 +257,8 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		FiniteTrajectoryRecorder tr = getTrajectoryProvider().get();
 		getSimulationController().simulateTrajectory(
 				model, tr, gett0(), getx0(), gett1());
-		return tr;
+		FiniteTrajectory mappedTr = mapper.map(tr);
+		return mappedTr;
 	}
 
 	@Override
@@ -288,7 +289,15 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	}
 
 	@Override
-	public void writeOutputs() throws IOException {
+	public void initOutputs() throws OutputException {
+		List<SimulationOutput> outputs = getOutputs();
+		for (SimulationOutput output : outputs) {
+			output.init();
+		}
+	}
+
+	@Override
+	public void writeOutputs() throws OutputException, OutputAlreadyWrittenException {
 		switch (getSimulationType()) {
 		case TRAJECTORY:
 			break;

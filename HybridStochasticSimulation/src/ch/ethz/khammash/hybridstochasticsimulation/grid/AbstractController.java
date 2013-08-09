@@ -1,6 +1,5 @@
 package ch.ethz.khammash.hybridstochasticsimulation.grid;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -10,6 +9,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput.OutputException;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
 
 public abstract class AbstractController implements Runnable {
@@ -80,29 +80,40 @@ public abstract class AbstractController implements Runnable {
 	}
 
 	public void run() {
-		if (log.isDebugEnabled())
-			log.debug("Controller running");
-		ExecutorService executor = Executors.newFixedThreadPool(2);
-		executor.submit(new TaskDistributor());
-		executor.submit(new TrajectoryCollector());
-		executor.shutdown();
-		if (log.isDebugEnabled())
-			log.debug("Waiting for distributor and collector threads");
-        do {
-        	try {
-        		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-	        } catch (InterruptedException e) { }
-        } while (!executor.isTerminated());
 		try {
-			simulationJob.writeOutputs();
-		} catch (IOException e) {
-			if (log.isErrorEnabled()) {
-				log.error("Failed to write outputs", e);
+
+			simulationJob.initOutputs();
+
+			if (log.isDebugEnabled())
+				log.debug("Controller running");
+			ExecutorService executor = Executors.newFixedThreadPool(2);
+			executor.submit(new TaskDistributor());
+			executor.submit(new TrajectoryCollector());
+			executor.shutdown();
+			if (log.isDebugEnabled())
+				log.debug("Waiting for distributor and collector threads");
+	        do {
+	        	try {
+	        		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+		        } catch (InterruptedException e) { }
+	        } while (!executor.isTerminated());
+			try {
+				simulationJob.writeOutputs();
+			} catch (OutputException e) {
+				if (log.isErrorEnabled()) {
+					log.error("Failed to write outputs", e);
+				}
 			}
+			if (log.isDebugEnabled())
+				log.debug("Controller shutting down");
+
+		} catch (OutputException e) {
+			if (log.isErrorEnabled())
+				log.error("Error while initializing outputs", e);
+
+		} finally {
+			shutdownChildren();
 		}
-		shutdownChildren();
-		if (log.isDebugEnabled())
-			log.debug("Controller shutting down");
 	}
 
 	protected void handleSimulationResult(FiniteTrajectory tr) {

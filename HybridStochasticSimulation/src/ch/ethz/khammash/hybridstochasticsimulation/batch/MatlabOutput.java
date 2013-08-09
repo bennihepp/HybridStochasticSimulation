@@ -1,7 +1,5 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,6 +21,7 @@ public class MatlabOutput implements SimulationOutput {
     private int rows = -1;
     private int cols = -1;
     private boolean outputWritten = false;
+	private boolean overwrite;
 
     public MatlabOutput(String outputFilename, boolean overwrite) throws IOException {
         this(new File(outputFilename), overwrite);
@@ -31,21 +30,26 @@ public class MatlabOutput implements SimulationOutput {
     public MatlabOutput(File outputFile, boolean overwrite) throws IOException {
         plotDataListMap = new HashMap<>();
         this.outputFile = outputFile;
-        if (!overwrite)
-            checkArgument(!outputFile.exists(), "Output file already exists!");
-        try {
-            outputFile.createNewFile();
-        } catch (IOException e) {
-            System.err.println("Couldn't create file for output " + outputFile.getAbsolutePath());
-            throw e;
-        }
-        checkArgument(outputFile.canWrite());
+        this.overwrite = overwrite;
     }
 
     @Override
     public String toString() {
         return outputFile.getAbsolutePath();
     }
+
+	@Override
+	public void init() throws OutputException {
+        if (!overwrite && outputFile.exists())
+        	throw new OutputException("Output file already exists");
+        try {
+            outputFile.createNewFile();
+        } catch (IOException e) {
+        	throw new OutputException("Unable to create file for output", e);
+        }
+        if (!outputFile.canWrite())
+        	throw new OutputException("Unable to write to output file");
+	}
 
     @Override
     public void add(String simulationName, FinitePlotData plotData) {
@@ -64,13 +68,13 @@ public class MatlabOutput implements SimulationOutput {
     }
 
     @Override
-    public void finalize() throws IOException, OutputAlreadyWrittenException {
+    public void finalize() throws OutputException, OutputAlreadyWrittenException {
     	if (!outputWritten)
-    		write();
+			write();
     }
 
     @Override
-    public void write() throws IOException, OutputAlreadyWrittenException {
+    public void write() throws OutputException, OutputAlreadyWrittenException {
     	if (outputWritten)
     		throw new OutputAlreadyWrittenException("The output has already been written to the file");
         MatlabDataExporter mde = new MatlabDataExporter();
@@ -79,7 +83,11 @@ public class MatlabOutput implements SimulationOutput {
             matlabData.add(mde.buildDouble("rows", getRows()));
         if (getCols() > 0)
             matlabData.add(mde.buildDouble("cols", getCols()));
-        mde.writeMatlabDataToFile(outputFile, matlabData);
+        try {
+        	mde.writeMatlabDataToFile(outputFile, matlabData);
+        } catch (IOException e) {
+        	throw new OutputException(e);
+        }
     }
 
     public int getRows() {

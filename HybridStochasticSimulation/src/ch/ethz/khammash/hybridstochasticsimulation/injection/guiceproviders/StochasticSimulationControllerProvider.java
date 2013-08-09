@@ -23,8 +23,7 @@ public class StochasticSimulationControllerProvider extends AbstractSimulationCo
 
 	@Override
 	protected SimulationController<StochasticReactionNetworkModel> getController(int numOfThreads) {
-		StochasticSimulationController simCtrl = new StochasticSimulationController(numOfThreads);
-		simCtrl.setSimulatorProvider(simulatorProvider);
+		StochasticSimulationController simCtrl = new StochasticSimulationController(simulatorProvider, numOfThreads);
 		return simCtrl;
 	}
 

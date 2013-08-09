@@ -137,6 +137,12 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 
 	@Override
 	public void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
+		// TODO: round copy numbers of previously averaged species
+	}
+
+	@Override
+	protected void computeAverageStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
+		// TODO: Check if this is ok.
 	}
 
 }

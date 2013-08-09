@@ -22,8 +22,7 @@ public class PDMPSimulationControllerProvider extends AbstractSimulationControll
 
 	@Override
 	protected SimulationController<PDMPModel> getController(int numOfThreads) {
-		PDMPSimulationController simCtrl = new PDMPSimulationController(numOfThreads);
-		simCtrl.setSimulatorProvider(simulatorProvider);
+		PDMPSimulationController simCtrl = new PDMPSimulationController(simulatorProvider, numOfThreads);
 		return simCtrl;
 	}
 

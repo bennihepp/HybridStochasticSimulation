@@ -12,6 +12,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
+import org.apache.commons.math3.util.FastMath;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
@@ -24,7 +25,6 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionTrajectoryBuilder;
 
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -34,24 +34,32 @@ import com.google.common.util.concurrent.MoreExecutors;
 public abstract class AbstractSimulationController<T extends ReactionNetworkModel>
 		implements SimulationController<T> {
 
-	public final static int DEFAULT_NUMBER_OF_THREADS = 4;
+	public static final int DEFAULT_NUMBER_OF_THREADS = 4;
 
-	private static final int MAX_QUEUED_JOBS = 100;
+	private static final int DEFAULT_MAX_QUEUED_JOBS = 100;
 
-	private ListeningExecutorService executor;
-	private Optional<ObjProvider<? extends Simulator<T>>> simulatorProviderOptional;
+	private final ListeningExecutorService executor;
+	private ObjProvider<? extends Simulator<T>> simulatorProvider;
+	private int maxQueuedJobs = DEFAULT_MAX_QUEUED_JOBS;
 
-	public AbstractSimulationController() {
-		this(DEFAULT_NUMBER_OF_THREADS);
+	public AbstractSimulationController(ObjProvider<? extends Simulator<T>> simulatorProvider) {
+		this(simulatorProvider, DEFAULT_NUMBER_OF_THREADS);
 	}
 
-	public AbstractSimulationController(int numOfThreads) {
-		this(Executors.newFixedThreadPool(numOfThreads));
+	public AbstractSimulationController(ObjProvider<? extends Simulator<T>> simulatorProvider, int numOfThreads) {
+		this(simulatorProvider, Executors.newFixedThreadPool(numOfThreads));
+		setMaxQueuedJobs(FastMath.max(numOfThreads, maxQueuedJobs));
 	}
 
-	public AbstractSimulationController(ExecutorService executor) {
+	public AbstractSimulationController(ObjProvider<? extends Simulator<T>> simulatorProvider, ExecutorService executor) {
+		this.simulatorProvider = simulatorProvider;
 		this.executor = MoreExecutors.listeningDecorator(executor);
-		simulatorProviderOptional = Optional.absent();
+//		simulatorProviderOptional = Optional.absent();
+	}
+
+	public void setMaxQueuedJobs(int maxQueuedJobs) {
+		checkArgument(maxQueuedJobs > 0, "Expected maxQuededJobs > 0, found maxQuededJobs == " + maxQueuedJobs);
+		this.maxQueuedJobs = maxQueuedJobs;
 	}
 
 	protected SimulationWorker createSimulationWorker(T model, TrajectoryRecorder tr, double t0, double[] x0, double t1) {
@@ -72,19 +80,19 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		return new DefaultDistributionSimulationWorker(worker, tSeries, xSeriesStatistics);
 	}
 
-	@Override
-	final public void setExecutorService(ExecutorService executor) {
-		this.executor = MoreExecutors.listeningDecorator(executor);
-	}
+//	@Override
+//	final public void setExecutorService(ExecutorService executor) {
+//		this.executor = MoreExecutors.listeningDecorator(executor);
+//	}
 
-	protected Optional<ObjProvider<? extends Simulator<T>>> getSimulatorFactoryOptional() {
-		return simulatorProviderOptional;
-	}
+//	protected Optional<ObjProvider<? extends Simulator<T>>> getSimulatorProviderOptional() {
+//		return simulatorProviderOptional;
+//	}
 
-	@Override
-	final public void setSimulatorProvider(ObjProvider<? extends Simulator<T>> simulatorProvider) {
-		simulatorProviderOptional = Optional.<ObjProvider<? extends Simulator<T>>>of(simulatorProvider);
-	}
+//	@Override
+//	final public void setSimulatorProvider(ObjProvider<? extends Simulator<T>> simulatorProvider) {
+//		simulatorProviderOptional = Optional.<ObjProvider<? extends Simulator<T>>>of(simulatorProvider);
+//	}
 
 //	@Override
 //	final public void setTrajectoryRecorderFactory(
@@ -93,11 +101,11 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 //	}
 
 	protected Simulator<T> createSimulator() {
-        // We want to have different random number sequences for each run
-		if (simulatorProviderOptional.isPresent())
-			return simulatorProviderOptional.get().get();
-		else
-			throw new UnsupportedOperationException("The SimulatorProvider has not been set yet");
+//		if (simulatorProviderOptional.isPresent())
+//			return simulatorProviderOptional.get().get();
+//		else
+//			throw new UnsupportedOperationException("The SimulatorProvider has not been set yet");
+		return simulatorProvider.get();
 	}
 
 //	private E createTrajectoryRecorder() {
@@ -135,7 +143,7 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 
 		final List<TrajectoryRecorder> trList = Collections.synchronizedList(new LinkedList<TrajectoryRecorder>());
 
-        final Semaphore jobQueueCounter = new Semaphore(MAX_QUEUED_JOBS);
+        final Semaphore jobQueueCounter = new Semaphore(maxQueuedJobs);
 //        final AtomicInteger queuedJobs = new AtomicInteger(0);
 
         for (int k=0; k < runs; k++) {
@@ -198,7 +206,7 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 //				xSeriesStatistics[s][i] = new SynchronizedSummaryStatistics();
 		final VectorFiniteDistributionTrajectoryBuilder trajectoryDistributionBuilder = new VectorFiniteDistributionTrajectoryBuilder();
 
-        final Semaphore jobQueueCounter = new Semaphore(MAX_QUEUED_JOBS);
+        final Semaphore jobQueueCounter = new Semaphore(DEFAULT_MAX_QUEUED_JOBS);
 //        final AtomicInteger queuedJobs = new AtomicInteger(0);
 
         for (int k=0; k < runs; k++) {

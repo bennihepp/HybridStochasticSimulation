@@ -1,11 +1,9 @@
 package ch.ethz.khammash.hybridstochasticsimulation.controllers;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.Simulator;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteStatisticalSummaryTrajectory;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryMapper;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
@@ -13,9 +11,9 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecord
 
 public interface SimulationController<T extends ReactionNetworkModel> {
 
-	void setExecutorService(ExecutorService executor);
+//	void setExecutorService(ExecutorService executor);
 
-	void setSimulatorProvider(ObjProvider<? extends Simulator<T>> simulatorProvider);
+//	void setSimulatorProvider(ObjProvider<? extends Simulator<T>> simulatorProvider);
 
 	void simulateTrajectory(T model, TrajectoryRecorder tr, double t0, double[] x0, double t1);
 

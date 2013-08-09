@@ -26,6 +26,8 @@ import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.math.BroydenRootSolver;
 import ch.ethz.khammash.hybridstochasticsimulation.math.MultivariateFunction;
 import ch.ethz.khammash.hybridstochasticsimulation.math.RandomDataUtilities;
+import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryDeterministicModel;
+import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryModelUtils;
 import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryStochasticModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
@@ -90,6 +92,9 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 			SubnetworkInformation subnetworkInfo = new SubnetworkInformation();
 
+			UnaryBinaryDeterministicModel subnetworkModel = new UnaryBinaryDeterministicModel(subnetwork);
+			subnetworkInfo.setModel(subnetworkModel);
+
 			subnetworkInfo.setConservedSpeciesRelations(getConservedSpeciesRelations(subnetwork));
 			Set<SpeciesVertex> unconservedSpeciesSet = new HashSet<>(subnetworkSpecies);
 			for (ConservedSpeciesRelation relation : subnetworkInfo.getConservedSpeciesRelations())
@@ -116,14 +121,14 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 			}
 			subnetworkInfo.setReactionIndices(subnetworkReactionIndices);
 
-			subnetworkInformationMap.put(subnetworkSpecies, subnetworkInfo);
-
 			Map<SpeciesVertex, Integer> subnetworkIndexMap = new HashMap<>();
 			for (int i=0; i < subnetwork.getNumberOfSpecies(); i++) {
 				SpeciesVertex v = subnetwork.getGraph().getSpeciesVertex(i);
 				subnetworkIndexMap.put(v, i);
 			}
 			subnetworkInfo.setIndexMap(subnetworkIndexMap);
+
+			subnetworkInformationMap.put(subnetworkSpecies, subnetworkInfo);
 
 			ComplexGraph subnetworkComplexGraph = createComplexGraphOfSubnetwork(subnetwork);
 			if (printMessages) {
@@ -143,6 +148,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 			boolean weaklyReversible = isWeaklyReversible(subnetworkComplexGraph);
 			if (!weaklyReversible)
 				continue;
+
 			zeroDeficiencySubnetworks.add(subnetworkSpecies);
 		}
 		return zeroDeficiencySubnetworks;
@@ -423,11 +429,26 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 		return matrix;
 	}
 
+	@Override
+	protected void computeAverageStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
+		// TODO: Is this really necessary?
+		for (Set<SpeciesVertex> subnetworkSpecies : subnetworksToAverage) {
+			SubnetworkInformation subnetworkInformation = subnetworkInformationMap.get(subnetworkSpecies);
+			UnaryBinaryDeterministicModel subnetworkModel = subnetworkInformation.getModel();
+			Map<SpeciesVertex, Integer> indexMap = subnetworkInformation.getIndexMap();
+			double[] subXSteadyState = UnaryBinaryModelUtils.computeSteadyState(subnetworkModel, t, x);
+			for (SpeciesVertex v : subnetworkSpecies) {
+				x[v.getSpecies()] = subXSteadyState[indexMap.get(v)];
+			}
+		}
+	}
+
 	private class SubnetworkInformation {
 
 		private Collection<ConservedSpeciesRelation> conservedSpeciesRelations;
 		private Collection<SpeciesVertex> unconservedSpecies;
 		private Collection<Integer> reactionIndices;
+		private UnaryBinaryDeterministicModel model;
 		private Map<SpeciesVertex, Integer> indexMap;
 
 		public Collection<ConservedSpeciesRelation> getConservedSpeciesRelations() {
@@ -452,6 +473,14 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 		public void setReactionIndices(Collection<Integer> reactionIndices) {
 			this.reactionIndices = reactionIndices;
+		}
+
+		public void setModel(UnaryBinaryDeterministicModel model) {
+			this.model = model;
+		}
+
+		public UnaryBinaryDeterministicModel getModel() {
+			return model;
 		}
 
 		public void setIndexMap(Map<SpeciesVertex, Integer> indexMap) {

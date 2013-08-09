@@ -5,8 +5,8 @@ import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
-import ch.ethz.khammash.ode.DirectBufferEventFunctionAdapter;
-import ch.ethz.khammash.ode.DirectBufferOdeAdapter;
+import ch.ethz.khammash.ode.BufferEventFunctionAdapter;
+import ch.ethz.khammash.ode.BufferOdeAdapter;
 import ch.ethz.khammash.ode.EventFunction;
 import ch.ethz.khammash.ode.EventObserver;
 import ch.ethz.khammash.ode.FiniteTimepointProvider;
@@ -26,8 +26,8 @@ public class LsodarDirectSolver implements Solver {
 
     private boolean initialized = false;
     private long jni_pointer;
-    private DirectBufferOdeAdapter lsodarOde;
-    private DirectBufferEventFunctionAdapter lsodarEf;
+    private BufferOdeAdapter lsodarOde;
+    private BufferEventFunctionAdapter lsodarEf;
     private StateObserver stateObserver;
     private EventObserver eventObserver;
 	private TimepointProvider timepointProvider;
@@ -79,7 +79,7 @@ public class LsodarDirectSolver implements Solver {
     	this.absTol = absTol;
     }
 
-	private native long jni_initialize(DirectBufferOdeAdapter ode, DirectBufferEventFunctionAdapter ef,
+	private native long jni_initialize(BufferOdeAdapter ode, BufferEventFunctionAdapter ef,
 			DoubleBuffer xBuffer, DoubleBuffer xTmpBuffer, DoubleBuffer xDotBuffer,
 			DoubleBuffer gBuffer, IntBuffer eventIndexBuffer,
 			double relTol, double absTol);
@@ -129,8 +129,8 @@ public class LsodarDirectSolver implements Solver {
 //    	gBuffer = ByteBuffer.allocateDirect(Double.SIZE / 8 * ef.getNumberOfEventValues());
 //    	g = gBuffer.asDoubleBuffer().array();
 
-    	this.lsodarOde = new DirectBufferOdeAdapter(ode, xTmpBuffer, xDotBuffer);
-    	this.lsodarEf = new DirectBufferEventFunctionAdapter(ef, ode.getDimensionOfVectorField(), xTmpBuffer, gBuffer);
+    	this.lsodarOde = new BufferOdeAdapter(ode, xTmpBuffer, xDotBuffer);
+    	this.lsodarEf = new BufferEventFunctionAdapter(ef, ode.getDimensionOfVectorField(), xTmpBuffer, gBuffer);
         jni_pointer = jni_initialize(lsodarOde, lsodarEf, xBuffer, xTmpBuffer, xDotBuffer, gBuffer, eventIndexBuffer, relTol, absTol);
 //        jni_pointer = jni_initialize(lsodarOde, lsodarEf, xBuffer, xTmpBuffer, xDotBuffer, gBuffer, eventIndexBuffer, relTol, absTol);
         if (jni_pointer == 0)

@@ -1,6 +1,5 @@
 package ch.ethz.khammash.hybridstochasticsimulation.grid.mpi;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -9,6 +8,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
+import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput.OutputException;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.mpi.MPIUtils.Message;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
 
@@ -35,70 +35,90 @@ public class MPIController implements Runnable {
 	}
 
 	public void run() {
-		if (log.isDebugEnabled())
-			log.debug("Controller running");
-		int distributedTasks = 0;
-		Iterator<RankIndexPair> it = runningChildren.iterator();
-		while (it.hasNext() && distributedTasks < simulationJob.getRuns()) {
-			RankIndexPair ri = it.next();
-			int target = ri.getRank();
-			sendSimulationTask(target);
-			distributedTasks++;
-		}
-		int receivedResults = 0;try{
-		while (receivedResults < simulationJob.getRuns()) {
-			if (log.isDebugEnabled()) {
-				log.debug("receivedResults: " + receivedResults);
-				log.debug("distributedTasks: " + distributedTasks);
-			}
-			MPIContainer<FiniteTrajectory> result = receiveSimulationResult();
-			if (distributedTasks < simulationJob.getRuns()) {
-				sendSimulationTask(result.getSource());
+		try {
+
+			if (log.isDebugEnabled())
+				log.debug("Controller running");
+	
+			simulationJob.initOutputs();
+	
+			int distributedTasks = 0;
+			Iterator<RankIndexPair> it = runningChildren.iterator();
+			while (it.hasNext() && distributedTasks < simulationJob.getRuns()) {
+				RankIndexPair ri = it.next();
+				int target = ri.getRank();
+				sendSimulationTask(target);
 				distributedTasks++;
 			}
-			handleSimulationResult(result.getPayload());
-			receivedResults++;
+	
+			int receivedResults = 0;
+			while (receivedResults < simulationJob.getRuns()) {
+				if (log.isDebugEnabled()) {
+					log.debug("receivedResults: " + receivedResults);
+					log.debug("distributedTasks: " + distributedTasks);
+				}
+				MPIContainer<FiniteTrajectory> result = receiveSimulationResult();
+				if (distributedTasks < simulationJob.getRuns()) {
+					sendSimulationTask(result.getSource());
+					distributedTasks++;
+				}
+				handleSimulationResult(result.getPayload());
+				receivedResults++;
+			}
+	
+			try {
+				if (log.isDebugEnabled())
+					log.debug("Writing output...");
+	
+				simulationJob.writeOutputs();
+	
+				if (log.isDebugEnabled())
+					log.debug("Output written");
+			} catch (OutputException e) {
+				if (log.isErrorEnabled())
+					log.error("Error while writing output", e);
+			}
+	
+			if (log.isDebugEnabled())
+				log.debug("Controller shutting down");
+
+		} catch (OutputException e) {
+			if (log.isErrorEnabled())
+				log.error("Error while initializing outputs", e);
+
+		} finally {
+			shutdownRunningChildren();
 		}
-		}catch(Exception e) {
-			e.printStackTrace();
-		}
-		it = runningChildren.iterator();
+	}
+
+	private void shutdownRunningChildren() {
+		if (log.isDebugEnabled())
+			log.debug("Shutting down running children");
+		Iterator<RankIndexPair> it = runningChildren.iterator();
 		while (it.hasNext()) {
 			RankIndexPair ri = it.next();
 			int target = ri.getRank();
 			sendShutdownSignal(target);
 		}
-		try {
-			if (log.isDebugEnabled())
-				log.debug("Writing output...");
-			simulationJob.writeOutputs();
-			if (log.isDebugEnabled())
-				log.debug("Output written");
-		} catch (IOException e) {
-			if (log.isErrorEnabled())
-				log.error("Error while writing output", e);
-		}
-		if (log.isDebugEnabled())
-			log.debug("Controller shutting down");
 	}
 
-	protected void handleSimulationResult(FiniteTrajectory tr) {
+	private void handleSimulationResult(FiniteTrajectory tr) {
 		simulationJob.addSimulationResult(tr);
 	}
 
-	protected void sendSimulationTask(int mpiTarget) {
+	private void sendSimulationTask(int mpiTarget) {
 		if (log.isDebugEnabled())
 			log.debug("Sending simulation task");
 		mpiUtils.sendMessage(mpiTarget, Message.RUN_SIMULATION);
 	}
 
-	protected void sendShutdownSignal(int mpiTarget) {
+	private void sendShutdownSignal(int mpiTarget) {
 		if (log.isDebugEnabled())
 			log.debug("Sending shutdown signal");
 		mpiUtils.sendMessage(mpiTarget, Message.SHUTDOWN);
 	}
 
-	protected MPIContainer<FiniteTrajectory> receiveSimulationResult() {
+	private MPIContainer<FiniteTrajectory> receiveSimulationResult() {
 		if (log.isDebugEnabled())
 			log.debug("Waiting for simulation result...");
 		MPIContainer<FiniteTrajectory> result = mpiUtils.receiveObject();

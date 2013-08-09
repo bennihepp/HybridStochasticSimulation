@@ -1,6 +1,5 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -14,12 +13,16 @@ public class DummyOutput implements SimulationOutput {
 	public DummyOutput() {}
 
 	@Override
+	public void init() throws OutputException {
+	}
+
+	@Override
 	public void add(String simulationName, FinitePlotData plotData) {}
 
 	@Override
 	public void addAll(String simulationName, List<FinitePlotData> plotDataList) {}
 
 	@Override
-	public void write() throws IOException, OutputAlreadyWrittenException {}
+	public void write() throws OutputException, OutputAlreadyWrittenException {}
 
 }

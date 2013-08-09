@@ -5,8 +5,8 @@ import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
-import ch.ethz.khammash.ode.DirectBufferEventFunctionAdapter;
-import ch.ethz.khammash.ode.DirectBufferOdeAdapter;
+import ch.ethz.khammash.ode.BufferEventFunctionAdapter;
+import ch.ethz.khammash.ode.BufferOdeAdapter;
 import ch.ethz.khammash.ode.EventFunction;
 import ch.ethz.khammash.ode.EventObserver;
 import ch.ethz.khammash.ode.EventObserver.EventAction;
@@ -99,8 +99,8 @@ public class CVodeSolver implements Solver {
 
     private boolean initialized = false;
     private long jni_pointer;
-    private DirectBufferOdeAdapter ode;
-    private DirectBufferEventFunctionAdapter ef;
+    private BufferOdeAdapter ode;
+    private BufferEventFunctionAdapter ef;
     private StateObserver stateObserver;
     private EventObserver eventObserver;
 	private TimepointProvider timepointProvider;
@@ -167,7 +167,7 @@ public class CVodeSolver implements Solver {
     	this.maxStep = maxStep;
     }
 
-	private native long jni_initialize(DirectBufferOdeAdapter ode, DirectBufferEventFunctionAdapter ef,
+	private native long jni_initialize(BufferOdeAdapter ode, BufferEventFunctionAdapter ef,
 			DoubleBuffer xBuffer, DoubleBuffer xTmpBuffer, DoubleBuffer xDotBuffer,
 			DoubleBuffer gBuffer, IntBuffer eventIndexBuffer,
 			double relTol, double absTol, int multistepType, int iterationType, int maxNumOfSteps, double minStep, double maxStep);
@@ -205,8 +205,8 @@ public class CVodeSolver implements Solver {
     	ibuffer.position((Double.SIZE / Integer.SIZE) / 8 * offset);
     	eventIndexBuffer = ibuffer.slice();
 
-    	this.ode = new DirectBufferOdeAdapter(ode, xTmpBuffer, xDotBuffer);
-    	this.ef = new DirectBufferEventFunctionAdapter(ef, ode.getDimensionOfVectorField(), xTmpBuffer, gBuffer);
+    	this.ode = new BufferOdeAdapter(ode, xTmpBuffer, xDotBuffer);
+    	this.ef = new BufferEventFunctionAdapter(ef, ode.getDimensionOfVectorField(), xTmpBuffer, gBuffer);
         jni_pointer = jni_initialize(this.ode, this.ef, xBuffer, xTmpBuffer, xDotBuffer, gBuffer, eventIndexBuffer,
         		relTolerance, absTolerance, multistepType, iterationType, maxNumOfSteps, minStep, maxStep);
         if (jni_pointer == 0)
@@ -247,20 +247,16 @@ public class CVodeSolver implements Solver {
 		xBuffer.position(0);
 		xBuffer.put(x);
 		double t = timepointProvider.getCurrentTimepoint();
-//		if (prepared)
-//			jni_quick_reinitialize(jni_pointer, t);
-//		else {
-//			jni_reinitialize(jni_pointer, t);
-//			prepared = true;
-//		}
 		jni_reinitialize(jni_pointer, t);
 	}
 
 	@Override
 	public double integrate() throws CVodeIntegrationException, NotYetInitializedException {
-    	if (initialized) {
-    		double t = timepointProvider.getCurrentTimepoint();
-			stateObserver.report(t, x);
+    	if (!initialized)
+    		throw new NotYetInitializedException("Solver has not yet been initialized");
+
+		double t = timepointProvider.getCurrentTimepoint();
+		stateObserver.report(t, x);
 
 //			// Crude root-finding
 //			ef.computeEventValues(t, x, eventValues);
@@ -277,12 +273,12 @@ public class CVodeSolver implements Solver {
 //    		double t = timepointProvider.getCurrentTimepoint();
 //    		while (timepointProvider.hasNextTimepoint()) {
 //    			double tNext = timepointProvider.getNextTimepoint();
-			while (timepointProvider.hasNextTimepoint(t)) {
-        		double tNext = timepointProvider.getNextTimepoint(t);
+		while (timepointProvider.hasNextTimepoint(t)) {
+    		double tNext = timepointProvider.getNextTimepoint(t);
 //        		System.out.println("t="+t+", tNext="+tNext);
-				t = jni_integrate(jni_pointer, tNext);
-        		xBuffer.position(0);
-	    		xBuffer.get(x);
+			t = jni_integrate(jni_pointer, tNext);
+    		xBuffer.position(0);
+    		xBuffer.get(x);
 //        		System.out.println("prop=" + x0[x0.length-1]);
 
 //				// Crude root-finding
@@ -294,21 +290,19 @@ public class CVodeSolver implements Solver {
 //							return t;
 //	        		}
 
-        		if (t < tNext)
-            		if (eventOccured()) {
-            			EventAction ea = eventObserver.report(getEventOccuredIndex(), t, x);
-            			resetEventOccuredFlags();
-            			if (ea == EventAction.STOP)
-	            			return t;
-            		} else
-            			throw new CVodeIntegrationException("Integration of ODE failed: t < tNext");
-        		if (t > tNext)
-        			throw new RuntimeException("Integration of ODE failed: t > tNext");
-    			stateObserver.report(t, x);
-    		}
-    		return t;
-    	} else
-    		throw new NotYetInitializedException("Solver has not yet been initialized");
+    		if (t < tNext)
+        		if (eventOccured()) {
+        			EventAction ea = eventObserver.report(getEventOccuredIndex(), t, x);
+        			resetEventOccuredFlags();
+        			if (ea == EventAction.STOP)
+            			return t;
+        		} else
+        			throw new CVodeIntegrationException("Integration of ODE failed: t < tNext");
+    		if (t > tNext)
+    			throw new RuntimeException("Integration of ODE failed: t > tNext");
+			stateObserver.report(t, x);
+		}
+		return t;
 	}
 
     public double integrate(TimepointProvider timepointProvider, double[] x) throws CVodeIntegrationException {

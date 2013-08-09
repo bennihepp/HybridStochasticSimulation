@@ -1,7 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch;
 
-import java.io.IOException;
-
+import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput.OutputException;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
 
 
@@ -51,7 +50,9 @@ public interface SimulationJob {
 
 	FiniteTrajectory runSingleSimulation();
 
-	void writeOutputs() throws IOException;
+	void initOutputs() throws OutputException;
+
+	void writeOutputs() throws OutputException, OutputAlreadyWrittenException;
 
 	void addSimulationResult(FiniteTrajectory tr);
 

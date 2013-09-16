@@ -1,0 +1,11 @@
+To build this project you define two environment variables:
+JAVA_HOME - This is the path to the jdk to compile against
+SUNDIALS_HOME - $SUNDIALS_HOME/lib and $SUNDIALS_HOME/include should contain the appropriate libraries and headers for CVode
+
+To compile you run:
+> mvn compile
+The libcvodejni.so and liblsodarjni.so will recide in the jni/lib directory.
+
+To install you run:
+> mvn install
+

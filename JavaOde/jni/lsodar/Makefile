@@ -21,7 +21,7 @@ HEADERS = $(wildcard include/*.h)
 OBJECTS = $(SOURCES:.c=.o)
 LOBJECTS = $(SOURCES:.c=.lo)
 EXTERNAL_LOBJECTS = ../src/jni_utils.lo $(wildcard ../odepack/src/*.lo)
-JAVACLASSPATH=../../bin
+JAVACLASSPATH=../../target/classes
 JAVACLASS = ch.ethz.khammash.ode.lsodar.LsodarSolver ch.ethz.khammash.ode.lsodar.LsodarDirectSolver
 JAVACLASSFILE = $(JAVACLASSPATH)/ch/ethz/khammash/ode/lsodar/LsodarSolver.class $(JAVACLASSPATH)/ch/ethz/khammash/ode/lsodar/LsodarDirectSolver.class
 

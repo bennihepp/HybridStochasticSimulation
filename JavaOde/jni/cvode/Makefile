@@ -22,7 +22,7 @@ HEADERS = $(wildcard include/*.h)
 OBJECTS = $(SOURCES:.c=.o)
 LOBJECTS = $(SOURCES:.c=.lo)
 EXTERNAL_LOBJECTS = ../src/jni_utils.lo
-JAVACLASSPATH=../../bin
+JAVACLASSPATH=../../target/classes
 JAVACLASS = ch.ethz.khammash.ode.cvode.CVodeSolver
 JAVACLASSFILE = $(JAVACLASSPATH)/ch/ethz/khammash/ode/cvode/CVodeSolver.class
 

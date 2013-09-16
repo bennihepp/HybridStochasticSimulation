@@ -1,27 +1,32 @@
 package ch.ethz.khammash.hybridstochasticsimulation.grid.mpi;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import java.util.concurrent.Callable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.mpi.MPIUtils.Message;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
 
-public class MPIWorker implements Runnable {
+public class MPIWorker implements Callable<Void> {
 
-	protected static final Log log = LogFactory.getLog(MPIWorker.class);
+	// We don't use a static logger here to prevent synchronization between threads
+	protected final Logger logger = LoggerFactory.getLogger(MPIWorker.class);
 
 	private final MPIUtils mpiUtils;
 	private final SimulationJob simulationJob;
 
 	public MPIWorker(int mpiTag, SimulationJob simulationJob) {
-		mpiUtils = new MPIUtils(mpiTag);
+		this. mpiUtils = new MPIUtils(mpiTag);
 		this.simulationJob = simulationJob;
 	}
 
-	public void run() {
-		if (log.isDebugEnabled())
-			log.debug("Worker running");
+	public Void call() {
+
+		if (logger.isDebugEnabled())
+			logger.debug("Worker running");
+
 		boolean shutdown = false;
 		while (!shutdown) {
 			Message msg = receiveMessage();
@@ -30,36 +35,40 @@ public class MPIWorker implements Runnable {
 				FiniteTrajectory tr = runSimulation();
 				sendSimulationResult(tr);
 				break;
+			default:
 			case SHUTDOWN:
 				shutdown = true;
 				break;
 			}
 		}
-		if (log.isDebugEnabled())
-			log.debug("Worker shutting down");
+
+		if (logger.isDebugEnabled())
+			logger.debug("Worker shutting down");
+
+		return null;
 	}
 
 	protected FiniteTrajectory runSimulation() {
-		if (log.isDebugEnabled()) {
-			log.debug("Running simulation");
+		if (logger.isDebugEnabled()) {
+			logger.debug("Running simulation");
 		}
 		FiniteTrajectory tr = simulationJob.runSingleSimulation();
 		return tr;
 	}
 
 	private Message receiveMessage() {
-		if (log.isDebugEnabled())
-			log.debug("Waiting for message...");
-		MPIContainer<Message> container = mpiUtils.receiveMessage();
-		if (log.isDebugEnabled())
-			log.debug("Received message");
+		if (logger.isDebugEnabled())
+			logger.debug("Waiting for message...");
+		MPIContainer<Message> container = mpiUtils.receiveMessage(0);
+		if (logger.isDebugEnabled())
+			logger.debug("Received message");
 		return container.getPayload();
 	}
 
 	protected void sendSimulationResult(FiniteTrajectory tr) {
-		if (log.isDebugEnabled())
-			log.debug("Sending simulation result");
-		mpiUtils.sendObject(tr);
+		if (logger.isDebugEnabled())
+			logger.debug("Sending simulation result");
+		mpiUtils.sendObject(0, tr, MPIController.MPI_OBJECT_TAG_OFFSET);
 	}
 
 }

@@ -25,17 +25,16 @@ public class MPIUtils {
 		this.mpiTag = mpiTag;
 	}
 
-	public void sendMessage(Message msg) {
+	public void sendMessage(Message msg) throws InterruptedException {
 		sendMessage(0, msg);
 	}
 
-	public void sendMessage(int target, Message msg) {
+	public void sendMessage(int target, Message msg) throws InterruptedException {
 		sendMessage(target, msg, 0);
 	}
 
 	public void sendMessage(int target, Message msg, int mpiTagOffset) {
-		Message[] msgBuf = { msg };
-		MPI.COMM_WORLD.Send(msgBuf, 0, 1, MPI.OBJECT, target, mpiTag + mpiTagOffset);
+		sendObject(target, msg, mpiTagOffset);
 	}
 
 	public MPIContainer<Message> receiveMessage() {
@@ -51,7 +50,11 @@ public class MPIUtils {
 	}
 
 	public <T> void sendObject(T payload) {
-		sendObject(0, payload);
+		sendObject(payload, 0);
+	}
+
+	public <T> void sendObject(T payload, int mpiTagOffset) {
+		sendObject(0, payload, mpiTagOffset);
 	}
 
 	public <T> void sendObject(int target, T payload) {
@@ -74,8 +77,9 @@ public class MPIUtils {
 	public <T> MPIContainer<T> receiveObject(int source, int mpiTagOffset) {
 		Object[] buf = new Object[1];
 		Status status = MPI.COMM_WORLD.Recv(buf, 0, 1, MPI.OBJECT, source, mpiTag + mpiTagOffset);
+		Object obj = buf[0];
 		@SuppressWarnings("unchecked")
-		T payload = (T)buf[0];
+		T payload = (T)obj;
 		return new MPIContainer<>(status.source, payload);
 	}
 

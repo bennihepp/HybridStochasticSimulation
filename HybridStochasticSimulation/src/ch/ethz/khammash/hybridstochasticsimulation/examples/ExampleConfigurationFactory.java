@@ -125,6 +125,12 @@ public class ExampleConfigurationFactory {
 				return new ToggleSwitch();
 			}
 		});
+		registerExampleConfiguration("Repressilator", new ExampleConfigurationCreator() {
+			@Override
+			public SimulationConfiguration create() {
+				return new Repressilator();
+			}
+		});
 	}
 
 	public void registerExampleConfiguration(String name, ExampleConfigurationCreator creator) {

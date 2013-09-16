@@ -183,13 +183,11 @@ public class LsodarDirectSolver implements Solver {
 //    		while (timepointProvider.hasNextTimepoint()) {
 //    			double tNext = timepointProvider.getNextTimepoint();
     		while (true) {
-//        		System.out.println("t="+t+", tNext="+tNext);
         		xBuffer.put(x);
         		xBuffer.position(0);
 				t = jni_integrate(jni_pointer, t, tNext);
 	    		xBuffer.get(x);
         		xBuffer.position(0);
-//        		System.out.println("prop=" + x0[x0.length-1]);
         		if (t < tNext)
             		if (eventOccured()) {
             			eventObserver.report(getEventOccuredIndex(), t, x);
@@ -278,7 +276,6 @@ public class LsodarDirectSolver implements Solver {
 
 		@Override
 		public void computeVectorField(double t, double[] x, double[] xDot) {
-//			System.out.println("computeVectorField");
 			xDot[0] = x[0];
 			xDot[0] = x[0] + 2;
 		}

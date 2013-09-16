@@ -3,10 +3,10 @@
   <groupId>ch.ethz.khammash</groupId>
   <artifactId>JavaOde</artifactId>
   <version>0.1-SNAPSHOT</version>
-  <packaging>pom</packaging>
+  <!-- <packaging>pom</packaging>
   <modules>
     <module>jni</module>
-  </modules>
+  </modules> -->
 
   <build>
     <sourceDirectory>src</sourceDirectory>

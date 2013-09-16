@@ -2,14 +2,19 @@ package ch.ethz.khammash.hybridstochasticsimulation.batch;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput.OutputException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
+import ch.ethz.khammash.hybridstochasticsimulation.io.SimulationOutput;
+import ch.ethz.khammash.hybridstochasticsimulation.io.SimulationOutput.OutputException;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.DummyTrajectoryMapper;
@@ -25,7 +30,11 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDist
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionTrajectoryBuilder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFinitePlotData;
 
-public class DefaultSimulationJob<T extends ReactionNetworkModel> implements SimulationJobDescription<T> {
+public class DefaultSimulationJob<T extends ReactionNetworkModel> implements SimulationJobDescription<T>, Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private final static Logger logger = LoggerFactory.getLogger(DefaultSimulationJob.class);
 
 	private String name = "<unnamed>";
 	private List<SimulationOutput> outputs;
@@ -166,11 +175,12 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 
 	// TODO: Restructure trajectory mapping
 	@Override
-	public void runJob() {
+	public void runJob() throws InterruptedException {
 		Set<SimulationOutput> usedOutputs = new LinkedHashSet<>();
 		long startTime = System.currentTimeMillis();
 		List<FinitePlotData> plotDataList = new LinkedList<>();
-		System.out.println("Running simulation \"" + getName() + "\" [" + getSimulationType() + "] (" + getRuns() + " runs)");
+		if (logger.isInfoEnabled())
+			logger.info("Running simulation \"{}\" [{}] ({} runs)", getName(), getSimulationType(), getRuns());
 		switch (getSimulationType()) {
 		case TRAJECTORY:
 //			for (int i=0; i < getRuns(); i++) {
@@ -234,19 +244,25 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		}
 		List<SimulationOutput> outputs = getOutputs();
 		for (SimulationOutput output : outputs) {
-			output.addAll(getName(), plotDataList);
-			usedOutputs.add(output);
+			try {
+				output.begin();
+				output.addAll(getName(), plotDataList);
+				usedOutputs.add(output);
+			} catch (OutputException e) {
+				if (logger.isErrorEnabled())
+					logger.error("ERROR: Could not output results to {}", output, e);
+			}
 		}
 		long endTime = System.currentTimeMillis();
-		System.out.println("  Runtime: " + (endTime - startTime) + "ms");
+		if (logger.isInfoEnabled())
+			logger.info("  Runtime: {}ms", (endTime - startTime));
 
 		for (SimulationOutput output : usedOutputs)
 			try {
-				output.write();
+				output.end();
 			} catch (OutputException e) {
-				System.err.println("ERROR: Could not output results to " + output);
-				e.printStackTrace();
-				System.err.println();
+				if (logger.isErrorEnabled())
+					logger.error("ERROR: Could not output results to {}", output, e);
 			}
 
 	}
@@ -289,15 +305,15 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 	}
 
 	@Override
-	public void initOutputs() throws OutputException {
+	public void beginOutput() throws OutputException {
 		List<SimulationOutput> outputs = getOutputs();
 		for (SimulationOutput output : outputs) {
-			output.init();
+			output.begin();
 		}
 	}
 
 	@Override
-	public void writeOutputs() throws OutputException, OutputAlreadyWrittenException {
+	public void endOutput() throws OutputException, OutputAlreadyWrittenException {
 		switch (getSimulationType()) {
 		case TRAJECTORY:
 			break;
@@ -311,14 +327,19 @@ public class DefaultSimulationJob<T extends ReactionNetworkModel> implements Sim
 		}
 		List<SimulationOutput> outputs = getOutputs();
 		for (SimulationOutput output : outputs) {
-			output.write();
+			output.end();
 		}
 	}
 
 	private void outputPlotData(FinitePlotData plotData) {
 		List<SimulationOutput> outputs = getOutputs();
 		for (SimulationOutput output : outputs) {
-			output.add(getName(), plotData);
+			try {
+				output.add(getName(), plotData);
+			} catch (OutputException e) {
+				if (logger.isErrorEnabled())
+					logger.error("ERROR: Could not output results to {}", output, e);
+			}
 		}
 	}
 

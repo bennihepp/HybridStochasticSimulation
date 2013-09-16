@@ -10,6 +10,8 @@ import org.apache.commons.math3.linear.RealVector;
 
 public class ScalingTrajectoryMapper implements FiniteTrajectoryMapper {
 
+	private static final long serialVersionUID = 1L;
+
 	private double[] plotScales;
 
 	@Inject

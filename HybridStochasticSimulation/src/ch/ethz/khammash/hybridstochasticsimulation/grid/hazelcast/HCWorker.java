@@ -8,8 +8,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.AbstractWorker;
@@ -23,7 +23,7 @@ import com.hazelcast.core.MessageListener;
 
 public class HCWorker extends AbstractWorker implements MessageListener<Control> {
 
-	private static final Log log = LogFactory.getLog(HCWorker.class);
+	private static final Logger logger = LoggerFactory.getLogger(HCWorker.class);
 
 	public static void main(String[] args) throws FileNotFoundException {
 
@@ -36,8 +36,8 @@ public class HCWorker extends AbstractWorker implements MessageListener<Control>
 			HCUtils hcUtils = HCUtils.createInstance(hazelcastConfigFilename);
 
 			int numOfWorkerThreads = gridUtils.getConfig().getInt("GridParameters.numOfWorkerThreads", 1);
-			if (log.isDebugEnabled())
-				log.debug(String.format("Number of worker threads: %d", numOfWorkerThreads));
+			if (logger.isDebugEnabled())
+				logger.debug(String.format("Number of worker threads: %d", numOfWorkerThreads));
 
 			ExecutorService executor = Executors.newFixedThreadPool(numOfWorkerThreads);
 			for (int i=0; i < numOfWorkerThreads; i++) {
@@ -45,18 +45,19 @@ public class HCWorker extends AbstractWorker implements MessageListener<Control>
 				executor.submit(worker);
 			}
 	        executor.shutdown();
-	        do {
-	        	try {
-	        		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-		        } catch (InterruptedException e) { }
-	        } while (!executor.isTerminated());
+	        while (!executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
 
 			hcUtils.shutdown();
 
 		} catch (ConfigurationException | IOException e) {
-			if (log.isInfoEnabled())
-				log.info("Failed to load configuration", e);
-			System.exit(1);
+			if (logger.isInfoEnabled())
+				logger.info("Failed to load configuration", e);
+			System.exit(-1);
+
+		} catch (InterruptedException e) {
+			if (logger.isDebugEnabled())
+				logger.debug("Interrupted while waiting for executor to shutdown", e);
+			System.exit(-2);
 		}
 
     }
@@ -87,8 +88,8 @@ public class HCWorker extends AbstractWorker implements MessageListener<Control>
 			taskQueue.take();
 			return true;
 		} catch (InterruptedException e) {
-			if (log.isDebugEnabled())
-				log.debug("Interrupted while waiting for next task", e);
+			if (logger.isDebugEnabled())
+				logger.debug("Interrupted while waiting for next task", e);
 			return false;
 		}
 	}

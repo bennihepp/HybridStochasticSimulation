@@ -16,6 +16,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 import com.google.common.eventbus.Subscribe;
 
+
 public class GUI {
 
 	public static void main(String[] args) {
@@ -29,6 +30,7 @@ public class GUI {
 						@Override
 						public void run() {
 							window.getStatusBar().setText("Running simulation");
+//							try {
 //							List<FinitePlotData> plotDataList = Examples.trivialNetwork();
 							// Maybe example
 //							List<FinitePlotData> plotDataList = Examples.regulatedTranscriptionNetwork();
@@ -42,8 +44,8 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.heatShockResponseNetwork();
 //							List<FinitePlotData> plotDataList = Examples.vilarOscillatorNetwork();
 
-							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
-//							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
+//							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
+//								List<FinitePlotData> plotDataList = Examples.fastIsomerization();
 //							List<FinitePlotData> plotDataList = Examples.fastDimerization();
 //							List<FinitePlotData> plotDataList = Examples.haploinsufficiencyNetwork();
 //							List<FinitePlotData> plotDataList = Examples.simpleCrystallizationNetwork();
@@ -51,7 +53,7 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.conversionCycleNetwork();
 
 //							List<FinitePlotData> plotDataList = Examples.repressilator();
-//							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
+							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
 //							try {
 //								List<FinitePlotData> plotDataList = Examples.heatShockMassAction();
 //								List<FinitePlotData> plotDataList = Examples.enzymeKinetics1();
@@ -71,10 +73,11 @@ public class GUI {
 								window.setPlotData(plotDataList, rows, cols);
 								window.validate();
 								window.getStatusBar().setText("Finished simulation", 2000);
-//							} catch (ParserConfigurationException
-//									| SAXException | IOException | FileFormatException e) {
+//							} catch (ParserConfigurationException | SAXException | IOException | FileFormatException e) {
 //								e.printStackTrace();
 //								window.getStatusBar().setText("Simulation failed!");
+//							} catch (InterruptedException e) {
+//								window.getStatusBar().setText("Simulation was interrupted", 2000);
 //							}
 						}
 					};

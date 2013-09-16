@@ -3,6 +3,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.averaging;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -12,36 +13,44 @@ import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 
 public abstract class AbstractAveragingUnit implements ModularAveragingUnit {
 
 	protected UnaryBinaryReactionNetwork network;
 	protected ReactionNetworkGraph graph;
-	protected Set<SpeciesVertex> importantSpecies;
+	private Set<SpeciesVertex> importantSpecies;
 	private List<Set<SpeciesVertex>> previousSubnetworksToAverage;
-	private SubnetworkEnumerator enumerateSubnetworks;
+	private SubnetworkEnumerator baseSubnetworkEnumerator;
+	private SubnetworkEnumerator subnetworkEnumerator;
 
 	public AbstractAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
-		init(network, importantSpecies); 
+		init(network, importantSpecies, null);
+	}
+
+	public AbstractAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies, SubnetworkEnumerator subnetworkEnumerator) {
+		init(network, importantSpecies, subnetworkEnumerator);
 	}
 
 	protected AbstractAveragingUnit() {}
 
-	final private void init(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
+	private void init(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies, SubnetworkEnumerator subnetworkEnumerator) {
 		this.network = network;
 		this.importantSpecies = importantSpecies;
 		this.graph = network.getGraph();
 		this.previousSubnetworksToAverage = null;
-		this.enumerateSubnetworks = new FilteredSubnetworksEnumerator(graph);
+		if (subnetworkEnumerator == null)
+			subnetworkEnumerator = new FilteredSubnetworksEnumerator(graph);
+		setSubnetworkEnumerator(subnetworkEnumerator);
 	}
 
 	protected Iterable<Set<SpeciesVertex>> enumerateSubnetworks() {
-		return enumerateSubnetworks;
+		return subnetworkEnumerator;
 	}
 
 	protected void copyFrom(AbstractAveragingUnit provider) {
-		init(provider.network, provider.importantSpecies);
+		init(provider.network, provider.importantSpecies, provider.baseSubnetworkEnumerator);
 	}
 
 	@Override
@@ -50,9 +59,39 @@ public abstract class AbstractAveragingUnit implements ModularAveragingUnit {
 	}
 
 	@Override
-	public void setSubnetworkEnumerator(SubnetworkEnumerator subnetworkEnumerator) {
+	final public void setSubnetworkEnumerator(SubnetworkEnumerator subnetworkEnumerator) {
 		// TODO: possible subnetworks should be searched for again after changing the enumerator
-		this.enumerateSubnetworks = subnetworkEnumerator;
+		baseSubnetworkEnumerator = subnetworkEnumerator;
+		this.subnetworkEnumerator = new SubnetworkEnumerator() {
+
+			Predicate<Set<SpeciesVertex>> subnetworkFilter = new Predicate<Set<SpeciesVertex>>() {
+
+				@Override
+				public boolean apply(Set<SpeciesVertex> subnetworkSpecies) {
+					if (subnetworkSpecies.size() == network.getNumberOfSpecies() || subnetworkSpecies.isEmpty())
+						return false;
+					boolean hasImportantSpecies = false;
+					HashSet<Integer> subnetworkReactions = new HashSet<Integer>();
+					for (SpeciesVertex v : subnetworkSpecies) {
+						// Skip this subnetwork if it contains any important species
+						if (importantSpecies.contains(v)) {
+							hasImportantSpecies  = true;
+							break;
+						}
+						subnetworkReactions.addAll(network.getInvolvedReactions(v.getSpecies()));
+					}
+					if (hasImportantSpecies)
+						return false;
+					return true;
+				}
+
+			};
+
+			@Override
+			public Iterator<Set<SpeciesVertex>> iterator() {
+				return Iterators.filter(baseSubnetworkEnumerator.iterator(), subnetworkFilter);
+			}
+		};
 	}
 
 	@Override
@@ -60,7 +99,7 @@ public abstract class AbstractAveragingUnit implements ModularAveragingUnit {
 		List<Set<SpeciesVertex>> averagingCandidates = findAveragingCandidates(t, x, filter);
 		List<Set<SpeciesVertex>> subnetworksToAverage = greedySelectSubnetworksToAverage(averagingCandidates);
 
-		computeAverageStateOfSubnetworks(t, x, subnetworksToAverage);
+		computeAverageStationaryStateOfSubnetworks(t, x, subnetworksToAverage);
 
 		if (previousSubnetworksToAverage != null)
 			resamplePreviouslyAveragedSubnetworks(t, x, subnetworksToAverage, previousSubnetworksToAverage);
@@ -69,7 +108,7 @@ public abstract class AbstractAveragingUnit implements ModularAveragingUnit {
 		return subnetworksToAverage;
 	}
 
-	protected abstract void computeAverageStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage);
+	protected abstract void computeAverageStationaryStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage);
 
 //	protected boolean checkAveragingConditions(Set<SpeciesVertex> subnetworkSpecies, double[] x, double[] reactionTimescales) {
 //		double maxSubnetworkTimescale = computeMaxSubnetworkTimescale(subnetworkSpecies, x, reactionTimescales);
@@ -172,7 +211,7 @@ public abstract class AbstractAveragingUnit implements ModularAveragingUnit {
 			allAveragingSpecies.addAll(subnetwork);
 		for (Set<SpeciesVertex> subnetworkSpecies : previousSubnetworksToAverage)
 			if (!allAveragingSpecies.containsAll(subnetworkSpecies))
-				resampleFromSteadyStateDistribution(t, x, subnetworkSpecies);
+				resampleFromStationaryDistribution(t, x, subnetworkSpecies);
 	}
 
 }

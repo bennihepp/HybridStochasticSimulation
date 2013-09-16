@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>HybridStochasticSimulation</groupId>
+  <groupId>ch.ethz.khammash</groupId>
   <artifactId>HybridStochasticSimulation</artifactId>
   <version>0.1-SNAPSHOT</version>
   <build>
@@ -10,6 +10,7 @@
         <directory>src</directory>
         <excludes>
           <exclude>**/*.java</exclude>
+          <exclude>**/*.groovy</exclude>
         </excludes>
       </resource>
     </resources>
@@ -20,11 +21,93 @@
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
+          <excludes>
+            <exclude>**/sandbox/*.java</exclude>
+          </excludes>
         </configuration>
+        <executions>
+            <execution>
+                <phase>compile</phase>
+                <goals>
+                    <goal>compile</goal>
+                </goals>
+            </execution>
+        </executions>
       </plugin>
+      <plugin>
+        <!-- NOTE: We don't need a groupId specification because the group is
+                          org.apache.maven.plugins ...which is assumed by default.
+         -->
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.0</version>
+        <configuration>
+          <compilerId>groovy-eclipse-compiler</compilerId>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-eclipse-compiler</artifactId>
+            <version>2.8.0-01</version>
+          </dependency>
+          <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-eclipse-batch</artifactId>
+            <version>2.1.5-03</version>
+          </dependency>
+        </dependencies>
+      </plugin> -->
+      <!-- <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/main/groovy</source>
+              </sources> 
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-source</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/test/groovy</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin> -->
     </plugins>
   </build>
-  <dependencyManagement>
+  <!-- <dependencyManagement> -->
   	<dependencies>
   		<dependency>
   			<groupId>ch.qos.logback</groupId>
@@ -104,15 +187,92 @@
   			<version>1.0.13</version>
   		</dependency>
   		<dependency>
-  			<groupId>jgraph</groupId>
-  			<artifactId>jgraph</artifactId>
-  			<version>5.13.0.0</version>
-  		</dependency>
-  		<dependency>
   			<groupId>com.google.guava</groupId>
   			<artifactId>guava</artifactId>
   			<version>14.0.1</version>
   		</dependency>
+  		<dependency>
+  			<groupId>com.googlecode.matlabcontrol</groupId>
+  			<artifactId>matlabcontrol</artifactId>
+  			<version>4.1.0</version>
+  		</dependency>
+  		<dependency>
+  			<groupId>net.sourceforge.jmatio</groupId>
+  			<artifactId>jmatio</artifactId>
+  			<version>1.0</version>
+  		</dependency>
+  		<dependency>
+  			<groupId>org.jgrapht</groupId>
+  			<artifactId>jgrapht-jdk1.5</artifactId>
+  			<version>0.7.3</version>
+  		</dependency>
+  		<dependency>
+  			<groupId>de.root1.simon</groupId>
+  			<artifactId>simon</artifactId>
+  			<version>1.1.3</version>
+  		</dependency>
+  		<dependency>
+  			<groupId>org.mpj-express.mpj</groupId>
+  			<artifactId>mpj</artifactId>
+  			<version>0.38</version>
+  		</dependency>
+  		<dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>1.7.5</version>
+  		</dependency>
+  		<dependency>
+            <groupId>ch.ethz.khammash</groupId>
+            <artifactId>JavaOde</artifactId>
+            <version>0.1-SNAPSHOT</version>
+            <!-- <scope>system</scope>
+            <systemPath>${project.basedir}/../JavaOde/target/JavaOde-0.1-SNAPSHOT.jar</systemPath> -->
+  		</dependency>
+        <dependency>
+            <groupId>net.sf.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-actor_2.10</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-remote_2.10</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-kernel_2.10</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+        <!-- <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>1.8.6</version>
+        </dependency> -->
+        <dependency>
+            <groupId>org.hdfgroup</groupId>
+            <artifactId>jhdf5</artifactId>
+            <version>2.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hdfgroup</groupId>
+            <artifactId>jhdf5obj</artifactId>
+            <version>2.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hdfgroup</groupId>
+            <artifactId>jhdf</artifactId>
+            <version>2.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hdfgroup</groupId>
+            <artifactId>jhdfobj</artifactId>
+            <version>2.9</version>
+        </dependency>
   	</dependencies>
-  </dependencyManagement>
+  <!-- </dependencyManagement> -->
 </project>

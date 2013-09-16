@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders;
 
+import java.io.Serializable;
+
 import javax.inject.Provider;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
@@ -10,9 +12,11 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
 
 import com.google.inject.Inject;
 
-public class AdaptiveMSHRNModelProvider extends AbstractProvider<PDMPModel> {
+public class AdaptiveMSHRNModelProvider extends AbstractProvider<PDMPModel> implements Serializable {
 
-//	private Provider<AdaptiveMSHRN> hrnProvider;
+	private static final long serialVersionUID = 1L;
+
+	//	private Provider<AdaptiveMSHRN> hrnProvider;
 	private AdaptiveMSHRN baseHrn;
 
 	@Inject

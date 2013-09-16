@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
-import ch.ethz.khammash.hybridstochasticsimulation.batch.MatlabOutput;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput;
+import ch.ethz.khammash.hybridstochasticsimulation.io.MatlabOutput;
+import ch.ethz.khammash.hybridstochasticsimulation.io.SimulationOutput;
 
 import com.google.inject.Inject;
 

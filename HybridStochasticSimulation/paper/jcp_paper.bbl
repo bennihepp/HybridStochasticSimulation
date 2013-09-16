@@ -1,0 +1,41 @@
+\begin{thebibliography}{1}
+
+\bibitem{anderson_kurtz_2010}
+David~F. Anderson, Gheorghe Craciun, and Thomas~G. Kurtz.
+\newblock {Product-form stationary distributions for deficiency zero chemical
+  reaction networks}.
+\newblock {\em {Bulletin of mathematical biology}}, {72}({8}):1947--1970,
+  {2010}.
+
+\bibitem{davis1984piecewise}
+Mark~HA Davis.
+\newblock {Piecewise-deterministic Markov processes: A general class of
+  non-diffusion stochastic models}.
+\newblock {\em {Journal of the Royal Statistical Society. Series B
+  (Methodological)}}, pages 353--388, {1984}.
+
+\bibitem{gillespie2001approximate}
+Daniel~T. Gillespie.
+\newblock {Approximate accelerated stochastic simulation of chemically reacting
+  systems}.
+\newblock {\em {The Journal of Chemical Physics}}, {115}:1716, {2001}.
+
+\bibitem{kang2013}
+Hye-Won Kang and Thomas~G. Kurtz.
+\newblock {Separation of time-scales and model reduction for stochastic
+  reaction networks}.
+\newblock {\em {The Annals of Applied Probability}}, {23}({2}):529--583,
+  {2013}.
+
+\bibitem{kouretas2006stochastic}
+Panagiotis Kouretas, Konstantinos Koutroumpas, John Lygeros, and Zoi Lygerou.
+\newblock {Stochastic hybrid modeling of biochemical processes}.
+\newblock {\em {Stochastic Hybrid Systems}}, {24}({9083}), {2006}.
+
+\bibitem{serban2005cvodes}
+Radu Serban and Alan~C. Hindmarsh.
+\newblock {CVODES, the sensitivity-enabled ODE solver in SUNDIALS}.
+\newblock In {\em {Proceedings of the 5th International Conference on Multibody
+  Systems, Nonlinear Dynamics and Control, Long Beach, CA}}, {2005}.
+
+\end{thebibliography}

@@ -2,6 +2,9 @@ package ch.ethz.khammash.hybridstochasticsimulation.examples;
 
 import java.util.Arrays;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
@@ -26,6 +29,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 public class BacteriophageT7 extends SimulationConfiguration {
 
+	@Inject @Named("BacteriophageT7")
 	public BacteriophageT7() {
 
 		int[][] productionStochiometries = {

@@ -3,30 +3,27 @@ package ch.ethz.khammash.hybridstochasticsimulation.grid.mpi;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import mpi.MPI;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput.OutputException;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.mpi.MPIUtils.Message;
+import ch.ethz.khammash.hybridstochasticsimulation.io.SimulationOutput.OutputException;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
 
-public class MPIController implements Runnable {
+public class MPIController implements Callable<Void> {
 
-	protected static final Log log = LogFactory.getLog(MPIController.class);
+	protected static final Logger logger = LoggerFactory.getLogger(MPIController.class);
+
+	public static final int MPI_OBJECT_TAG_OFFSET = 1;
 
 	private final MPIUtils mpiUtils;
 	private final SimulationJob simulationJob;
 	private final Set<RankIndexPair> runningChildren;
-
-	public static MPIController createMPIController(int mpiTag, SimulationJob simulationJob, int mpiSize, int numOfMPIThreads) {
-		Set<RankIndexPair> runningChildren = new HashSet<>((mpiSize - 1) * numOfMPIThreads);
-		for (int rank=1; rank < mpiSize; rank++)
-			for (int i=0; i < numOfMPIThreads; i++)
-				runningChildren.add(new RankIndexPair(rank, i));
-		return new MPIController(mpiTag, simulationJob, runningChildren);
-	}
 
 	public MPIController(int mpiTag, SimulationJob simulationJob, Set<RankIndexPair> runningChildren) {
 		mpiUtils = new MPIUtils(mpiTag);
@@ -34,18 +31,21 @@ public class MPIController implements Runnable {
 		this.runningChildren = new HashSet<>(runningChildren);
 	}
 
-	public void run() {
+	// The return value is not used
+	public Void call() throws OutputException, InterruptedException {
 		try {
 
-			if (log.isDebugEnabled())
-				log.debug("Controller running");
+			if (logger.isDebugEnabled())
+				logger.debug("Controller running");
 	
-			simulationJob.initOutputs();
+			simulationJob.beginOutput();
 	
 			int distributedTasks = 0;
 			Iterator<RankIndexPair> it = runningChildren.iterator();
 			while (it.hasNext() && distributedTasks < simulationJob.getRuns()) {
 				RankIndexPair ri = it.next();
+				if (logger.isDebugEnabled())
+					logger.debug("sending task to rank={}, index={}", ri.getRank(), ri.getIndex());
 				int target = ri.getRank();
 				sendSimulationTask(target);
 				distributedTasks++;
@@ -53,9 +53,9 @@ public class MPIController implements Runnable {
 	
 			int receivedResults = 0;
 			while (receivedResults < simulationJob.getRuns()) {
-				if (log.isDebugEnabled()) {
-					log.debug("receivedResults: " + receivedResults);
-					log.debug("distributedTasks: " + distributedTasks);
+				if (logger.isDebugEnabled()) {
+					logger.debug("receivedResults: " + receivedResults);
+					logger.debug("distributedTasks: " + distributedTasks);
 				}
 				MPIContainer<FiniteTrajectory> result = receiveSimulationResult();
 				if (distributedTasks < simulationJob.getRuns()) {
@@ -65,35 +65,50 @@ public class MPIController implements Runnable {
 				handleSimulationResult(result.getPayload());
 				receivedResults++;
 			}
-	
-			try {
-				if (log.isDebugEnabled())
-					log.debug("Writing output...");
-	
-				simulationJob.writeOutputs();
-	
-				if (log.isDebugEnabled())
-					log.debug("Output written");
-			} catch (OutputException e) {
-				if (log.isErrorEnabled())
-					log.error("Error while writing output", e);
-			}
-	
-			if (log.isDebugEnabled())
-				log.debug("Controller shutting down");
 
-		} catch (OutputException e) {
-			if (log.isErrorEnabled())
-				log.error("Error while initializing outputs", e);
+//			try {
+				if (logger.isDebugEnabled())
+					logger.debug("Writing output...");
+
+				simulationJob.endOutput();
+
+				if (logger.isDebugEnabled())
+					logger.debug("Output written");
+//			} catch (OutputException e) {
+//				if (logger.isDebugEnabled())
+//					logger.debug("DEBUG", e);
+//				if (logger.isErrorEnabled())
+//					logger.error("Error while writing output", e);
+//			}
+	
+			if (logger.isDebugEnabled())
+				logger.debug("Controller shutting down");
+
+//		} catch (OutputException e) {
+//			if (logger.isErrorEnabled())
+//				logger.error("Error while initializing outputs", e);
+
+//		} catch (InterruptedException e) {
+//			if (logger.isDebugEnabled())
+//				logger.debug("Interrupted while running simulations", e);
+//			Thread.currentThread().interrupt();
 
 		} finally {
-			shutdownRunningChildren();
+//			try {
+				shutdownRunningChildren();
+//			} catch (InterruptedException e) {
+//				if (logger.isDebugEnabled())
+//					logger.debug("Interrupted while sending shutdown messages", e);
+//				Thread.currentThread().interrupt();
+//			}
 		}
+
+		return null;
 	}
 
-	private void shutdownRunningChildren() {
-		if (log.isDebugEnabled())
-			log.debug("Shutting down running children");
+	private void shutdownRunningChildren() throws InterruptedException {
+		if (logger.isDebugEnabled())
+			logger.debug("Shutting down running children");
 		Iterator<RankIndexPair> it = runningChildren.iterator();
 		while (it.hasNext()) {
 			RankIndexPair ri = it.next();
@@ -106,24 +121,24 @@ public class MPIController implements Runnable {
 		simulationJob.addSimulationResult(tr);
 	}
 
-	private void sendSimulationTask(int mpiTarget) {
-		if (log.isDebugEnabled())
-			log.debug("Sending simulation task");
+	private void sendSimulationTask(int mpiTarget) throws InterruptedException {
+		if (logger.isDebugEnabled())
+			logger.debug("Sending simulation task");
 		mpiUtils.sendMessage(mpiTarget, Message.RUN_SIMULATION);
 	}
 
-	private void sendShutdownSignal(int mpiTarget) {
-		if (log.isDebugEnabled())
-			log.debug("Sending shutdown signal");
+	private void sendShutdownSignal(int mpiTarget) throws InterruptedException {
+		if (logger.isDebugEnabled())
+			logger.debug("Sending shutdown signal");
 		mpiUtils.sendMessage(mpiTarget, Message.SHUTDOWN);
 	}
 
-	private MPIContainer<FiniteTrajectory> receiveSimulationResult() {
-		if (log.isDebugEnabled())
-			log.debug("Waiting for simulation result...");
-		MPIContainer<FiniteTrajectory> result = mpiUtils.receiveObject();
-		if (log.isDebugEnabled())
-			log.debug("Received simulation result");
+	private MPIContainer<FiniteTrajectory> receiveSimulationResult() throws InterruptedException {
+		if (logger.isDebugEnabled())
+			logger.debug("Waiting for simulation result...");
+		MPIContainer<FiniteTrajectory> result = mpiUtils.receiveObject(MPI.ANY_SOURCE, MPI_OBJECT_TAG_OFFSET);
+		if (logger.isDebugEnabled())
+			logger.debug("Received simulation result");
 		return result;
 	}
 

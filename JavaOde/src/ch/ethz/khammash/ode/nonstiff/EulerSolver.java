@@ -105,8 +105,8 @@ public class EulerSolver implements Solver {
 		while (true) {
 			double tOld = t;
 			double[] xOld = x.clone();
-			if (Double.isNaN(x[0]))
-				System.out.println(x[0]);
+//			if (Double.isNaN(x[0]))
+//				// TODO: Handle NaNs
 			t = findNextState(t, x, step, tReport - t);
 			ef.computeEventValues(t, x, eventValues2);
 			for (int k=0; k < ef.getNumberOfEventValues(); k++)
@@ -181,7 +181,6 @@ public class EulerSolver implements Solver {
 
 		@Override
 		public void computeVectorField(double t, double[] x, double[] xDot) {
-//			System.out.println("computeVectorField");
 			xDot[0] = x[0];
 			xDot[0] = x[0] + 2;
 		}

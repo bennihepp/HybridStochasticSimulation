@@ -19,14 +19,17 @@ public interface SimulationController<T extends ReactionNetworkModel> {
 
 	List<TrajectoryRecorder> simulateTrajectories(int runs,
 			ObjProvider<? extends T> modelProvider, ObjProvider<? extends TrajectoryRecorder> trProvider,
-			double t0, double[] x0, double t1);
+			double t0, double[] x0, double t1)
+					throws InterruptedException;
 
 	FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
 			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends FiniteTrajectoryRecorder> trProvider,
-			double t0, double[] x0, double t1);
+			double t0, double[] x0, double t1)
+					throws InterruptedException;
 
 	FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
 			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends FiniteTrajectoryRecorder> trProvider,
-			FiniteTrajectoryMapper mapper, double t0, double[] x0, double t1);
+			FiniteTrajectoryMapper mapper, double t0, double[] x0, double t1)
+					throws InterruptedException;
 
 }

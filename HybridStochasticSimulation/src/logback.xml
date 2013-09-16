@@ -8,9 +8,23 @@
 		</encoder>
 	</appender>
 
+	<appender name="MPI_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread:rank=%X{rank}] %-5level %logger{36} - %msg%n</pattern>
+		</encoder>
+	</appender>
+
 	<root level="info">
 		<appender-ref ref="STDOUT" />
 	</root>
+
+    <logger name="ch.ethz.khammash.hybridstochasticsimulation.MainMPI" additivity="false">
+		<appender-ref ref="MPI_STDOUT" />
+    </logger>
+
+    <logger name="ch.ethz.khammash.hybridstochasticsimulation.grid.mpi" additivity="false">
+		<appender-ref ref="MPI_STDOUT" />
+    </logger>
 
 </configuration>
 

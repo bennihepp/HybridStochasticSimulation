@@ -1,22 +1,38 @@
+/**
+ * @author      Benjamin Hepp <benjamin.hepp@bsse.ethz.ch>
+ */
 package ch.ethz.khammash.hybridstochasticsimulation.averaging;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math3.random.RandomDataGenerator;
+import org.apache.commons.math3.util.FastMath;
 import org.ejml.UtilEjml;
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.factory.DecompositionFactory;
 import org.ejml.factory.SingularValueDecomposition;
 import org.ejml.ops.CommonOps;
 import org.ejml.ops.SingularOps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import cern.colt.matrix.DoubleMatrix1D;
+import cern.colt.matrix.DoubleMatrix2D;
+import cern.colt.matrix.impl.SparseDoubleMatrix2D;
+import cern.colt.matrix.linalg.EigenvalueDecomposition;
+import cern.jet.math.Functions;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
-import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryDeterministicModel;
-import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryModelUtils;
+import ch.ethz.khammash.hybridstochasticsimulation.math.MathUtilities;
+import ch.ethz.khammash.hybridstochasticsimulation.math.RandomDataUtilities;
+import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryStochasticModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
@@ -24,16 +40,30 @@ import com.google.common.base.Predicate;
 
 public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 
-	private List<Set<SpeciesVertex>> finiteMarkovChainSubnetworks = null;
-	private Map<Set<SpeciesVertex>, SubnetworkInformation> subnetworkInformationMap;
+	// TODO: StateEnumerator could be implemented more efficiently
+	// TODO: Reuse StateEnumerator and transitionMatrix etc. instead of computing again and again
+
+	private static final Logger logger = LoggerFactory.getLogger(FiniteMarkovChainAveragingUnit.class);
 
 	public static FiniteMarkovChainAveragingUnit createCopy(FiniteMarkovChainAveragingUnit averagingUnit) {
 		FiniteMarkovChainAveragingUnit copy = new FiniteMarkovChainAveragingUnit();
 		copy.copyFrom(averagingUnit);
 		copy.finiteMarkovChainSubnetworks = averagingUnit.finiteMarkovChainSubnetworks;
 		copy.subnetworkInformationMap = averagingUnit.subnetworkInformationMap;
+		copy._stopIfAveragingBecomesInvalid = averagingUnit._stopIfAveragingBecomesInvalid;
+		copy._warnIfAveragingBecomesInvalid = averagingUnit._warnIfAveragingBecomesInvalid;
 		return copy;
 	}
+
+	private List<Set<SpeciesVertex>> finiteMarkovChainSubnetworks = null;
+	private Map<Set<SpeciesVertex>, SubnetworkInformation> subnetworkInformationMap;
+	// TODO: Cache the transition matrix?
+//	private Map<Set<SpeciesVertex>, Matrix> averagingCandidateTransitionMatrixMap;
+	private boolean _stopIfAveragingBecomesInvalid = true;
+	private boolean _warnIfAveragingBecomesInvalid = true;
+	private double zeroEigenvalueTolerance = 1e-6;
+	private double zeroSumTolerance = 1e-6;
+	private RandomDataGenerator rdg;
 
 	public FiniteMarkovChainAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies) {
 		super(network, importantSpecies);
@@ -44,33 +74,43 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 		super();
 	}
 
+	public void stopIfAveragingBecomesInvalid(boolean stop) {
+		_stopIfAveragingBecomesInvalid = stop;
+	}
+
+	public void warnIfAveragingBecomesInvalid(boolean warn) {
+		_warnIfAveragingBecomesInvalid = warn;
+	}
+
+	public void setZeroSumTolerance(double tol) {
+		this.zeroSumTolerance = tol;
+	}
+
+	public void setZeroEigenvalueTolerance(double tol) {
+		this.zeroEigenvalueTolerance = tol;
+	}
+
 	private List<Set<SpeciesVertex>> findFiniteMarkovChainSubnetworks() {
 		List<Set<SpeciesVertex>> finiteMarkovChainSubnetworks = new ArrayList<Set<SpeciesVertex>>();
 		for (Set<SpeciesVertex> subnetworkSpecies : enumerateSubnetworks()) {
-			// TODO: this should be done by the subnetworkEnumerator
-			if (subnetworkSpecies.size() == network.getNumberOfSpecies() || subnetworkSpecies.isEmpty())
-				continue;
-			boolean hasImportantSpecies = false;
-			for (SpeciesVertex v : subnetworkSpecies) {
-				// Skip this subnetwork if it contains any important species
-				if (importantSpecies.contains(v)) {
-					hasImportantSpecies  = true;
-					break;
-				}
-			}
-			if (hasImportantSpecies)
-				continue;
-
 			UnaryBinaryReactionNetwork subnetwork = createSubReactionNetwork(network, subnetworkSpecies);
-			List<SpeciesVertex> conservedSpecies = getConservedSpecies(subnetwork);
-			// Check if this a Finite Markov Chain (i.e. all species in the subnetwork are involved in a conservation relation)
-			if (conservedSpecies.size() < subnetworkSpecies.size())
-				continue;
 
-			// TODO: Check for irreducibility
+			List<SpeciesConservationRelation> conservedSpeciesRelations = getConservedSpeciesRelations(subnetwork);
+			// TODO: for now we only allow subnetworks that are fully related by a single conservation relation
+			if (conservedSpeciesRelations.size() != 1)
+				continue;
+//			Set<SpeciesVertex> unconservedSpeciesSet = new HashSet<>(subnetworkSpecies);
+//			for (SpeciesConservationRelation relation : conservedSpeciesRelations)
+//				unconservedSpeciesSet.removeAll(relation.getConservedSpeciesList());
+////			// Check if this a Finite Markov Chain (i.e. all species in the subnetwork are involved in a conservation relation)
+//			if (unconservedSpeciesSet.size() > 0)
+//				continue;
+			SpeciesConservationRelation conservedSpeciesRelation = conservedSpeciesRelations.get(0);
+
+			UnaryBinaryStochasticModel subnetworkModel = new UnaryBinaryStochasticModel(subnetwork);
 
 			SubnetworkInformation subnetworkInfo = new SubnetworkInformation();
-			UnaryBinaryDeterministicModel subnetworkModel = new UnaryBinaryDeterministicModel(subnetwork);
+			subnetworkInfo.setConservedSpeciesRelation(conservedSpeciesRelation);
 			subnetworkInfo.setModel(subnetworkModel);
 			Map<SpeciesVertex, Integer> subnetworkIndexMap = new HashMap<>();
 			for (int i=0; i < subnetwork.getNumberOfSpecies(); i++) {
@@ -97,23 +137,44 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
 		if (finiteMarkovChainSubnetworks == null)
 			this.finiteMarkovChainSubnetworks = findFiniteMarkovChainSubnetworks();
+//		averagingCandidateTransitionMatrixMap = new HashMap<>();
 		// First find a list of subnetworks that could be averaged
 		List<Set<SpeciesVertex>> averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
-		for (Set<SpeciesVertex> subnetwork : finiteMarkovChainSubnetworks) {
-			if (filter.apply(subnetwork))
-				averagingCandidates.add(subnetwork);
+		for (Set<SpeciesVertex> subnetworkSpecies : finiteMarkovChainSubnetworks) {
+			if (filter.apply(subnetworkSpecies)) {
+				SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetworkSpecies);
+				DoubleMatrix2D transitionMatrix = computeTransitionMatrix(t, x, subnetworkInfo.getConservedSpeciesRelation(), subnetworkInfo.getModel());
+				if (isIrreducible(transitionMatrix)) {
+//					averagingCandidateTransitionMatrixMap.put(subnetworkSpecies, transitionMatrix);
+					averagingCandidates.add(subnetworkSpecies);
+				}
+			}
 		}
 		return averagingCandidates;
 	}
 
 	@Override
-	public void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
-		// TODO: round copy numbers of previously averaged species
+	public void resampleFromStationaryDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
+		SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetworkSpecies);
+		SpeciesConservationRelation relation = subnetworkInfo.getConservedSpeciesRelation();
+		UnaryBinaryStochasticModel subnetworkModel = subnetworkInfo.getModel();
+		DoubleMatrix2D transitionMatrix = computeTransitionMatrix(t, x, relation, subnetworkModel);
+		DoubleMatrix1D stationaryDistribution = computeStationaryDistribution(transitionMatrix);
+		int stateIndex = RandomDataUtilities.sampleFromProbabilityMassFunction(rdg, stationaryDistribution.toArray());
+		SpeciesConservationRelationStateEnumerator stateEnumerator = new SpeciesConservationRelationStateEnumerator(x, relation);
+		Iterator<double[]> it = stateEnumerator.iterator();
+		for (int i=0; i < stateIndex; i++)
+			it.next();
+		double[] state = it.next();
+		Map<SpeciesVertex, Integer> indexMap = subnetworkInfo.getIndexMap();
+		for (SpeciesVertex v : subnetworkSpecies) {
+			x[v.getSpecies()] = state[indexMap.get(v)];
+		}
 	}
 
-	private List<SpeciesVertex> getConservedSpecies(UnaryBinaryReactionNetwork network) {
+	private List<SpeciesConservationRelation> getConservedSpeciesRelations(UnaryBinaryReactionNetwork network) {
 		DenseMatrix64F nullSpace = computeNullSpaceOfReactionNetwork(network);
-		List<SpeciesVertex> conservedSpecies = new ArrayList<>();
+		List<SpeciesConservationRelation> conservedSpeciesRelations = new ArrayList<>();
 		for (int col=0; col < nullSpace.numCols; col++) {
 			List<SpeciesVertex> speciesList = new ArrayList<SpeciesVertex>();
 			boolean noConservationRelation = false;
@@ -140,9 +201,9 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 					elementMinNeqZero = element;
 			}
 			CommonOps.divide(elementMinNeqZero, lcVector);
-			conservedSpecies.addAll(speciesList);
+			conservedSpeciesRelations.add(new SpeciesConservationRelation(speciesList, lcVector));
 		}
-		return conservedSpecies;
+		return conservedSpeciesRelations;
 	}
 
 	private DenseMatrix64F computeNullSpaceOfReactionNetwork(UnaryBinaryReactionNetwork network) {
@@ -171,30 +232,139 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 	}
 
 	@Override
-	protected void computeAverageStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
+	protected void computeAverageStationaryStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
 		// TODO: Perform correct computation of average state
 		for (Set<SpeciesVertex> subnetworkSpecies : subnetworksToAverage) {
-			SubnetworkInformation subnetworkInformation = subnetworkInformationMap.get(subnetworkSpecies);
-			UnaryBinaryDeterministicModel subnetworkModel = subnetworkInformation.getModel();
-			Map<SpeciesVertex, Integer> indexMap = subnetworkInformation.getIndexMap();
-			double[] subXSteadyState = UnaryBinaryModelUtils.computeSteadyState(subnetworkModel, t, x);
-			for (SpeciesVertex v : subnetworkSpecies) {
-				x[v.getSpecies()] = subXSteadyState[indexMap.get(v)];
+			SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetworkSpecies);
+			SpeciesConservationRelation conservedSpeciesRelation = subnetworkInfo.getConservedSpeciesRelation();
+			UnaryBinaryStochasticModel subnetworkModel = subnetworkInfo.getModel();
+			Map<SpeciesVertex, Integer> indexMap = subnetworkInfo.getIndexMap();
+			double[] subXAverage = computeAverageStateOfSubnetwork(t, x, conservedSpeciesRelation, subnetworkModel);
+			for (SpeciesVertex v : conservedSpeciesRelation.getConservedSpeciesList()) {
+				x[v.getSpecies()] = subXAverage[indexMap.get(v)];
 			}
 		}
 	}
 
+	private double[] computeAverageStateOfSubnetwork(double t, double[] x, SpeciesConservationRelation relation,
+			UnaryBinaryStochasticModel subnetworkModel) {
+		DoubleMatrix2D transitionMatrix = computeTransitionMatrix(t, x, relation, subnetworkModel);
+		EigenvalueDecomposition eigenDecomposition = new EigenvalueDecomposition(transitionMatrix); 
+		// TODO: Is this even possible?
+		boolean irreducible = isIrreducible(eigenDecomposition);
+		if (!irreducible) {
+			String msg = "Averaging of finite markov chain subnetwork became invalid. The finite markov chain is not irreducible anymore. at t=" + t;
+			if (_stopIfAveragingBecomesInvalid)
+				throw new AveragingException(msg);
+			if (_warnIfAveragingBecomesInvalid)
+				logger.warn(msg);
+		}
+		DoubleMatrix1D stationaryDistribution = computeStationaryDistribution(eigenDecomposition);
+		double[] xAverage = computeStationaryAverage(x, relation, stationaryDistribution);
+		return xAverage;
+	}
+
+	private boolean isIrreducible(DoubleMatrix2D transitionMatrix) {
+		EigenvalueDecomposition eigenDecomposition = new EigenvalueDecomposition(transitionMatrix); 
+		return isIrreducible(eigenDecomposition);
+	}
+
+	private boolean isIrreducible(EigenvalueDecomposition eigenDecomposition) {
+		// To check for irreducibility we check whether the dimension of the nullspace is <= 1
+		DoubleMatrix2D D = eigenDecomposition.getD();
+		int dimensionOfNullspace = 0;
+		for (int i=0; i < D.rows(); i++)
+			if (FastMath.abs(D.get(i, i)) <= zeroEigenvalueTolerance)
+				dimensionOfNullspace++;
+		boolean irreducible = dimensionOfNullspace <= 1;
+		return irreducible;
+	}
+
+	private DoubleMatrix2D computeTransitionMatrix(double t, double[] x, SpeciesConservationRelation relation, UnaryBinaryStochasticModel subnetworkModel) {
+		// TODO: check for species numbers > 2
+		SpeciesConservationRelationStateEnumerator stateEnumerator = new SpeciesConservationRelationStateEnumerator(x, relation);
+		int numOfStates = stateEnumerator.getNumberOfStates();
+		DoubleMatrix2D transitionMatrix = new SparseDoubleMatrix2D(numOfStates, numOfStates);
+//		Matrix transitionMatrix = crs.createMatrix(numOfStates, numOfStates);
+		int stateIndex = 0;
+		double[] propensities = new double[subnetworkModel.getNumberOfReactions()];
+		for (double[] state : stateEnumerator) {
+			subnetworkModel.computePropensities(stateIndex, state, propensities);
+			double propensity = MathUtilities.sum(propensities);
+			transitionMatrix.set(stateIndex, stateIndex, -propensity);
+			for (int r=0; r < subnetworkModel.getNumberOfReactions(); r++) {
+				double newPropensity = propensities[r];
+				if (newPropensity > 0) {
+					double[] newState = state.clone();
+					subnetworkModel.changeState(r, t, newState);
+					int newStateIndex = stateEnumerator.getStateIndex(newState);
+					transitionMatrix.setQuick(newStateIndex, stateIndex, newPropensity);
+				}
+			}
+			stateIndex++;
+		}
+		return transitionMatrix;
+	}
+
+	private DoubleMatrix1D computeStationaryDistribution(DoubleMatrix2D transitionMatrix) {
+		EigenvalueDecomposition eigenDecomposition = new EigenvalueDecomposition(transitionMatrix);
+		return computeStationaryDistribution(eigenDecomposition);
+	}
+
+	private DoubleMatrix1D computeStationaryDistribution(EigenvalueDecomposition eigenDecomposition) {
+		DoubleMatrix2D D = eigenDecomposition.getD();
+		DoubleMatrix2D P = eigenDecomposition.getV();
+		// Find eigenvector with eigenvalue 0
+		int zeroEigenvalueIndex = -1;
+		for (int i=0; i < D.rows(); i++)
+			if (FastMath.abs(D.get(i, i)) <= zeroEigenvalueTolerance) {
+				zeroEigenvalueIndex = i;
+				break;
+			}
+		DoubleMatrix1D zeroEigenVector = P.viewColumn(zeroEigenvalueIndex);
+		double sum = zeroEigenVector.aggregate(Functions.plus, Functions.identity);
+		DoubleMatrix1D result = zeroEigenVector.copy();
+		result = result.assign(Functions.div(sum));
+		// Consistency check
+		sum = result.aggregate(Functions.plus, Functions.abs);
+		checkArgument(FastMath.abs(sum - 1.0) <= zeroSumTolerance);
+		return result;
+	}
+
+	private double[] computeStationaryAverage(double[] x, SpeciesConservationRelation relation, DoubleMatrix1D stationaryDistribution) {
+		SpeciesConservationRelationStateEnumerator stateEnumerator = new SpeciesConservationRelationStateEnumerator(x, relation);
+		double[] averageState = new double[relation.getConservedSpeciesList().size()];
+		int stateIndex = 0;
+		for (double[] state : stateEnumerator) {
+			double p = stationaryDistribution.get(stateIndex);
+			for (int i=0; i < averageState.length; i++)
+				averageState[i] += p * state[i];
+			stateIndex++;
+		}
+		return averageState;
+	}
+
 	private class SubnetworkInformation {
 
-		private UnaryBinaryDeterministicModel model;
+		private UnaryBinaryStochasticModel model;
+//		private Collection<SpeciesConservationRelation> conservedSpeciesRelations;
+		private SpeciesConservationRelation conservedSpeciesRelation;
 		private Map<SpeciesVertex, Integer> indexMap;
 
-		public void setModel(UnaryBinaryDeterministicModel model) {
-			this.model = model;
+		public void setModel(UnaryBinaryStochasticModel subnetworkModel) {
+			this.model = subnetworkModel;
 		}
 
-		public UnaryBinaryDeterministicModel getModel() {
+		public UnaryBinaryStochasticModel getModel() {
 			return model;
+		}
+
+		public SpeciesConservationRelation getConservedSpeciesRelation() {
+			return conservedSpeciesRelation;
+		}
+
+		public void setConservedSpeciesRelation(SpeciesConservationRelation conservedSpeciesRelation) {
+			this.conservedSpeciesRelation = conservedSpeciesRelation;
 		}
 
 		public void setIndexMap(Map<SpeciesVertex, Integer> indexMap) {

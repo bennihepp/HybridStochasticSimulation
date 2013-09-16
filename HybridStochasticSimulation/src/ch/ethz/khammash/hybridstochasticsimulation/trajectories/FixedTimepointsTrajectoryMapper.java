@@ -11,6 +11,8 @@ import org.apache.commons.math3.linear.RealVector;
 
 public class FixedTimepointsTrajectoryMapper implements FiniteTrajectoryMapper {
 
+	private static final long serialVersionUID = 1L;
+
 	private double[] timepoints;
 	private double[] plotScales;
 

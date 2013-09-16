@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.math3.stat.descriptive.SynchronizedSummaryStatistics;
 import org.apache.commons.math3.util.FastMath;
@@ -35,7 +36,6 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 		implements SimulationController<T> {
 
 	public static final int DEFAULT_NUMBER_OF_THREADS = 4;
-
 	private static final int DEFAULT_MAX_QUEUED_JOBS = 100;
 
 	private final ListeningExecutorService executor;
@@ -47,14 +47,21 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	}
 
 	public AbstractSimulationController(ObjProvider<? extends Simulator<T>> simulatorProvider, int numOfThreads) {
-		this(simulatorProvider, Executors.newFixedThreadPool(numOfThreads));
-		setMaxQueuedJobs(FastMath.max(numOfThreads, maxQueuedJobs));
+		this(simulatorProvider, Executors.newFixedThreadPool(numOfThreads), FastMath.max(numOfThreads, DEFAULT_MAX_QUEUED_JOBS));
+//		setMaxQueuedJobs(FastMath.max(numOfThreads, maxQueuedJobs));
 	}
 
 	public AbstractSimulationController(ObjProvider<? extends Simulator<T>> simulatorProvider, ExecutorService executor) {
+		this(simulatorProvider, executor, DEFAULT_MAX_QUEUED_JOBS);
+	}
+
+	protected AbstractSimulationController(ObjProvider<? extends Simulator<T>> simulatorProvider, ExecutorService executor, int bound) {
 		this.simulatorProvider = simulatorProvider;
-		this.executor = MoreExecutors.listeningDecorator(executor);
+		this.executor = MoreExecutors.listeningDecorator(BlockingThreadPoolExecutor.blockingDecorator(executor, bound));
+//		this.executor = BlockingThreadPoolExecutor.blockingDecorator(MoreExecutors.listeningDecorator(executor), bound);
+//		this.executor = MoreExecutors.listeningDecorator(executor);
 //		simulatorProviderOptional = Optional.absent();
+		setMaxQueuedJobs(bound);
 	}
 
 	public void setMaxQueuedJobs(int maxQueuedJobs) {
@@ -138,11 +145,15 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	@Override
 	public List<TrajectoryRecorder> simulateTrajectories(
 			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends TrajectoryRecorder> trProvider,
-			double t0, double[] x0, double t1) {
+			double t0, double[] x0, double t1)
+					throws InterruptedException {
 		checkArgument(runs > 0, "Expected runs > 0");
 
 		final List<TrajectoryRecorder> trList = Collections.synchronizedList(new LinkedList<TrajectoryRecorder>());
 
+		final AtomicBoolean runFailed = new AtomicBoolean(false);
+		final AtomicBoolean throwableSet = new AtomicBoolean(false);
+		final Throwable[] throwable = new Throwable[1];
         final Semaphore jobQueueCounter = new Semaphore(maxQueuedJobs);
 //        final AtomicInteger queuedJobs = new AtomicInteger(0);
 
@@ -153,13 +164,17 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
     		TrajectoryRecorder tr = trProvider.get();
     		Callable<TrajectoryRecorder> sw = createSimulationWorker(model, tr, t0, x0, t1);
     		ListenableFuture<TrajectoryRecorder> completion = executor.submit(sw);
+
     		Futures.addCallback(completion, new FutureCallback<TrajectoryRecorder>() {
 
 				@Override
 				public void onFailure(Throwable t) {
 					jobQueueCounter.release();
 //					releaseSubmission(queuedJobs);
-					throw new RuntimeException(t);
+					if (runFailed.compareAndSet(false, true)) {
+						throwable[0] = t;
+						throwableSet.set(true);
+					}
 				}
 
 				@Override
@@ -170,20 +185,22 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 				}
 
     		});
+
+    		if (throwableSet.get())
+    			throw new RuntimeException(throwable[0]);
         }
+
         executor.shutdown();
-        do {
-        	try {
-        		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-	        } catch (InterruptedException e) { }
-        } while (!executor.isTerminated());
+		while (!executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
+
         return trList;
 	}
 
 	@Override
 	public FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
 			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends FiniteTrajectoryRecorder> trProvider,
-			double t0, double[] x0, double t1) {
+			double t0, double[] x0, double t1)
+					throws InterruptedException {
 		DummyTrajectoryMapper mapper = new DummyTrajectoryMapper();
 		return simulateTrajectoryDistribution(runs, modelProvider, trProvider, mapper, t0, x0, t1);
 	}
@@ -191,7 +208,8 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
 	@Override
 	public FiniteStatisticalSummaryTrajectory simulateTrajectoryDistribution(
 			int runs, ObjProvider<? extends T> modelProvider, ObjProvider<? extends FiniteTrajectoryRecorder> trProvider,
-			final FiniteTrajectoryMapper mapper, double t0, double[] x0, double t1) {
+			final FiniteTrajectoryMapper mapper, double t0, double[] x0, double t1)
+					throws InterruptedException {
 		checkArgument(runs > 0, "Expected runs > 0");
 //		checkArgument(tSeries.length >= 2, "Expected tSeries.length >= 2");
 
@@ -243,11 +261,7 @@ public abstract class AbstractSimulationController<T extends ReactionNetworkMode
     		});
         }
         executor.shutdown();
-        do {
-        	try {
-        		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-	        } catch (InterruptedException e) { }
-        } while (!executor.isTerminated());
+		while (!executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
         return trajectoryDistributionBuilder.getDistributionTrajectory();
 //        return VectorFiniteStatisticalSummaryPlotData.createFromStatisticalSummary(tSeries, xSeriesStatistics);
 	}

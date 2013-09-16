@@ -93,7 +93,7 @@ public class CombiningAveragingUnit implements AveragingUnit {
 
 	private void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
 		ModularAveragingUnit ap = lastSubnetworkToAveragingUnitMap.get(subnetworkSpecies);
-		ap.resampleFromSteadyStateDistribution(t, x, subnetworkSpecies);
+		ap.resampleFromStationaryDistribution(t, x, subnetworkSpecies);
 	}
 
 }

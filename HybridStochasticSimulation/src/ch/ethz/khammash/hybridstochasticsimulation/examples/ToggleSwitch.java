@@ -109,7 +109,7 @@ public class ToggleSwitch extends SimulationConfiguration {
 		double t1 = 100.0;
 		double N = 100;
 		double gamma = 0;
-		double[] alpha = new double[x0.length];
+		double[] alpha = { 0, 0, 0, 0, 1, 1 };
 		double[] beta = new double[rateParameters.length];
 //		int[] importantSpecies = { 0 };
 

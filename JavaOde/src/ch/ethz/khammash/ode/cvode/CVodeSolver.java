@@ -275,11 +275,9 @@ public class CVodeSolver implements Solver {
 //    			double tNext = timepointProvider.getNextTimepoint();
 		while (timepointProvider.hasNextTimepoint(t)) {
     		double tNext = timepointProvider.getNextTimepoint(t);
-//        		System.out.println("t="+t+", tNext="+tNext);
 			t = jni_integrate(jni_pointer, tNext);
     		xBuffer.position(0);
     		xBuffer.get(x);
-//        		System.out.println("prop=" + x0[x0.length-1]);
 
 //				// Crude root-finding
 //				ef.computeEventValues(t, x, eventValues);
@@ -365,7 +363,6 @@ public class CVodeSolver implements Solver {
 
 		@Override
 		public void computeVectorField(double t, double[] x, double[] xDot) {
-//			System.out.println("computeVectorField");
 			xDot[0] = x[0];
 			xDot[0] = x[0] + 2;
 		}

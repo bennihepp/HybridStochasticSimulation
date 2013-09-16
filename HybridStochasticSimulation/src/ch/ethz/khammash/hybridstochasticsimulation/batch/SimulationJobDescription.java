@@ -3,6 +3,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.batch;
 import java.util.List;
 
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
+import ch.ethz.khammash.hybridstochasticsimulation.io.SimulationOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.models.ReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
@@ -37,6 +38,6 @@ public interface SimulationJobDescription<T extends ReactionNetworkModel> extend
 
 	Type getSimulationType();
 
-	void runJob();
+	void runJob() throws InterruptedException;
 
 }

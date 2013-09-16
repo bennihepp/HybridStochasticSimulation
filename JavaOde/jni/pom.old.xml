@@ -1,0 +1,54 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>ch.ethz.khammash</groupId>
+  <artifactId>JavaOde.jni</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <packaging>so</packaging>
+  <build>
+    <plugins>
+      <plugin>
+         <groupId>org.codehaus.mojo</groupId>
+         <artifactId>native-maven-plugin</artifactId>
+         <extensions>true</extensions>
+         <configuration>
+           <javahOS>linux</javahOS>
+           <compilerStartOptions>
+             <compilerStartOption>-fPIC</compilerStartOption>
+           </compilerStartOptions>
+           <linkerStartOptions>
+             <linkerStartOption>-shared</linkerStartOption> 
+           </linkerStartOptions>
+           <sources>
+             <source>
+               <directory>include</directory>
+             </source>
+             <source>
+               <!-- relative to your project directory -->
+               <directory>./</directory>
+               <!-- ant base wild card files> -->
+               <includes>
+                 <include>src/*.c</include>
+               </includes>
+               <!-- <excludes>
+                 <exclude>somefile.cpp</exclude>
+               </excludes> -->
+               <!-- <fileNames>
+                 <fileName>file1.c</fileName>
+                 <fileName>file2.c</fileName>
+               </fileNames> -->
+             </source>
+             <!-- additional system include path -->
+             <!-- <source>
+               <directory>...</directory>
+               <dependencyAnalysisParticipation>false</dependencyAnalysisParticipation>
+             </source> -->
+           </sources>
+         </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <!-- <dependencyManagement> -->
+  	<dependencies>
+  	</dependencies>
+  <!-- </dependencyManagement> -->
+</project>

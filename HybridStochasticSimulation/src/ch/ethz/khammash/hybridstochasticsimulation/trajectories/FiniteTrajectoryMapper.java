@@ -1,6 +1,8 @@
 package ch.ethz.khammash.hybridstochasticsimulation.trajectories;
 
-public interface FiniteTrajectoryMapper {
+import java.io.Serializable;
+
+public interface FiniteTrajectoryMapper extends Serializable {
 
 	FiniteTrajectory map(FiniteTrajectory tr);
 

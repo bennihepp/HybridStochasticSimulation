@@ -40,7 +40,7 @@ public class AdaptiveMSHRNProvider extends AbstractProvider<AdaptiveMSHRN> {
 		String thetaKey = "theta";
 		if (config().getMaxIndex(thetaKey) >= 0)
 			adaptiveHrn.setTheta(config().getDouble(thetaKey));
-		adaptiveHrn.setPrintMessages(config().getBoolean("printMessages", false));
+		adaptiveHrn.setLogMessages(config().getBoolean("printMessages", false));
 		adaptiveHrn.setAveragingUnit(averagingUnit);
 		return adaptiveHrn;
 	}

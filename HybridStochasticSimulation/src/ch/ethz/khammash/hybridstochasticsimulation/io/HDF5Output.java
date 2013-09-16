@@ -8,42 +8,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ncsa.hdf.object.Datatype;
-import ncsa.hdf.object.FileFormat;
-import ncsa.hdf.object.Group;
-import ncsa.hdf.object.h5.H5File;
-import ncsa.hdf.object.h5.H5ScalarDS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob.OutputAlreadyWrittenException;
+import ch.ethz.khammash.hybridstochasticsimulation.io.HDF5File.HDF5Datatype;
+import ch.ethz.khammash.hybridstochasticsimulation.io.HDF5File.HDF5Group;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 
+// TODO: Add metadata to HDF5 file (number of simulations, species labels, etc.)
 public class HDF5Output implements SimulationOutput {
 
-	public static class HDF5Exception extends OutputException {
-
-		private static final long serialVersionUID = 1L;
-
-		public HDF5Exception(String msg) {
-			super(msg);
-		}
-
-		public HDF5Exception(String msg, Throwable cause) {
-			super(msg, cause);
-		}
-
-		public HDF5Exception(Throwable cause) {
-			super(cause);
-		}
-
-	}
+	private static final Logger logger = LoggerFactory.getLogger(HDF5Output.class);
 
     private File outputFile;
 	private boolean overwrite;
     private boolean outputWritten = false;
+	private int chunkSize = 64;
 	private int gzipLevel = 0;
-	private H5File h5file;
-	private Group simulationsGroup;
-	private Map<String, H5ScalarDS> datasetMap;
+	private HDF5File h5file;
+//	private H5File h5file;
+	private HDF5Group simulationsGroup;
+	private Map<String, HDF5File.HDF5Dataset> datasetMap;
 
     public HDF5Output(String outputFilename, boolean overwrite) throws IOException {
         this(new File(outputFilename), overwrite);
@@ -58,6 +45,11 @@ public class HDF5Output implements SimulationOutput {
     @Override
     public String toString() {
         return outputFile.getAbsolutePath();
+    }
+
+    public void setChunkSize(int chunkSize) {
+    	checkArgument(1 <= chunkSize, "chunk size has to be greater equal than 1");
+    	this.chunkSize = chunkSize;
     }
 
     public void setGzipLevel(int gzipLevel) {
@@ -82,33 +74,33 @@ public class HDF5Output implements SimulationOutput {
 
     	try {
 
-    		h5file = createHDF5File(outputFile);
-			h5file.open();
+    		h5file = HDF5File.openForWriting(outputFile);
+    		h5file.open();
 
-			Group rootGroup = (Group)((javax.swing.tree.DefaultMutableTreeNode)h5file.getRootNode()).getUserObject();
-			simulationsGroup = h5file.createGroup("simulations", rootGroup);
+    		 HDF5Group rootGroup = h5file.getRootGroup();
+    		 simulationsGroup = rootGroup.createGroup("simulations");
 
 		} catch (Exception e) {
-			throw new HDF5Exception(e);
+			throw new OutputException(e);
 		}
 	}
 
-    private H5File createHDF5File(File outputFile) throws Exception {
-    	// Retrieve an instance of the implementing class for the HDF5 format
-    	FileFormat fileFormat = FileFormat.getFileFormat(FileFormat.FILE_TYPE_HDF5);
-    	if (fileFormat == null)
-    		throw new HDF5Exception("Cannot find HDF5 FileFormat");
-
-     // If the specified file already exists, it is truncated.
-     // The default HDF5 file creation and access properties are used.
-     H5File file = (H5File)fileFormat.createFile(outputFile.getAbsolutePath(), FileFormat.FILE_CREATE_DELETE);
-
-     // Check for error condition and report.
-     if (file == null)
-    	 throw new HDF5Exception(String.format("Failed to create file: {}", outputFile.getAbsolutePath()));
-
-     return file;
-	}
+//    private H5File createHDF5File(File outputFile) throws Exception {
+//    	// Retrieve an instance of the implementing class for the HDF5 format
+//    	FileFormat fileFormat = FileFormat.getFileFormat(FileFormat.FILE_TYPE_HDF5);
+//    	if (fileFormat == null)
+//    		throw new HDF5Exception("Cannot find HDF5 FileFormat");
+//
+//		// If the specified file already exists, it is truncated.
+//		// The default HDF5 file creation and access properties are used.
+//		H5File file = (H5File)fileFormat.createFile(outputFile.getAbsolutePath(), FileFormat.FILE_CREATE_DELETE);
+//		
+//		// Check for error condition and report.
+//		if (file == null)
+//			throw new HDF5Exception(String.format("Failed to create file: {}", outputFile.getAbsolutePath()));
+//		
+//		return file;
+//	}
 
 	@Override
     public void add(String simulationName, FinitePlotData plotData) throws OutputException {
@@ -123,20 +115,26 @@ public class HDF5Output implements SimulationOutput {
 
     private void writePlotData(String simulationName, FinitePlotData plotData) throws OutputException {
     	try {
-    		H5ScalarDS xSeriesDataset;
+    		HDF5File.HDF5Dataset xSeriesDataset;
     		if (datasetMap.containsKey(simulationName)) {
     			xSeriesDataset = datasetMap.get(simulationName);
     		} else {
-    			Group simulationGroup = h5file.createGroup(simulationName, simulationsGroup);
-				Datatype dtype = h5file.createDatatype(Datatype.CLASS_FLOAT, 8, Datatype.NATIVE, -1);
+    			HDF5Group simulationGroup = simulationsGroup.createGroup(simulationName);
+    			HDF5Datatype dtype = h5file.getDoubleDatatype();
 				double[] tSeries = plotData.gettSeries();
 				long[] tSeriesDims1D = { tSeries.length };
-				h5file.createScalarDS("tSeries", simulationGroup, dtype, tSeriesDims1D, null, null, gzipLevel, tSeries);
+				HDF5Dimension tSeriesDim = new HDF5Dimension(tSeriesDims1D);
+				simulationGroup.createDataset("tSeries", dtype, tSeriesDim, tSeries);
 				long[] xSeriesDims3D = { 0, plotData.getNumberOfStates(), plotData.getNumberOfTimePoints() };
 				long[] xSeriesMaxDims3D = { Integer.MAX_VALUE, plotData.getNumberOfStates(), plotData.getNumberOfTimePoints() };
 				long[] xSeriesChunks = xSeriesDims3D.clone();
-				xSeriesChunks[0]++;
-				xSeriesDataset = (H5ScalarDS)h5file.createScalarDS("xSeries", simulationGroup, dtype, xSeriesDims3D, xSeriesMaxDims3D, xSeriesChunks, 0, null);
+				xSeriesChunks[0] = chunkSize;
+				HDF5Dimension xSeriesDim = new HDF5Dimension(xSeriesDims3D, xSeriesMaxDims3D, xSeriesChunks);
+    	    	if (logger.isDebugEnabled()) {
+    	    		logger.debug("Creating dataset with dimension={}, gzipLevel={}", xSeriesDim, gzipLevel);
+    	    	}
+    	    	xSeriesDataset = simulationGroup.createDataset("xSeries", dtype, xSeriesDim, gzipLevel);
+//				xSeriesDataset = (H5ScalarDS)h5file.createScalarDS("xSeries", simulationGroup, dtype, xSeriesDims3D, xSeriesMaxDims3D, xSeriesChunks, 0, null);
 				xSeriesDataset.init();
 				long[] selected = xSeriesDataset.getSelectedDims();
 				selected[0] = 1;
@@ -150,15 +148,24 @@ public class HDF5Output implements SimulationOutput {
 			long[] xSeriesDims3D = xSeriesDataset.getDims();
 			long[] newDims3D = xSeriesDims3D.clone();
 			newDims3D[0]++;
-			xSeriesDataset.extend(newDims3D);
+	    	if (logger.isDebugEnabled()) {
+	    		long x = newDims3D[0];
+	    		long y = newDims3D[1];
+	    		long z = newDims3D[2];
+	    		logger.debug("Extending dataset to size=({},{},{})", x, y, z);
+	    	}
+	    	HDF5Dimension newDims = new HDF5Dimension(newDims3D);
+			xSeriesDataset.extend(newDims);
 			long[] start = xSeriesDataset.getStartDims();
 			start[0]++;
 			// TOOD: probably data can be used directly here
 	        double[][][] data = new double[1][][];
 	        data[0] = plotData.getxSeries();
+	    	if (logger.isDebugEnabled())
+	    		logger.debug("Writing trajectory to file");
 	        xSeriesDataset.write(data);
 		} catch (Exception e) {
-			throw new HDF5Exception(e);
+			throw new OutputException(e);
 		}
     }
 
@@ -175,7 +182,7 @@ public class HDF5Output implements SimulationOutput {
     	try {
 			h5file.close();
 		} catch (Exception e) {
-			throw new HDF5Exception("Error while closing file", e);
+			throw new OutputException("Error while closing file", e);
 		}
     }
 

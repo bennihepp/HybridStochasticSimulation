@@ -2,6 +2,8 @@ package ch.ethz.khammash.hybridstochasticsimulation.matlab;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -21,31 +23,41 @@ import com.jmatio.types.MLStructure;
 
 public class MatlabDataExporter {
 
-	public MLArray buildString(String name, String value) {
+	public static MLArray buildString(String name, String value) {
 		return new MLChar(name, value);
 	}
 
-	public MLArray buildDouble(String name, double value) {
+	public static MLArray buildDouble(String name, double value) {
 		double[] values = new double[1];
 		return buildDouble(name, values);
 	}
 
-	public MLDouble buildDouble(String name, double[] values) {
+	public static MLDouble buildDouble(String name, double[] values) {
 		return new MLDouble(name, values, values.length);
 	}
 
-	public MLDouble buildDouble(String name, double[][] data) {
+	public static MLDouble buildDouble(String name, double[][] data) {
 		return new MLDouble(name, data);
 	}
 
-	public List<MLArray> buildMatlabPlotList(List<FinitePlotData> plotDataList) {
+	public static List<MLArray> buildMatlabPlotList(List<FinitePlotData> plotDataList) {
 		MLStructure mlPlots = buildMatlabPlotData(plotDataList);
 		List<MLArray> list = new LinkedList<MLArray>();
 		list.add(mlPlots);
 		return list;
 	}
 
-	public MLArray buildMatlabPlotData(MLStructure mlPlots, int index, FinitePlotData plotData) {
+	public static MLStructure buildMatlabPlotData(List<FinitePlotData> plotDataList) {
+		int[] plotDim = { plotDataList.size(), 1 };
+		MLStructure mlPlots = new MLStructure("plots", plotDim);
+		for (int i=0; i < plotDataList.size(); i++ ) {
+			FinitePlotData plotData = plotDataList.get(i);
+			buildMatlabPlotData(mlPlots, i, plotData);
+		}
+		return mlPlots;
+	}
+
+	public static MLArray buildMatlabPlotData(MLStructure mlPlots, int index, FinitePlotData plotData) {
 		int[] trajectoriesDim = { plotData.getNumberOfStates(), 1 };
         MLStructure mlTrajectories = new MLStructure("trajectories", trajectoriesDim);
 		double[] tSeries = plotData.gettVector().toArray();
@@ -72,16 +84,7 @@ public class MatlabDataExporter {
 		return mlPlots;
 	}
 
-	public MLStructure buildMatlabPlotData(List<FinitePlotData> plotDataList) {
-		int[] plotDim = { plotDataList.size(), 1 };
-		MLStructure mlPlots = new MLStructure("plots", plotDim);
-		for (int i=0; i < plotDataList.size(); i++ ) {
-			FinitePlotData plotData = plotDataList.get(i);
-			buildMatlabPlotData(mlPlots, i, plotData);
-		}
-		return mlPlots;
-	}
-	public List<MLArray> buildMatlabSimulationList(Map<String, List<FinitePlotData>> plotDataListMap) {
+	public static List<MLArray> buildMatlabSimulationList(Map<String, List<FinitePlotData>> plotDataListMap) {
 		int[] simulationDim = { plotDataListMap.size(), 1 };
 //		MLStructure mlSimulations = new MLStructure("simulations", simulationDim);
 		MLCell mlSimulations = new MLCell("simulations", simulationDim);
@@ -99,8 +102,14 @@ public class MatlabDataExporter {
 		return list;
 	}
 
-	public void writeMatlabDataToFile(File file, List<MLArray> matlabData) throws IOException {
+	public static void writeMatlabDataToFile(File file, Collection<MLArray> matlabData) throws IOException {
 		new MatFileWriter(file, matlabData);
+	}
+
+	public static void writeMatlabDataToFile(File file, MLArray matlabData) throws IOException {
+		MatFileWriter writer = new MatFileWriter();
+		MLArray[] matlabDataArray = { matlabData };
+		writer.write(file, Arrays.asList(matlabDataArray));
 	}
 
 }

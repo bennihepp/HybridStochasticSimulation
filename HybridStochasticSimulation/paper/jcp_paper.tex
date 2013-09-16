@@ -1,0 +1,804 @@
+%% LyX 2.0.3 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[english]{article}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{esint}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+%% Because html converters don't know tabularnewline
+\providecommand{\tabularnewline}{\\}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+\usepackage{amsthm}
+\usepackage{amsfonts}
+
+%\usepackage{hyperref}
+%\hypersetup{hidelinks}
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage{color}
+
+\DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
+
+\makeatother
+
+\usepackage{babel}
+\begin{document}
+
+\title{Paper}
+
+\maketitle
+
+\section{INTRODUCTION}
+\begin{itemize}
+\item General importance of Stochastic Chemical Reaction Networks (SCRNs)
+and why they are necessary
+\item Mention SSA and other methods and their limitations (SDM, PPM, tau-leaping,
+ssSSA) {[}``expert systems''{]}
+\item Describe what multiscale networks are (multiscale in time and copy
+numbers)
+\item Argue about the importance of having tools for simulating such systems
+\end{itemize}
+In this paper we extend the known simulation methods for PDMP models
+to an adaptive scheme that incorporates multiple scales in both time
+and species copy-numbers and also takes advantage of the time-scale
+separation of subnetworks with fast dynamics. The rest of this section
+formally introduces Stochastic Chemical Reaction Networks and Piecewise
+Deterministic Markov Processes. In section \ref{sec:MATHEMATICAL-OVERVIEW}
+we then recapitulate the existing theoretical foundation followed
+by the description of our implementation in section \ref{sec:IMPLEMENTATION}.
+Thereafter we show numerical examples in section \ref{sec:NUMERICAL-EXAMPLES}
+and provide a discussion of our approach and conclusions in section
+\ref{sec:CONCLUSIONS}.
+
+
+\subsection*{Stochastic Chemical Reaction Network}
+
+A Stochastic Chemical Reaction Network (SCRN) with $s_{0}$ species
+given by $x_{i}$ with $i=1,\ldots,s_{0}$ and $r_{0}$ reactions
+is defined by
+\begin{itemize}
+\item the initial population $x_{i}(0)$ of each species $i=1,\ldots,s_{0}$
+\item the reactions $\sum_{i=1}^{s_{0}}\nu_{ik}x_{i}\longrightarrow\sum_{i=1}^{s_{0}}\nu'_{ik}x_{i}$
+for each reaction $k=1,\ldots,r_{0}$ (we define the stochiometry
+vector as $\xi_{k}=\nu'_{k}-\nu_{k}$)
+\item the reaction propensities $\lambda_{k}(x)$ for each reaction $k=1,\ldots,r_{0}$
+\end{itemize}
+The corresponding Markov Jump Process of the network in the random-time-change
+representation is
+
+\[
+X(t)=x(0)+\sum_{k=1}^{r_{0}}Y_{k}\left(\int_{0}^{t}\lambda_{k}\left(X(s)\right)ds\right)\left(\nu'_{k}-\nu_{k}\right)
+\]
+
+
+where the $\{Y_{k}:\ k=1,\ldots,r_{0}\}$ is a family of independent
+Poisson processes.
+
+In this work we limit ourselves to the case of mass-action-kinetics
+with constitutive, unary and binary reactions. We can then write the
+propensities as\medskip{}
+
+
+\begin{tabular}{|c|c|c|}
+\hline 
+$\lambda_{k}$ & Reaction & $\nu_{k}$\tabularnewline
+\hline 
+\hline 
+$\kappa'_{k}$ & $\emptyset\rightarrow stuff$ & $0$\tabularnewline
+\hline 
+$\kappa'_{k}x_{i}$ & $S_{i}\rightarrow stuff$ & $e_{i}$\tabularnewline
+\hline 
+$\kappa'_{k}V^{-1}x_{i}x_{j}$ & $S_{i}+S_{j}\rightarrow stuff$ & $e_{i}+e_{j}$\tabularnewline
+\hline 
+$\kappa'_{k}V^{-1}x_{i}(x_{i}-1)$ & $2S_{i}\rightarrow stuff$ & $2e_{i}$\tabularnewline
+\hline 
+\end{tabular}\bigskip{}
+
+
+where $V$ corresponds to the volume of the system and the $\kappa'_{k}$
+correspond to the molecular reaction rates.
+
+Simulating a SCRN can become computationally expensive when the system
+is stiff (i.e. some reactions occur on a very small timescale, but
+are not important for the global behaviour). In such cases an approximation
+of the SCRN can provide considerable speedups in simulation time.
+One possibility for such an approximation is to split the fully stochastic
+system into a stochastic and a deterministic part which can be modeled
+as a Piecewise Deterministic Markov Process which is described in
+the following subsection. Another popular method for approximating
+SCRNs is $\tau\textit{-leaping}$ where multiple reactions are lumped
+into one simulation step by approximating the number of reactions
+with a poissonian random variable \cite{gillespie2001approximate}.
+
+
+\subsection*{Piecewise Deterministic Markov Processes}
+
+Here we give a short description of Piecewise Deterministic Markov
+Processes (PDMP) in the context of Stochastic Chemical Reaction Networks
+(SCRNs). We refer to \cite{davis1984piecewise} for more details.
+
+The state of a PDMP consists of a set of continuous and a set of discrete
+variables and both a vector field describing the dynamics of the continuous
+variables and a jump intensity function describing stochastic reactions.
+In the context of a SCRN the reactions $1,\ldots,r_{0}$ are also
+partitioned into two disjunct sets
+
+\[
+M_{D}=\left\{ k|\ \mbox{reaction \ensuremath{k}is deterministic}\right\} 
+\]
+
+
+\[
+M_{S}=\left\{ k|\ \mbox{reaction \ensuremath{k}is stochastic}\right\} 
+\]
+
+
+and the species $1,\ldots,s_{0}$ are partitioned into two disjunct
+sets
+
+\[
+S_{D}=\left\{ i|\ \mbox{species \ensuremath{i}is discrete}\right\} 
+\]
+
+
+\[
+S_{C}=\left\{ i|\ \mbox{species \ensuremath{i}is continuous}\right\} 
+\]
+
+
+where it has to be $\nu'_{ik}=\nu_{ik}$ for $i\in S_{D}$ and $k\in M_{D}$,
+i.e. discrete species can only be changed by stochastic reactions.
+
+The vector field of the PDMP is then defined as
+
+\[
+f:\ \mathbb{R}^{s_{0}}\rightarrow\mathbb{R}^{s_{0}},\ \frac{d}{dt}x_{i}(t)=f\left(x\right)=\sum_{k\in M_{D}}\lambda_{k}\left(x(t)\right)\left(\nu'_{ik}-\nu_{ik}\right)\mbox{ for \ensuremath{i\in S_{C}}}
+\]
+
+
+and the jump intensity function is defined as
+
+\[
+\Lambda_{k}\left(x\right)=\lambda_{k}\left(x\right)\mbox{ for \ensuremath{k\in M_{S}}}
+\]
+
+
+In the random-time-change representation the PDMP can be written as
+
+\[
+X(t)=x(0)+\sum_{k\in M_{D}}\int_{0}^{t}\lambda_{k}\left(X(s)\right)ds\left(\nu'_{k}-\nu_{k}\right)+\sum_{k\in M_{S}}Y_{k}\left(\int_{0}^{t}\lambda_{k}\left(X(s)\right)ds\right)\left(\nu'_{k}-\nu_{k}\right)
+\]
+
+
+where the $\{Y_{k}:\ k\in M_{S}\}$ is a family of independent Poisson
+processes.
+
+One should note that the choice of a suitable partitioning is a non-trivial
+problem and for SCRNs with high variation over time there might not
+be a suitable partitioning. This is the motivation for introducing
+an adaptive scheme for approximating SCRNs.
+
+
+\section{MATHEMATICAL OVERVIEW\label{sec:MATHEMATICAL-OVERVIEW}}
+
+In this section we summarize existing theoretical results concerning
+stochastic models and SCRNs. We start by recapitulating the multiscale
+framework described by Kang et al. \cite{kang2013} followed by a
+short summary concerning averaging of fast subnetworks.
+
+
+\subsection*{Multiscale SCRNs}
+
+Kang et al. \cite{kang2013} describe a framework for separating both
+time-scales and copy-number-scales in SCRNs with mass action kinetics.
+To this end they define scaling parameters $\alpha_{i}\geq0$ for
+$i=1,\ldots,s_{0}$, $\beta_{k}$ for $k=1,\ldots,r_{0}$ and a large
+parameter $N_{0}$ and embed the original process $X(t)$ into a family
+of processes parameterized by $N$
+
+\[
+X_{i}^{N}(t)=\left(\frac{N}{N_{0}}\right)^{\alpha_{i}}X_{i}(t)
+\]
+
+
+\[
+Z_{i}^{N}(t)=N^{-\alpha_{i}}X_{i}^{N}(t)
+\]
+
+
+\[
+\kappa_{k}=\begin{cases}
+N^{-\beta_{k}}\kappa'_{k} & \mbox{for unary reactions}\\
+N^{-\beta_{k}}\kappa'_{k}V^{-1} & \mbox{for binary reactions}
+\end{cases}
+\]
+
+
+The propensities for the parametrized process can now be written as\medskip{}
+
+
+\begin{tabular}{|c|c|c|}
+\hline 
+Reaction & Propensity & $\lambda_{k}^{N}(z)$\tabularnewline
+\hline 
+\hline 
+$\emptyset\rightarrow\mbox{stuff}$ & $N^{\beta_{k}}\lambda_{k}^{N}(z)$ & $\kappa_{k}$\tabularnewline
+\hline 
+$S_{i}\rightarrow\mbox{stuff}$ & $N^{\beta_{k}+\alpha_{i}}\lambda_{k}^{N}(z)$ & $\kappa_{k}z_{i}$\tabularnewline
+\hline 
+$S_{i}+S_{j}\rightarrow\mbox{stuff}$ & $N^{\beta_{k}+\alpha_{i}+\alpha_{j}}\lambda_{k}^{N}(z)$ & $\kappa_{k}z_{i}z_{j}$\tabularnewline
+\hline 
+$2S_{i}\rightarrow\mbox{stuff}$ & $N^{\beta_{k}+2\alpha_{i}}\lambda_{k}^{N}(z)$ & $\kappa_{k}z_{i}(z_{i}-N^{-\alpha_{i}})$\tabularnewline
+\hline 
+\end{tabular}\bigskip{}
+
+
+With these definitions the markov process of the SCRN can be written
+as
+
+\[
+Z_{i}^{N}(t)=Z_{i}^{N}(0)+N^{-\alpha_{i}}\sum_{k=1}^{r_{0}}Y_{k}\left(\int_{0}^{t}N^{\beta_{k}+\alpha\cdot\nu_{k}}\lambda_{k}^{N}\left(Z^{N}(s)\right)ds\right)\left(\nu'_{ik}-\nu_{ik}\right)
+\]
+
+
+where $\alpha\cdot\nu_{k}$ denotes the dot product of vectors $\alpha$
+and $\nu_{k}$.
+
+In the limit $N\rightarrow\infty$ this process could explode if the
+exponent $-\alpha_{i}$ outside of the Poisson processes doesn't cancel
+the exponents $\beta_{k}+\alpha\cdot\nu_{k}$ inside of the Poisson
+processes. To make sure that the process is well-behaved for $N\rightarrow\infty$
+the constraint $\alpha_{i}\geq\beta_{k}+\alpha\cdot\nu_{k}$ for $i=1,\ldots,s_{0}$,
+the so called the \textit{species balance condition}, is introduced.
+
+If the \textit{species balance condition} is satisfied, Kang et al.
+\cite{kang2013} show that the process $Z_{i}^{N}(t)$ converges to
+a PDMP in the limit $N\rightarrow\infty$. Thereby each reaction term
+
+\[
+N^{-\alpha_{i}}Y_{k}\left(\int_{0}^{t}N^{\beta_{k}+\alpha\cdot\nu_{k}}\lambda_{k}^{N}\left(Z^{N}(s)\right)ds\right)\left(\nu'_{ik}-\nu_{ik}\right)
+\]
+
+
+converges to
+
+\[
+\begin{cases}
+0 & \mbox{if }\alpha_{i}>\beta_{k}+\alpha\cdot\nu_{k}\\
+Y_{k}\left(\int_{0}^{t}\lambda_{k}^{\infty}\left(Z(s)\right)ds\right)\left(\nu'_{ik}-\nu_{ik}\right) & \mbox{if }\alpha_{i}=\beta_{k}+\alpha\cdot\nu_{k}=0\\
+\left(\int_{0}^{t}\lambda_{k}^{\infty}\left(Z(s)\right)ds\right)\left(\nu'_{ik}-\nu_{ik}\right) & \mbox{if }\alpha_{i}=\beta_{k}+\alpha\cdot\nu_{k}>0
+\end{cases}
+\]
+
+
+where $\lambda_{k}^{\infty}(z)=\begin{cases}
+\kappa_{k} & \mbox{for constitutive reactions}\\
+\kappa_{k}z_{i} & \mbox{for unary reactions of species \ensuremath{i}}\\
+\kappa_{k}z_{i}z_{j} & \mbox{for binary reactions of species \ensuremath{i}and \ensuremath{j}}
+\end{cases}$.
+
+If $N_{0}$ is a large enough number then we expect a similar behaviour
+for the original process $X_{i}(t)=N_{0}^{\alpha_{i}}Z_{i}^{N_{0}}$.
+Intuitivly this allows us to approximate species with high copy numbers
+with deterministic dynamics as the fluctuations become less important.
+
+Note: If the above constraints are not fulfilled Kang et al. \cite{kang2013}
+introduce other constraints for which the process  still converges
+to a PDMP.
+
+So far the above convergence result gives us an approximation of the
+original process depending on the copy-number-scales. Another separation
+can occur on the time-scales: A subnetwork with dynamics which are
+much faster than the dynamics of the surrounding network will reach
+it's stationary average (provided that a stationary distribution exists)
+before influencing the surrounding network. Such a subnetwork can
+then be collapsed to it's stationary average. This is called averaging
+and is described in the following subsection.
+
+
+\subsection*{Averaging of fast subnetworks}
+
+Given a subnetwork with \textit{fast} dynamics compared to the surrounding
+network (i.e. the species that are directly influenced by the subnetwork)
+we partition the reactions that are involved in the subnetwork into
+two sets, one that is only influencing the subnetwork, and the other
+one that is connecting the subnetwork to the surrounding network.
+We will then define a timescale for both of these sets of reactions
+so that we can define a formal criterion to check whether the subnetwork
+has \textit{fast} dynamics. The final step is then to compute the
+stationary distribution of the subnetwork.
+
+Following is a more formal description of the averaging and an elaboration
+on three different strategies for the computation of the stationary
+distribution of a subnetwork.
+
+
+\subsubsection*{Formal description}
+
+Consider a SCRN with $s_{0}$ species and $r_{0}$ reactions. The
+general idea is to identify subnetworks of \textit{fast }species and
+average the state of those subnetworks according to the stationary
+distribution. Formally, given a subset of species $Q=\left\{ q_{1},\ldots,q_{m}\right\} $
+we identify the set of reactions involving species from $Q$ as
+
+\[
+R\left(Q\right)=\left\{ k|\ k\in\left\{ 1,\ldots,r_{0}\right\} \ \wedge\ \exists\ i\in Q:\ \nu_{ik}\neq\nu'_{ik}\right\} 
+\]
+\color{red}
+\[
+R\left(Q\right)=\{k|\ \max\left(\nu_{ik},\nu'_{ik}\right)\neq0\mbox{ for }i\in Q\}
+\]
+\color{black}Based on this we define a partition of $R\left(Q\right)$
+into two subsets of reactions $R_{S}\left(Q\right)\subseteq R\left(Q\right)$
+and $R_{B}\left(Q\right)\subseteq R\left(Q\right)$. $R_{S}\left(Q\right)$
+includes those reactions that only change copy numbers of species
+in $Q$ whereas $R_{B}\left(Q\right)$ includes those reactions that
+change copy numbers of species not in $Q$:
+
+\[
+R_{s}\left(Q\right)=\left\{ k|\ k\in R\left(Q\right)\ \wedge\ v_{jk}=\nu'_{jk}\forall j\not\in Q\right\} 
+\]
+
+
+\[
+R_{B}\left(Q\right)=\left\{ k|\ k\in R\left(Q\right)\ \wedge\ \exists\ j\not\in Q:\ v_{jk}=\nu'_{jk}\right\} 
+\]
+\color{red}
+
+\[
+R_{s}\left(Q\right)=\{k|\ \max\left(\nu_{ik},\nu'_{ik}\right)\neq0,\nu_{jk}=\nu'_{jk}\mbox{ for }i\in Q\mbox{ and }j\not\in Q\}
+\]
+
+
+\[
+R_{B}\left(Q\right)=\{k|\ \max\left(\nu_{ik},\nu'_{ik}\right)\neq0,\nu_{jk}\neq\nu'_{jk}\mbox{ for }i\in Q\mbox{ and }j\not\in Q\}
+\]
+\color{black}We assume that the SCRN defined by $Q$ and $R\left(Q\right)$
+has a stationary distribution given the current state of the surrounding
+network.
+
+We define the timescale separation of the subnetwork given by the
+species $Q$ as
+
+\[
+\Delta\tau\left(Q\right)=\min_{k\in R_{B}}\left(\tau_{B}\left(k\right)\right)-\max_{k\in R_{S}}\left(\tau_{S}\left(k\right)\right)
+\]
+
+
+where we define the logarithmic timescales $\tau_{S}\left(k\right)$
+and $\tau_{B}\left(k\right)$ as
+
+\color{green}
+\[
+\tau\left(k\right)=-\frac{\log\ \kappa'_{k}}{\log\ N}-\frac{1}{\log\ N}\sum_{i,\nu_{ik}\neq0}\begin{cases}
+\log\ x_{i} & x>0\\
+0 & x=0
+\end{cases}+\min_{\left\{ i:\ \nu_{ik}\neq\nu'_{ik}\right\} }\left(\alpha_{i}\right)
+\]
+
+
+\color{black}
+
+\[
+\tau_{S}\left(k\right)=-\frac{\log\ \kappa'_{k}}{\log\ N}-\frac{1}{\log\ N}\sum_{i,\nu_{ik}\neq0}\begin{cases}
+\log\ x_{i} & x>0\\
+0 & x=0
+\end{cases}
+\]
+
+
+\[
+\tau_{B}\left(k\right)=\tau_{S}\left(k\right)+\min_{\left\{ i:\ \nu_{ik}\neq\nu'_{ik}\right\} }\left(\alpha_{i}\right)
+\]
+
+
+In words, $\Delta\tau\left(Q\right)$ is the minimum timescale of
+all reactions connecting the subnetwork to the outer network minus
+the maximum timescale of all reactions within the subnetwork. The
+second term ($\min_{\left\{ i:\ \nu_{ik}\neq\nu'_{ik}\right\} }\left(\alpha_{i}\right)$)
+of $\tau_{B}\left(k\right)$ reflects the fact, that the relative
+change of a highly abundant species is smaller than the relative change
+of a low abundant species even if the reaction propensities are the
+same.
+
+If $\Delta\tau\left(Q\right)\geq\zeta$ where the parameter $\zeta>0$
+then we can average the subset of species $Q$, i.e. set their copy
+number to their stationary average. Of course the results for the
+species in $Q$ can only be interpreted on the level of distributions
+and not on the level of single sample paths as those get lost in the
+process of averaging. Following we present three different strategies
+for averaging of fast subnetworks:
+
+
+\paragraph*{Finite Markov Chains}
+
+Consider a subset of fast species $Q$ fulfiling a conservation relation
+
+\[
+\sum_{q_{i}\in Q}a_{i}q_{i}=const.
+\]
+with $a_{i}\in\mathbb{Z}_{\geq1}$. Such a subnetwork forms a Finite
+Markov Chain (citation). Consider that the subnetwork is also irreducible,
+i.e. every state of the Markov Chain can be reached from any other
+state in finite time. Without loss of generality we enumerate the
+states with $1,\ldots,L$. The irreducibility of this Markov Chain
+is equivalent to $\mbox{dim}\left(\mbox{null}\left(A\right)\right)=1$
+where $A$ is the generator matrix of the Markov Chain. In the irreducible
+case the stationary distribution $\pi_{1},\cdots,\pi_{L}$ of the
+Markov Chain is an eigenvector of the generator matrix with eigenvalue
+$0$:
+
+\[
+A^{T}\cdot\left[\begin{array}{c}
+\pi_{1}\\
+\vdots\\
+\pi_{L}
+\end{array}\right]=0
+\]
+
+
+Thus we can compute $\pi_{1},\cdots,\pi_{L}$ and perform averaging.
+
+
+\paragraph*{Pseudo-Linear subnetworks}
+
+Consider a subset of fast species $Q$ such that all the reactions
+consuming or producing species in $Q$ have at most one reactant in
+$Q$. Such a subnetwork is called pseudo-linear as the additional
+reactants outside of the subnetwork can be considered constant for
+the timescale of the subnetwork. For linear SCRNs we can easily compute
+the stationary average by finding the stationary solution $\frac{d}{dt}x_{i}\left(t\right)=0$
+of the corresponding deterministic system
+
+\[
+\frac{d}{dt}x_{i}\left(t\right)=N^{-\alpha_{i}}\sum_{k=1}^{r_{0}}\int_{0}^{t}\left(N^{\beta_{k}+\alpha\cdot\nu_{k}}\lambda_{k}^{N}\left(Z^{N}(s)\right)ds\left(\nu'_{ik}-\nu_{ik}\right)\right)
+\]
+
+
+and thus we can perform averaging. Note: The stationary distribution
+on the other hand can't be easily computed for all linear SCRNs. We
+will elaborate on this in the next section.
+
+
+\paragraph*{Zero-Deficiency subnetworks}
+
+Here we apply results from Anderson et al. \cite{anderson_kurtz_2010}
+showing that a \textit{weakly reversible} SCRN with \textit{deficiency}
+$0$ has a unique stationary distribution $\pi\left(x\right)$ which
+is a product-form:
+
+\[
+\begin{cases}
+\pi\left(x\right)=\prod_{i=1}^{s_{0}}\frac{c_{i}^{x_{i}}}{x_{i}!} & \mbox{ for reducible networks}\\
+\pi\left(x\right)=\prod_{i=1}^{s_{0}}\frac{c_{i}^{x_{i}}}{x_{i}!}\exp\left(-c_{i}\right) & \mbox{ for irreducible networks}
+\end{cases}
+\]
+
+
+where $c\in\mathbb{R}_{\geq0}^{s_{0}}$ is the equilibrium point of
+the corresponding deterministic system.
+
+A SCRN is called \textit{weakly reversible} if for every reaction
+$k$ there is a sequence of reactions $\nu_{k_{1}}\rightarrow\nu'_{k_{1}}\rightarrow\cdots\rightarrow\nu_{k_{m}}\rightarrow\nu'_{k_{m}}$
+such that $\nu'_{k}=\nu_{k_{1}}$ and $\nu_{k}=\nu'_{k_{m}}$. The
+\textit{deficiency} of a SCRN is defined as $\delta=|C|-l-s$ where
+$|C|$ is the number of reaction complexes ($C=\{\nu_{k}\}\cap\{\nu'_{k}\}$),
+$l$ is the number of linkage classes (a linkage class is a connected
+component of the reaction complex graph corresponding to the SCRN)
+and $s$ is the dimension of the stochiometric subspace $S=span_{k\in\left\{ 1,\ldots,r_{0}\right\} }\left\{ \nu'_{k}-\nu_{k}\right\} $.
+We refer to \cite{anderson_kurtz_2010} for more details.
+
+We will got into more details about the implementation in the following
+section.
+
+
+\section{IMPLEMENTATION\label{sec:IMPLEMENTATION}}
+
+In this section we shortly summarize the well known scheme for simulating
+a PDMP model and then describe our contribution of an adaptive hybrid
+scheme for simulating SCRNs.
+
+We use the following notation for a specific sample path:\vspace{0.2cm}
+
+\begin{tabular}{|c|c|}
+\hline 
+$t_{0}$ & initial time of simulation\tabularnewline
+\hline 
+$t_{1}$ & final time of simulation\tabularnewline
+\hline 
+$x_{0}$ & initial state of simulation\tabularnewline
+\hline 
+$P$ & total number of reactions occuring from $t_{0}$ until $t_{1}$\tabularnewline
+\hline 
+$t_{r}\left(p\right)$ & time of the $p$th reaction for $p=1,\ldots,P$ and by definition
+$t_{r}\left(0\right)=t_{0}$\tabularnewline
+\hline 
+$M_{S}\left(t\right)$ & the set of reactions marked as stochastic\tabularnewline
+\hline 
+$M_{D}\left(t\right)$ & the set of reactions marked as deterministic\tabularnewline
+\hline 
+\end{tabular}
+
+
+\subsection*{Vanilla PDMP}
+
+The typical algorithm to simulate PDMP models is to evolve the part
+of the model that is described deterministically until the next stochastic
+reaction occurs. Then the copy numbers are updated according to the
+reaction. This is repeated until the end-timepoint of the simulation
+is reached.
+
+The time of the next stochastic reaction $p$ is easily formulated
+as the root of an additional ODE state $w_{p}$ defined as
+
+\[
+\frac{d}{dt}w_{p}\left(t\right)=\sum_{k\in M_{S}}\lambda_{k}\left(x\left(t\right)\right)
+\]
+
+
+with the boundary condition of $w_{p}\left(t_{r}\left(p-1\right)\right)=\log\left(u_{p}\right)$
+where $u_{p}$ is a random variable uniformly extracted from the interval
+$[0,1]$. Note that $\log\left(u_{p}\right)\leq0$ and $\lambda_{k}\left(x\right)\geq0$
+and so starting from the time $t=t_{r}\left(p-1\right)$ the state
+$w_{p}\left(t\right)$ will monotonically increase until either $t=t_{1}$
+if $p=P$ or if $p<P$ until the $p$th reaction occurs at $t=t_{r}\left(p+1\right)$.
+It follows from the random-time-change formulation that $w_{p}\left(t_{r}\left(p+1\right)\right)=0$.
+Thus by searching for the root of $w_{p}\left(t\right)$ one can find
+the time of the $p$th reaction in the process of solving the system
+of ODEs \cite{kouretas2006stochastic}. This is called root finding
+or event detection and modern ODE solvers like CVODE support this
+\cite{serban2005cvodes}.
+
+
+
+The procedure described above is depicted in algorithm \ref{alg:vanilla_pdmp}.
+Simulating a PDMP approximatino of a SCRN can be considerably faster
+if the reduction of the number of reactions is big enough. An improper
+PDMP approximation can also make the simulation much slower than simulating
+the exact model with SSA. This happens for example if there are still
+a lot of stochastic reactions happening and thus the ODE solver has
+to be started over and over again causing a performance hit because
+the ODE solving machinery has to be reinitialized after the state
+has changed from stochastic reactions.
+
+\begin{algorithm}
+\caption{Vanilla PDMP}
+\label{alg:vanilla_pdmp}
+\algblock[evolve]{evolve}{until}
+\algblockdefx[evolve]{Evolve}{EndEvolve}%
+	{\textbf{evolve}}%
+	{\textbf{until }}
+\begin{algorithmic}
+\State $t\gets t_0$, $x\left(t_0 \right)\gets x_0$, $p\gets 1$
+\While {$t < t_1$}
+	\State $u_p \gets\ \sim \mathcal{U}\left[0,1\right]$
+	\State $w_p\left(t \right) \gets \log\left(u_p\right)$
+	\Evolve
+		\State $x$ according to $\frac{d}{dt}x\left(t\right) = \sum_{k\in M_D} \lambda_k\left(x\left(t\right)\right) \left(\nu'_k - \nu_k\right)$
+		\State $w_p$ according to $\frac{d}{dt}w_p\left(t\right) = \sum_{k\in M_S} \lambda_k\left(x\left(t\right)\right)$
+	\EndEvolve {$t=t_1$ or $w_p\left(t\right) = 0$}
+	\If {$w_p\left(t\right) = 0$}
+		\State $r\gets k \mbox{ with probability } p_k\propto \lambda_k\left(x\left(t\right)\right)$ for $k\in\left\{M_S\right\}$
+		\State $x\left(t\right)\gets x\left(t\right) + \nu'_r - \nu_r$
+		\State $p \gets p + 1$
+	\EndIf
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+
+\subsection*{Adaptive hybrid models for SCRNs}
+
+The vanilla PDMP algorithm is suitable for SCRNs where a PDMP approximation
+can be found that is both valid over the whole simulation time and
+that considerably reduces the number of reactions that have to be
+simulated. For SCRNs that show big variations in copy-numbers over
+time this is usually not possible. Our contribution is an extension
+of the vanilla PDMP algorithm to accommodate for varying scales of
+the underlying SCRN both in time and in copy numbers. The general
+idea is to define bounds for the copy numbers in a suitable manner
+and upon leaving these bounds a suitable the PDMP approximation of
+the SCRN is updated according to the current time- and copy-number-scales.
+
+The general outline of our adaptive simulation scheme is shown in
+algorithm \ref{alg:adaptive_pdmp}. In addition to the vanilla PDMP
+algorithm described above we observe the occurence of additional events,
+i.e. the crossing of copy number bounds. Of course we also have to
+perform this check once in a while in the case where only stochastic
+reactions occur. If these bounds are crossed we perform an adaptation
+procedure that will compute new values for the scaling parameters
+$\alpha_{i}$ and $\beta_{k}$, rescale the state-values and possibly
+perform averaging on suitable subnetworks. The copy number bounds
+are defined by parameters $\xi\ge0$ and $\eta\ge0$ (typical values
+are $\xi=1,\eta=0.5$). For a discrete species the upper bound is
+$N_{0}^{\xi}$. For a continuous species the lower and upper bounds
+are $N_{0}^{-\eta}$ and $N_{0}^{\eta}$ respectively. Thus the parameter
+$\xi$ influences when a species could be considered continuous and
+the parameter $\eta$ influences the bound of rescaled copy numbers
+where no adaptation is performed.
+
+The adaptation and averaging procedures are described in more detail
+in the following sections.
+
+\begin{algorithm}
+\caption{Adaptive PDMP}
+\label{alg:adaptive_pdmp}
+\algblock[evolve]{evolve}{until}
+\algblockdefx[evolve]{Evolve}{EndEvolve}%
+	{\textbf{evolve}}%
+	{\textbf{until }}
+\begin{algorithmic}
+\State $t\gets t_0$, $x\left(t_0\right)\gets x_0$, $p\gets 1$, $\textit{flag}\gets \textrm{true}$
+
+\While {$t < t_1$}
+	\If {$\textit{flag} = \textrm{true}$}
+		\State $u_p \gets\ \sim \mathcal{U}\left[0,1\right]$
+		\State $w_p\left(t \right) \gets \log\left(u_p\right)$
+		\State $\textit{flag}\gets \textrm{false}$
+	\EndIf
+
+	\Evolve
+		\State $x$ according to $\frac{d}{dt}x\left(t\right) = \sum_{k=1}^{r_0} \lambda_k\left(x\left(t\right)\right) \left(\nu'_k - \nu_k\right)$
+		\State $w_p$ according to $\frac{d}{dt}w_p\left(t\right) = \sum_{k=1}^{r_0} \lambda_k\left(x\left(t\right)\right)$
+	\EndEvolve {$t=t_1$ or $w_p\left(t\right) = 0$ or {\color{green}\textit{copy number bounds have been crossed}}}
+
+	\color{green}
+	\If {\textit{copy number bounds have been crossed}}
+		\State Perform adaptation procedure
+	\EndIf
+	\color{black}
+
+	\If {$w_p\left(t\right) = 0$}
+		\State $r\gets k \mbox{ with probability } p_k\propto \lambda_k\left(x\left(t\right)\right)$
+		\State $x\left(t\right)\gets x\left(t\right) + \nu'_r - \nu_r$
+		\State $p \gets p + 1$
+		\State $\textit{flag}\gets \textrm{true}$
+
+		\color{green}
+		\If {\textit{copy number bounds have been crossed}}
+			\State Perform adaptation procedure
+		\EndIf
+		\color{black}
+
+	\EndIf
+
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+
+\subsection*{Computation of scaling parameters}
+
+Upon crossing the copy number bounds we want to compute a PDMP approximation
+based on the framework by Kang et al. described above. To this end
+we have to make sure that our approximation is well-behaved and at
+the same time we want to handle as many reactions in a deterministic
+way as possible given the current state.
+
+We achieve this by formulating the \textit{species balance conditions}
+as constraints of a linear program that maximizes a weighted sum of
+the $\alpha_{i}$ and $\beta_{k}$. As the $\alpha_{i}$ will decide
+whether a reaction term converges to a deterministic term we weigh
+the $\alpha_{i}$ with a factor $\lambda$ that we usually set to
+$100$.
+
+Define 
+\[
+A_{i}=\frac{\log(x_{i})}{\log(N_{0})}{\color{green}+1},\ i\in\left\{ 1,\ldots,s_{0}\right\} 
+\]
+\[
+B_{k}=\frac{log(\kappa'_{k})}{\log(N_{0})}{\color{green}+1}\ k\in\left\{ 1,\ldots,r_{0}\right\} 
+\]
+
+
+We compute the $\alpha_{i}$ and $\beta_{k}$ by solving the following
+linear program
+
+\begin{center}
+\begin{equation}
+\begin{array}{ccc}
+\mbox{maximize } & \lambda\sum_{i=1}^{s_{0}}\frac{\alpha_{i}}{A_{i}}+\sum_{i=1}^{r_{0}}\frac{\beta_{k}}{B_{k}}\\
+\\
+\mbox{subject to } & 0\leq\alpha_{i}\leq A_{i} & \mbox{ for each \ensuremath{i\in\left\{ 1,\ldots,s_{0}\right\} }}\\
+\mbox{and } & \beta_{k}\leq B_{k} & \mbox{for each }k\in\left\{ 1,\ldots,r_{0}\right\} \\
+\mbox{and } & \alpha_{i}\geq\beta_{k}+\alpha\cdot\nu_{k} & \mbox{ for each \ensuremath{i\in\left\{ 1,\ldots,s_{0}\right\} ,\ k\in\left\{ 1,\ldots,r_{0}\right\} }}
+\end{array}\label{eq:adaptation_linear_program}
+\end{equation}
+
+\par\end{center}
+
+The algorithm for the adaptation procedure is shown in algorithm \ref{alg:adaptation}.
+
+\begin{algorithm}
+\caption{Adaptation}
+\label{alg:adaptation}
+\begin{algorithmic}
+\State Compute scaling parameters $\alpha_i$ and $\beta_k$ by solving the linear program in \ref{eq:adaptation_linear_program}
+\State Update species and reaction types
+\State Recompute copy number bounds
+\State Perform averaging procedure
+\end{algorithmic}
+\end{algorithm}
+
+
+\subsection*{Averaging of fast subnetworks}
+
+After the computation of the scaling parameters in algorithm \ref{alg:adaptation}
+we perform the averaging of fast subnetworks. The possible subnetworks
+suitable for averaging can be precomputed once at the start of the
+program (e.g. weakly reversible, zero-deficiency subnetworks). Upon
+averaging we compute the timescale-separation $\Delta\tau$ of all
+suitable subnetworks and select the subnetworks with $\Delta\tau\geq\zeta$.
+From these we perform a greedy strategy and repeatedly select the
+largest subnetwork that only contains species that haven't been selected
+yet. This gives us a list of disjunct subnetworks. Now we run through
+the list of subnetworks that were selected for averaging in the previous
+iteration but haven't been selected in the current iteration. For
+each of these subnetworks we sample the state from the stationary
+distribution. Finally we perform averaging by computing the stationary
+average of each selected subnetwork.
+
+In the case of pseudo-linear subnetworks we simply take the rounded
+stationary average instead of sampling from the stationary distribution
+as we can't compute this for all pseudo-linear subnetworks. Similarly
+in the case of a reducible, weakly reversible, zero-deficiency subnetwork
+we approximate the stationary distribution with a multinomial distribution
+(scaled according to the conservation-relation) as it is very difficult
+to sample from the stationary distribution in the general case. We
+expect that these approximations won't do any harm though one should
+keep them in mind.
+
+The algorithm for the averaging procedure is shown in algorithm \ref{alg:averaging}.
+
+\begin{algorithm}
+\caption{Averaging}
+\label{alg:averaging}
+\begin{algorithmic}
+\State \textbf{Once:} Precompute subnetworks $L_A$ suitable for averaging (e.g. weakly reversible, zero-deficiency subnetworks)
+\State Let $L_P$ be the set of previously averaged subnetworks
+\State Set $L_C = \emptyset$
+\ForAll {suitable subnetworks $Q \in L_A$}
+	\If {$\Delta\tau\left(Q\right) \ge 1$}
+		\State Set $L_C = L_C \cup {Q}$
+	\EndIf
+\EndFor
+\State $L_F = \emptyset$
+\While {$L_C \neq \emptyset$}
+	\State Set $Q = \argmax_{W\in L_C} \left(|W|\right)$
+	\State Set $L_C = L_C \setminus {Q}$
+	\If {$\left\{s :\  s\in W, W\in L_F\right\} \cap {Q} = \emptyset$}
+		\State Set $L_F = L_F \cup {Q}$
+	\EndIf
+\EndWhile
+\ForAll {subnetwork $Q \in L_P \setminus L_F$}
+	\State Sample state for subnetwork $Q$ from the stationary distribution
+\EndFor
+\ForAll {subnetwork $Q\in L_F$}
+	\State Compute stationary average of subnetwork $Q$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+
+\section{NUMERICAL EXAMPLES\label{sec:NUMERICAL-EXAMPLES}}
+
+
+\section{CONCLUSIONS\label{sec:CONCLUSIONS}}
+
+
+\section*{APPENDIX\label{sec:APPENDIX}}
+
+\bibliographystyle{plain}
+\bibliography{/home/bhepp/Documents/papers}
+
+\end{document}

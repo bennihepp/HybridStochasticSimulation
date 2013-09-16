@@ -272,12 +272,11 @@ public class PlotWindow extends ApplicationFrame {
 	}
 
 	public void exportToMatlabFile(File file) {
-		MatlabDataExporter mde = new MatlabDataExporter();
-		List<MLArray> matlabData = mde.buildMatlabPlotList(plotDataList);
-		matlabData.add(mde.buildDouble("rows", rows));
-		matlabData.add(mde.buildDouble("cols", cols));
+		List<MLArray> matlabData = MatlabDataExporter.buildMatlabPlotList(plotDataList);
+		matlabData.add(MatlabDataExporter.buildDouble("rows", rows));
+		matlabData.add(MatlabDataExporter.buildDouble("cols", cols));
 		try {
-			mde.writeMatlabDataToFile(file, matlabData);
+			MatlabDataExporter.writeMatlabDataToFile(file, matlabData);
 		} catch (IOException e1) {
 			String errorMsg = "Failed to export Matlab file:\n" + e1.toString();
 			e1.printStackTrace();

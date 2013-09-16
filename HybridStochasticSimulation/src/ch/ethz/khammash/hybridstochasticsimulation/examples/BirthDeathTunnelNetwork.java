@@ -1,5 +1,8 @@
 package ch.ethz.khammash.hybridstochasticsimulation.examples;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
@@ -9,6 +12,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 public class BirthDeathTunnelNetwork extends SimulationConfiguration {
 
+	@Inject @Named("BirthDeathTunnelNetwork")
 	public BirthDeathTunnelNetwork() {
 		// See Kang & Kurtz 2011 (3.2 Collective species balance)
 		int[] deterministicReactions = { };

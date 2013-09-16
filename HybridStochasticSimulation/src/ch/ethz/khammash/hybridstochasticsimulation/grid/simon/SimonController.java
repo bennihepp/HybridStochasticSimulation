@@ -9,8 +9,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.GridUtils;
@@ -23,7 +23,7 @@ import de.root1.simon.exceptions.NameBindingException;
 @SimonRemote(value = {ControllerInterface.class})
 public class SimonController implements ControllerInterface, Runnable {
 
-	private static final Log log = LogFactory.getLog(SimonController.class);
+	private static final Logger logger = LoggerFactory.getLogger(SimonController.class);
 
 	private static final int DEFAULT_SIMON_PORT = 22222;
 
@@ -50,12 +50,12 @@ public class SimonController implements ControllerInterface, Runnable {
         	registry.stop();
 
 		} catch (ConfigurationException | IOException e) {
-			if (log.isInfoEnabled())
-				log.info("Failed to load configuration", e);
+			if (logger.isInfoEnabled())
+				logger.info("Failed to load configuration", e);
 			System.exit(1);
 		} catch (NameBindingException e) {
-			if (log.isInfoEnabled())
-				log.info("Failed to bind controller object", e);
+			if (logger.isInfoEnabled())
+				logger.info("Failed to bind controller object", e);
 			System.exit(1);
 		}
 
@@ -83,15 +83,15 @@ public class SimonController implements ControllerInterface, Runnable {
 	public void addSimulationResult(FiniteTrajectory tr) {
 //		if (simulationsLeftLatch.getCount() <= 0)
 //			return;
-		if (log.isDebugEnabled())
-			log.debug("Got simulation result");
+		if (logger.isDebugEnabled())
+			logger.debug("Got simulation result");
 		simulationJob.addSimulationResult(tr);
 	}
 
 	@Override
 	public boolean moreSimulations() {
-		if (log.isDebugEnabled())
-			log.debug(String.format("Got simulation request. %d simulations left.", simulationsSemphore.availablePermits()));
+		if (logger.isDebugEnabled())
+			logger.debug(String.format("Got simulation request. %d simulations left.", simulationsSemphore.availablePermits()));
 		if (simulationsSemphore.tryAcquire()) {
 //			simulationsLeftLatch.countDown();
 			return true;
@@ -108,34 +108,35 @@ public class SimonController implements ControllerInterface, Runnable {
 
 	@Override
 	public void run() {
-		if (log.isInfoEnabled())
-			log.info("Controller is running");
+		if (logger.isInfoEnabled())
+			logger.info("Controller is running");
 		lock.lock();
 		try {
-			if (log.isDebugEnabled())
-				log.debug("Waiting for simulations to finish");
+			if (logger.isDebugEnabled())
+				logger.debug("Waiting for simulations to finish");
 //			simulationsLeftLatch.await();
 			simulationsDoneCondition.await();
 		} catch (InterruptedException e) {
-			if (log.isDebugEnabled())
-				log.debug("Interrupted while waiting for simulations to finish");
+			if (logger.isDebugEnabled())
+				logger.debug("Interrupted while waiting for simulations to finish", e);
 			Thread.currentThread().interrupt();
 		} finally {
 			lock.unlock();
 		}
-		if (log.isInfoEnabled())
-			log.info("Waiting for workers to shutdown");
+		if (logger.isInfoEnabled())
+			logger.info("Waiting for workers to shutdown");
 		lock.lock();
 		try {
 			workerSetEmptyCondition.await();
 		} catch (InterruptedException e) {
-			if (log.isDebugEnabled())
-				log.debug("Interrupted while waiting for workers to shutdown");
+			if (logger.isDebugEnabled())
+				logger.debug("Interrupted while waiting for workers to shutdown");
+			Thread.currentThread().interrupt();
 		} finally {
 			lock.unlock();
 		}
-		if (log.isInfoEnabled())
-			log.info("Controller is shutting down");
+		if (logger.isInfoEnabled())
+			logger.info("Controller is shutting down");
 	}
 
 	@Override

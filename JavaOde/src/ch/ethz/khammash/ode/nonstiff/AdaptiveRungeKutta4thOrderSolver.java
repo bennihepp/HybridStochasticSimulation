@@ -86,7 +86,6 @@ public class AdaptiveRungeKutta4thOrderSolver extends EulerSolver {
 		double newStep = step;
 		while (true) {
 			curStep = newStep;
-//			System.out.println("step: " + step);
 //			double halfStep = curStep / 2.0;
 			findNextStateExplicitFixed(t, x, curStep, out1V.getData(), out2V.getData());
 //			findNextStateExplicitFixed(t, x, halfStep, out2V.getData());
@@ -130,7 +129,6 @@ public class AdaptiveRungeKutta4thOrderSolver extends EulerSolver {
 		} else
 			CommonOps.add(out2V, errV, xV);
 		this.step = newStep;
-//		System.out.println("done: " + step);
 		return t + curStep;
 	}
 

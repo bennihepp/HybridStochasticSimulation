@@ -54,7 +54,6 @@ public class AdaptiveEulerSolver extends EulerSolver {
 		double newStep = step;
 		while (true) {
 			curStep = newStep;
-//			System.out.println("step: " + step);
 			double halfStep = curStep / 2.0;
 			findNextStateExplicitFixed(t, x, curStep, out1V.getData());
 			findNextStateExplicitFixed(t, x, halfStep, out2V.getData());
@@ -103,7 +102,6 @@ public class AdaptiveEulerSolver extends EulerSolver {
 //			CommonOps.add(out2V, errV, xV);
 		xV.set(out2V);
 		this.step = newStep;
-//		System.out.println("done: " + this.step);
 		return t + curStep;
 	}
 

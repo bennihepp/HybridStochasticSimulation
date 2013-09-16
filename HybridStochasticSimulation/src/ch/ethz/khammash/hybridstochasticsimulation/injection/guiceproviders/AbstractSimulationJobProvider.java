@@ -7,7 +7,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.DefaultSimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob.Type;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput;
+import ch.ethz.khammash.hybridstochasticsimulation.io.SimulationOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryMapper;
 
 public abstract class AbstractSimulationJobProvider extends AbstractProvider<SimulationJob> {

@@ -1,12 +1,15 @@
 package ch.ethz.khammash.hybridstochasticsimulation.models;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 
-public class UnaryBinaryStochasticModel implements StochasticReactionNetworkModel {
+public class UnaryBinaryStochasticModel implements StochasticReactionNetworkModel, Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	final private int numberOfSpecies;
 	private int[] reactionChoiceIndices1;

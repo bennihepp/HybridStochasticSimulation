@@ -4,6 +4,7 @@ SUNDIALS_HOME - $SUNDIALS_HOME/lib and $SUNDIALS_HOME/include should contain the
 
 To compile you run:
 > mvn compile
+> mvn -f pom_jni.xml compile
 The libcvodejni.so and liblsodarjni.so will recide in the jni/lib directory.
 
 To install you run:

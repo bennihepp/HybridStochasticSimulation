@@ -23,6 +23,12 @@ public class HDF5OutputProvider extends AbstractProvider<SimulationOutput> {
 		HDF5Output output;
 		try {
 			output = new HDF5Output(filename, overwrite);
+			if (config().containsKey("chunkSize")) {
+				output.setChunkSize(config().getInt("chunkSize"));
+			}
+			if (config().containsKey("gzipLevel")) {
+				output.setGzipLevel(config().getInt("gzipLevel"));
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

@@ -7,9 +7,9 @@ import javax.inject.Provider;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.DefaultSimulationJob;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob.Type;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
+import ch.ethz.khammash.hybridstochasticsimulation.io.SimulationOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryMapper;

@@ -10,7 +10,7 @@ extern "C" {
 /*
  * Class:     ch_ethz_khammash_ode_cvode_CVodeSolver
  * Method:    jni_initialize
- * Signature: (Lch/ethz/khammash/ode/DirectBufferOdeAdapter;Lch/ethz/khammash/ode/DirectBufferEventFunctionAdapter;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;DDIIIDD)J
+ * Signature: (Lch/ethz/khammash/ode/BufferOdeAdapter;Lch/ethz/khammash/ode/BufferEventFunctionAdapter;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;Ljava/nio/IntBuffer;DDIIIDD)J
  */
 JNIEXPORT jlong JNICALL Java_ch_ethz_khammash_ode_cvode_CVodeSolver_jni_1initialize
   (JNIEnv *, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jdouble, jdouble, jint, jint, jint, jdouble, jdouble);

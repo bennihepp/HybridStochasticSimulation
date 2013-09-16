@@ -11,6 +11,13 @@ public class Utilities {
 		printArray(name, temp);
 	}
 
+	public static void printArray(String name, long[] array) {
+		Long[] temp = new Long[array.length];
+		for (int i=0; i < array.length; i++)
+			temp[i] = Long.valueOf(array[i]);
+		printArray(name, temp);
+	}
+
 	public static void printArray(String name, double[] array) {
 		Double[] temp = new Double[array.length];
 		for (int i=0; i < array.length; i++)

@@ -10,17 +10,17 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.DummyAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.ModularAveragingUnit;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.DummyOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
-import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.SimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.AdaptiveMSHRNModelProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.AdaptiveMSHRNProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.CSVOutputProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.CVodeSolverProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.CombiningAveragingUnitProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.DeterministicModelProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.FiniteMarkovChainAveragingUnitProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.FiniteTrajectoryRecorderProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.HDF5OutputProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.MSHybridReactionNetworkModelProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.MSHybridReactionNetworkProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.MatlabOutputProvider;
@@ -32,6 +32,8 @@ import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.Stoc
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.StochasticSimulationJobProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.UnaryBinaryReactionNetworkProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.ZeroDeficiencyAveragingUnitProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.io.DummyOutput;
+import ch.ethz.khammash.hybridstochasticsimulation.io.SimulationOutput;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
@@ -153,8 +155,14 @@ public class BatchGuiceModule extends AbstractModule {
 		// Output
 		String outputType = config.getString("OutputParameters.type", "Dummy");
 		switch (outputType) {
+		case "HDF5":
+			bind(SimulationOutput.class).toProvider(HDF5OutputProvider.class);
+			break;
 		case "Matlab":
 			bind(SimulationOutput.class).toProvider(MatlabOutputProvider.class);
+			break;
+		case "CSV":
+			bind(SimulationOutput.class).toProvider(CSVOutputProvider.class);
 			break;
 		case "Dummy":
 			bind(SimulationOutput.class).to(DummyOutput.class);

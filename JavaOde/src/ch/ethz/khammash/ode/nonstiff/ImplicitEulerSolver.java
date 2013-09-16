@@ -125,7 +125,6 @@ public class ImplicitEulerSolver extends EulerSolver {
 	protected double findNextStateImplicitVariable(double t, double[] x, double step, double maxStep) {
 		double newStep = step;
 		while (true) {
-//			System.out.println("step: " + step);
 			double halfStep = step / 2.0;
 			findNextStateImplicitFixed(t, x, step, out1V.getData());
 			findNextStateImplicitFixed(t, x, halfStep, out2V.getData());
@@ -170,14 +169,12 @@ public class ImplicitEulerSolver extends EulerSolver {
 		CommonOps.add(out2V, errV, dummy);
 //		System.arraycopy(out2V.getData(), 0, x, 0, ode.getDimensionOfVectorField());
 		this.step = newStep;
-//		System.out.println("done: " + step);
 		return t + step;
 	}
 
 	protected double findNextStateImplicitVariableTest(double t, double[] x, double step, double maxStep) {
 		double prevStep;
 		while (true) {
-//			System.out.println("step: " + step);
 			prevStep = step;
 			double halfStep = step / 2.0;
 			findNextStateImplicitFixed(t, x, step, out1V.getData());
@@ -203,7 +200,6 @@ public class ImplicitEulerSolver extends EulerSolver {
 		dummy.setData(x);
 		CommonOps.sub(out2V, errV, dummy);
 		this.step = step;
-		System.out.println("done: " + step);
 		return t + prevStep;
 	}
 
@@ -281,7 +277,6 @@ public class ImplicitEulerSolver extends EulerSolver {
 //			ArrayRealVector vTmp = y2;
 //			y2 = y1;
 //			y1 = vTmp;
-//			System.out.println("y1:" + y1.getEntry(0));
 //		} while (f1.getNorm() > rootTolerance);
 //		for (int i=0; i < y1.getDimension(); i++)
 //			x[i] = y1.getEntry(i);

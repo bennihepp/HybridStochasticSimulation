@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.batch;
+package ch.ethz.khammash.hybridstochasticsimulation.io;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -10,6 +10,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob.OutputAlr
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 
+// TODO: Output time-points and metadata
 public class CSVOutput implements SimulationOutput {
 
     private File outputFile;
@@ -32,7 +33,7 @@ public class CSVOutput implements SimulationOutput {
     }
 
 	@Override
-	public void init() throws OutputException {
+	public void begin() throws OutputException {
         if (!overwrite && outputFile.exists())
         	throw new OutputException("Output file already exists");
         try {
@@ -60,15 +61,16 @@ public class CSVOutput implements SimulationOutput {
     		add(simulationName, plotData);
     }
 
+    // TODO: Need to write tSeries to CSV-file
     private void writePlotData(String simulationName, FinitePlotData plotData) {
     	String[] simulationColumns = {"Simulation", simulationName};
     	writer.writeNext(simulationColumns);
     	String[] sizeColumns = {"NumberOfStates", Integer.toString(plotData.getNumberOfStates()),
     			"NumberOfTimepoitns", Integer.toString(plotData.getNumberOfTimePoints())};
     	writer.writeNext(sizeColumns);
-		String[] columns = new String[plotData.getNumberOfStates()];
+		String[] columns = new String[plotData.getNumberOfTimePoints()];
     	for (int state=0; state < plotData.getNumberOfStates(); state++) {
-    		for (int i=0; i < plotData.getNumberOfStates(); i++)
+    		for (int i=0; i < plotData.getNumberOfTimePoints(); i++)
     			columns[i] = Double.toString(plotData.getxState(state, i));
     		writer.writeNext(columns);
     	}
@@ -77,11 +79,11 @@ public class CSVOutput implements SimulationOutput {
     @Override
     public void finalize() throws OutputException, OutputAlreadyWrittenException {
     	if (!outputWritten)
-			write();
+			end();
     }
 
     @Override
-    public void write() throws OutputException, OutputAlreadyWrittenException {
+    public void end() throws OutputException, OutputAlreadyWrittenException {
     	if (outputWritten)
     		throw new OutputAlreadyWrittenException("The output has already been written to the file");
     	try {

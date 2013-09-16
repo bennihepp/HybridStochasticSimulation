@@ -113,6 +113,10 @@ public class VectorFinitePlotData extends VectorFiniteTrajectory implements Fini
 		plotScales.set(s, plotScale);
 	}
 
+	public void setPlotScales(Double... plotScales) {
+		setPlotScales(Arrays.asList(plotScales));
+	}
+
 	public void setPlotScales(double[] plotScales) {
 		checkArgument(plotScales.length == getNumberOfStates(), "Expected plotScales.length == getNumberOfStates()");
 		for (int s=0; s < getNumberOfStates(); s++)

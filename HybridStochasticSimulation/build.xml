@@ -6,6 +6,8 @@
               as the first entry and export the buildfile again. --><project basedir="." default="build" name="HybridStochasticSimulation">
     <property environment="env"/>
     <property name="JavaOde.location" value="../JavaOde"/>
+    <property name="workspace_loc:HybridStochasticSimulation" value="."/>
+    <property name="workspace_loc:HybridStochasticSimulation/jobs" value="jobs"/>
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.7"/>
     <property name="source" value="1.7"/>
@@ -36,21 +38,35 @@
         <pathelement location="lib/jfreechart-1.0.14.jar"/>
         <pathelement location="lib/jgrapht-jdk1.6.jar"/>
         <pathelement location="lib/matlabcontrol-4.1.0.jar"/>
-        <pathelement location="lib/commons-lang3-3.1.jar"/>
         <pathelement location="lib/Jama-1.0.1.jar"/>
         <pathelement location="${JavaOde.location}/bin"/>
         <pathelement location="${JavaOde.location}/lib/ejml-0.23.jar"/>
         <pathelement location="lib/jgraph.jar"/>
+        <pathelement location="../../../../../usr/share/java/mpj.jar"/>
+        <pathelement location="lib/commons-configuration-1.9.jar"/>
+        <pathelement location="lib/commons-lang-2.6.jar"/>
+        <pathelement location="lib/commons-lang3-3.1.jar"/>
+        <pathelement location="lib/guice-3.0.jar"/>
+        <pathelement location="lib/javax.inject.jar"/>
+        <pathelement location="lib/aopalliance.jar"/>
+        <pathelement location="lib/guice-throwingproviders-3.0.jar"/>
+        <pathelement location="lib/simon-1.1.3-jar-with-dependencies.jar"/>
+        <pathelement location="lib/hazelcast-2.6.jar"/>
+        <pathelement location="lib/hazelcast-client-2.6.jar"/>
+        <pathelement location="lib/guice-multibindings-3.0.jar"/>
+        <pathelement location="lib/commons-cli-1.2.jar"/>
+        <pathelement location="lib/la4j-0.4.0.jar"/>
+        <pathelement location="lib/slf4j-api-1.7.5.jar"/>
+        <pathelement location="lib/slf4j-jdk14-1.7.5.jar"/>
     </path>
-    <path id="run.GUI 32bit.classpath">
+    <path id="run.MainMPI.classpath">
+        <pathelement location="cp"/>
         <path refid="HybridStochasticSimulation.classpath"/>
     </path>
-    <path id="run.GUI 32bit.bootclasspath"/>
     <target name="init">
         <mkdir dir="bin"/>
         <copy includeemptydirs="false" todir="bin">
             <fileset dir="src">
-                <exclude name="**/*.launch"/>
                 <exclude name="**/*.java"/>
             </fileset>
         </copy>
@@ -82,26 +98,30 @@
         <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
         <antcall target="build"/>
     </target>
-    <target name="SWTGui">
-        <java classname="ch.ethz.khammash.hybridstochasticsimulation.SWTGui" failonerror="true" fork="yes">
+    <target name="MainMPI">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.MainMPI" dir="${workspace_loc:HybridStochasticSimulation}/jobs" failonerror="true" fork="yes">
+            <arg line="0 mpj.conf.local niodev --threads 48 --config t7.xml"/>
+            <classpath refid="run.MainMPI.classpath"/>
+        </java>
+    </target>
+    <target name="Server">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.grid.simon.Server" failonerror="true" fork="yes">
             <classpath refid="HybridStochasticSimulation.classpath"/>
         </java>
     </target>
-    <target name="GUI 32bit">
-        <java classname="ch.ethz.khammash.hybridstochasticsimulation.GUI" failonerror="true" fork="yes">
-            <classpath refid="run.GUI 32bit.classpath"/>
-            <bootclasspath>
-                <path refid="run.GUI 32bit.bootclasspath"/>
-            </bootclasspath>
-        </java>
-    </target>
-    <target name="Console">
-        <java classname="ch.ethz.khammash.hybridstochasticsimulation.Console" failonerror="true" fork="yes">
+    <target name="TaskWorker">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.grid.hazelcast.TaskWorker" failonerror="true" fork="yes">
             <classpath refid="HybridStochasticSimulation.classpath"/>
         </java>
     </target>
-    <target name="IntegratorTest">
-        <java classname="ch.ethz.khammash.hybridstochasticsimulation.simulators.IntegratorTest" failonerror="true" fork="yes">
+    <target name="TaskManager">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.grid.hazelcast.TaskManager" failonerror="true" fork="yes">
+            <classpath refid="HybridStochasticSimulation.classpath"/>
+        </java>
+    </target>
+    <target name="Main">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.Main" dir="${workspace_loc:HybridStochasticSimulation/jobs}" failonerror="true" fork="yes">
+            <arg line="test.xml"/>
             <classpath refid="HybridStochasticSimulation.classpath"/>
         </java>
     </target>
@@ -110,23 +130,14 @@
             <classpath refid="HybridStochasticSimulation.classpath"/>
         </java>
     </target>
-    <target name="ImexSDTest">
-        <java classname="ImexSDTest" failonerror="true" fork="yes">
+    <target name="Client">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.grid.simon.Client" failonerror="true" fork="yes">
             <classpath refid="HybridStochasticSimulation.classpath"/>
         </java>
     </target>
-    <target name="GraphWindow">
-        <java classname="ch.ethz.khammash.hybridstochasticsimulation.sandbox.GraphWindow" failonerror="true" fork="yes">
-            <classpath refid="HybridStochasticSimulation.classpath"/>
-        </java>
-    </target>
-    <target name="JOptimizerTest">
-        <java classname="ch.ethz.khammash.hybridstochasticsimulation.JOptimizerTest" failonerror="true" fork="yes">
-            <classpath refid="HybridStochasticSimulation.classpath"/>
-        </java>
-    </target>
-    <target name="ImexTest">
-        <java classname="ImexTest" failonerror="true" fork="yes">
+    <target name="HCController">
+        <java classname="ch.ethz.khammash.hybridstochasticsimulation.grid.hazelcast.HCController" dir="${workspace_loc:HybridStochasticSimulation/jobs}" failonerror="true" fork="yes">
+            <arg line="test2.xml"/>
             <classpath refid="HybridStochasticSimulation.classpath"/>
         </java>
     </target>

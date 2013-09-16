@@ -1,5 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -9,11 +10,13 @@ import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 import com.google.common.base.Predicate;
 
-public class SpeciesTimescaleSeparationSubnetworkFilter implements AveragingCandidateFilter {
+public class SpeciesTimescaleSeparationSubnetworkFilter implements AveragingCandidateFilter, Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	private AdaptiveMSHRN hrn;
-	double t;
-	double[] x;
+//	private double t;
+//	private double[] x;
 
 	public SpeciesTimescaleSeparationSubnetworkFilter(AdaptiveMSHRN hrn) {
 		this.hrn = hrn;
@@ -21,8 +24,8 @@ public class SpeciesTimescaleSeparationSubnetworkFilter implements AveragingCand
 
 	@Override
 	public Predicate<Set<SpeciesVertex>> getFilterPredicate(double t, double[] x) {
-		this.t = t;
-		this.x = x;
+//		this.t = t;
+//		this.x = x;
 //		final double[][] networkTimescales = hrn.computeNetworkTimescales(t, x);
 //		final double[] minSpeciesTimescales = hrn.computeMinSpeciesTimescales(t, x);
 //		final double[] maxSpeciesTimescales = hrn.computeMaxSpeciesTimescales(t, x);

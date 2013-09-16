@@ -4,8 +4,17 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import mpi.MPI;
@@ -18,12 +27,15 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
+import cern.colt.Arrays;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.mpi.MPIController;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.mpi.MPIWorker;
+import ch.ethz.khammash.hybridstochasticsimulation.grid.mpi.RankIndexPair;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.BatchGuiceModule;
 
 import com.google.inject.Guice;
@@ -32,102 +44,183 @@ import com.google.inject.Injector;
 
 public class MainMPI {
 
-	private static final Log log = LogFactory.getLog(MainMPI.class);
+	private static final Logger logger = LoggerFactory.getLogger(MainMPI.class);
 
 	public static int MPI_TAG = 83;
 
 	private static final String DEFAULT_CONFIG_FILE = "config.xml";
 
-	public static void main(String mpiArgs[]) throws Exception {
+	public static void main(String mpiArgs[]) {
+		// Rank is not yet defined
+		MDC.put("rank", "<na>");
+
+		if (logger.isDebugEnabled())
+			logger.debug("mpiArgs: {}", Arrays.toString(mpiArgs));
+		if (logger.isInfoEnabled())
+			logger.info("Calling MPI.Init");
 		String[] args = MPI.Init(mpiArgs);
-
-		CommandLine cmd = parseCommandLine(args);
-
-		int numOfWorkerThreads = 1;
-		if(cmd.hasOption("t"))
-			numOfWorkerThreads = Integer.parseInt(cmd.getOptionValue("t"));
-
-		String filename = DEFAULT_CONFIG_FILE;
-		if (cmd.hasOption("c"))
-			filename = cmd.getOptionValue("c");
+		if (logger.isInfoEnabled())
+			logger.info("Called MPI.Init");
 
 		int mpiRank = MPI.COMM_WORLD.Rank();
 		int mpiSize = MPI.COMM_WORLD.Size();
-		if (log.isInfoEnabled())
-			log.info(String.format("Rank %d of %d is up", mpiRank, mpiSize));
+		if (logger.isInfoEnabled())
+			logger.info(String.format("Rank %d of %d is up", mpiRank, mpiSize));
 
-//		if (args.length == 0) {
-//			printUsageMessage(System.err);
-//			System.exit(-1);
-//		}
-//		try {
-//			numOfWorkerThreads = Integer.parseInt(mpiArgs[0]);
-//		} catch (NumberFormatException e) {
-//			e.printStackTrace(System.err);
-//			printUsageMessage(System.err);
-//			System.exit(-1);
-//		}
+		int exitCode = 0;
 
-//		String filename = DEFAULT_CONFIG_FILE;
-//		if (args.length > 1)
-//			filename = args[0];
+		// Make rank available for logging
+		MDC.put("rank", Integer.toString(mpiRank));
+
+		CommandLine cmd = parseCommandLine(args);
+
+		int numOfThreads = 1;
+		if(cmd.hasOption("t"))
+			numOfThreads = Integer.parseInt(cmd.getOptionValue("t"));
+
+		String configFilename = DEFAULT_CONFIG_FILE;
+		if (cmd.hasOption("c"))
+			configFilename = cmd.getOptionValue("c");
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("numOfWorkerThreads: " + numOfThreads);
+			logger.debug("configFilename: " + configFilename);
+		}
+
 		XMLConfiguration config;
 		try {
 
 			// Open configuration file
-			File configFile = new File(filename);
+			File configFile = new File(configFilename);
 			if (!configFile.exists())
 				throw new FileNotFoundException(configFile.getAbsolutePath());
 			config = new XMLConfiguration(configFile);
 
-			// TODO
-//			setupLogging(config, mpiRank);
-
 			// Build object graph using Guice and acquire a SimulationJob instance
+			if (mpiRank != 0)
+				config.setProperty("OutputParameters.type", "Dummy");
 			Injector injector = Guice.createInjector(new BatchGuiceModule(config));
 
-//			int numOfWorkerThreads = config.getInt("GridParameters.numOfWorkerThreads", 1);
-			int numOfThreads;
-			if (mpiRank == 0)
-				numOfThreads = 1;
-			else
-				numOfThreads = numOfWorkerThreads;
+//			SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
+//
+//			if (mpiRank == 0) {
+//				// List all threads with corresponding rank
+//				Set<Integer> runningChildren = new HashSet<>(mpiSize - 1);
+//				for (int rank=1; rank < mpiSize; rank++) {
+//					runningChildren.add(rank);
+//				}
+//
+//				// Spawn controller thread
+//				MPIController controller = new MPIController(MPI_TAG, simulationJob, runningChildren);
+//				controller.call();
+//
+//			} else {
+//				// Spawn worker threads
+//				MPIWorker worker = new MPIWorker(MPI_TAG, simulationJob, numOfThreads);
+//				worker.call();
+//			}
+	
+			try {
 
-			ExecutorService executor = Executors.newFixedThreadPool(numOfThreads);
-			for (int i=0; i < numOfThreads; i++) {
-				SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
+				ExecutorService executor = Executors.newFixedThreadPool(numOfThreads);
+				CompletionService<Void> ecs = new ExecutorCompletionService<>(executor);
 
-				// Run parallel simulations
+				List<Future<Void>> futureList = new ArrayList<>(mpiRank == 0 ? 1 : numOfThreads);
 				if (mpiRank == 0) {
-					MPIController manager = MPIController.createMPIController(MPI_TAG, simulationJob, mpiSize, numOfWorkerThreads);
-					executor.submit(manager);
+					// List all threads with corresponding rank
+					Set<RankIndexPair> runningChildren = new HashSet<>(mpiSize * numOfThreads - 1);
+					for (int rank=1; rank < mpiSize; rank++) {
+						for (int i=0; i < numOfThreads; i++)
+							runningChildren.add(new RankIndexPair(rank, i));
+					}
+	
+					// Spawn controller thread
+					SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
+	//				ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
+	//				ObjectOutputStream objOut = new ObjectOutputStream(out);
+	//				objOut.writeObject(simulationJob);
+					// TODO: Make simulationJob serializable
+	//				Object[] buf = { simulationJob };
+	//				MPI.COMM_WORLD.Send(buf, 0, 1, MPI.OBJECT, 1, MPI_TAG + 2);
+					Callable<Void> controller = new MPIController(MPI_TAG, simulationJob, runningChildren);
+					futureList.add(ecs.submit(controller));
+
 				} else {
-					MPIWorker worker = new MPIWorker(MPI_TAG, simulationJob);
-					executor.submit(worker);
+					for (int i=0; i < numOfThreads; i++) {
+						SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
+	
+						// Spawn worker threads
+						MPIWorker worker = new MPIWorker(MPI_TAG, simulationJob);
+						futureList.add(ecs.submit(worker));
+					}
 				}
-			}
-	        executor.shutdown();
-	        do {
-	        	try {
-	        		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-		        } catch (InterruptedException e) { }
-	        } while (!executor.isTerminated());
+	
+		        executor.shutdown();
 
-	        if (log.isDebugEnabled())
-	        	log.debug("Waiting for all processes (MPI Barrier)");
-			MPI.COMM_WORLD.Barrier();
+	            for (int i=0; i < futureList.size(); i++) {
+	            	if (logger.isDebugEnabled())
+	            		logger.debug("Waiting for future {}", i + 1);
+	                try {
+	                	ecs.take().get();
+	                } catch (ExecutionException e) {
+	                	if (logger.isErrorEnabled()) {
+	                		logger.error("Exception while executing task", e);
+	                	}
+		            } catch (InterruptedException e) {
+	                	if (logger.isErrorEnabled()) {
+	                		logger.error("Task was interrupted", e);
+	                	}
+		            }
+		        }
+            	if (logger.isDebugEnabled())
+            		logger.debug("All futures finished");
 
-			if (log.isInfoEnabled()) {
-				log.info(String.format("Rank %d shutting down", mpiRank));
-			}
+		        while (!executor.awaitTermination(Long.MAX_VALUE,  TimeUnit.DAYS));
+
+//		} catch (FileNotFoundException | ConfigurationException e) {
+//			if (logger.isErrorEnabled())
+//				logger.error("Failed to load configuration", e);
+//			exitCode = -1;
+//
+//		} catch (OutputException e) {
+//			if (logger.isErrorEnabled())
+//				logger.error("Error while writing output", e);
+//			exitCode = -2;
+//
+//		} catch (InterruptedException e) {
+//			if (logger.isErrorEnabled())
+//				logger.error("Interrupted while waiting for executor to shutdown", e);
+//			exitCode = -3;
+//		}
+
+			} finally {
+		        if (logger.isDebugEnabled())
+		        	logger.debug("Waiting for all processes (MPI Barrier) [rank={}]", mpiRank);
+				MPI.COMM_WORLD.Barrier();
+	
+				if (logger.isInfoEnabled()) {
+					logger.info("Rank {} shutting down", mpiRank);
+				}
+	
+		        if (logger.isDebugEnabled())
+		        	logger.debug("Calling MPI.Finalize [rank={}]", mpiRank);
+				MPI.Finalize();
+		        if (logger.isDebugEnabled())
+		        	logger.debug("Called MPI.Finalize [rank={}]", mpiRank);
+				}
 
 		} catch (ConfigurationException | IOException e) {
-			if (log.isErrorEnabled())
-				log.error("Failed to load configuration", e);
-			System.exit(-1);
+			if (logger.isErrorEnabled())
+				logger.error("Failed to load configuration", e);
+			exitCode = -1;
+		} catch (InterruptedException e) {
+			if (logger.isErrorEnabled())
+				logger.error("Interrupted while waiting for executor to shutdown", e);
+			exitCode = -2;
 		}
 
-		MPI.Finalize();
+
+		System.exit(exitCode);
 	}
 
 	private static CommandLine parseCommandLine(String[] args) {
@@ -153,7 +246,8 @@ public class MainMPI {
 			}
 			return cmd;
 		} catch (ParseException e) {
-			System.err.println("Parsing failed.  Reason: " + e.getMessage());
+			if (logger.isErrorEnabled())
+				logger.error("Parsing failed.  Reason: {}", e.getMessage());
 			printUsageMessage(options, System.err);
 			System.exit(-1);
 		}
@@ -164,20 +258,5 @@ public class MainMPI {
 		HelpFormatter formatter = new HelpFormatter();
 		formatter.printHelp("java ch.ethz.khammash.hybridstochasticsimulation.MainMPI", options);
 	}
-
-	// TODO
-//	private static void setupLogging(HierarchicalConfiguration config, int rank) throws SecurityException, IOException {
-//		String logFilenameFormat = config.getString("Logging.filenameFormat", null);
-//		if (logFilenameFormat != null) {
-//			String logFilename = String.format(logFilenameFormat, rank);
-//			if (log instanceof Log4JLogger) {
-//				Log4JLogger logWrapper = (Log4JLogger)log;
-//				Logger nativeLogger = logWrapper.getLogger();
-//				PatternLayout layout = new PatternLayout("%d{HH:mm:ss} [%t] {%-5p} %c{36} - %m%n");
-//				FileAppender fileAppender = new FileAppender(layout, logFilename);
-//				nativeLogger.addAppender(fileAppender);
-//			}
-//		}
-//	}
 
 }

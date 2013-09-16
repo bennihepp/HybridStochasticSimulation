@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.batch;
+package ch.ethz.khammash.hybridstochasticsimulation.io;
 
 import java.util.List;
 
@@ -29,12 +29,12 @@ public interface SimulationOutput {
 
 //	void addAll(String simulationName, List<FiniteTrajectory> trList);
 
-	void init() throws OutputException;
+	void begin() throws OutputException;
 
-	void add(String simulationName, FinitePlotData plotData);
+	void add(String simulationName, FinitePlotData plotData) throws OutputException;
 
-	void addAll(String simulationName, List<FinitePlotData> plotDataList);
+	void addAll(String simulationName, List<FinitePlotData> plotDataList) throws OutputException;
 
-	void write() throws OutputException, OutputAlreadyWrittenException;
+	void end() throws OutputException, OutputAlreadyWrittenException;
 
 }

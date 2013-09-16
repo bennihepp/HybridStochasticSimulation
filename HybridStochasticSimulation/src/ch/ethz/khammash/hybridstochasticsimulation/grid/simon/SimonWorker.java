@@ -6,14 +6,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import com.google.common.net.HostAndPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.GridUtils;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
+
+import com.google.common.net.HostAndPort;
+
 import de.root1.simon.Lookup;
 import de.root1.simon.Simon;
 import de.root1.simon.exceptions.EstablishConnectionFailed;
@@ -21,7 +22,7 @@ import de.root1.simon.exceptions.LookupFailedException;
 
 public class SimonWorker implements WorkerInterface, Runnable {
 
-	private static final Log log = LogFactory.getLog(SimonWorker.class);
+	private static final Logger logger = LoggerFactory.getLogger(SimonWorker.class);
 
 	private static final String DEFAULT_SIMON_HOST = "localhost";
 	private static final int DEFAULT_SIMON_PORT = 22222;
@@ -55,22 +56,24 @@ public class SimonWorker implements WorkerInterface, Runnable {
 			}
 
 	        executor.shutdown();
-	        do {
-	        	try {
-	        		executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-		        } catch (InterruptedException e) { }
-	        } while (!executor.isTerminated());
+	        while (!executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
 
 	        nameLookup.release(controller);
 
 		} catch (ConfigurationException | IOException e) {
-			if (log.isInfoEnabled())
-				log.info("Failed to load configuration", e);
-			System.exit(1);
+			if (logger.isInfoEnabled())
+				logger.info("Failed to load configuration", e);
+			System.exit(-1);
+
 		} catch (LookupFailedException | EstablishConnectionFailed e) {
-			if (log.isInfoEnabled())
-				log.info("Failed to acquire controller object", e);
-			System.exit(1);
+			if (logger.isInfoEnabled())
+				logger.info("Failed to acquire controller object", e);
+			System.exit(-2);
+
+		} catch (InterruptedException e) {
+			if (logger.isDebugEnabled())
+				logger.debug("Interrupted while collecting results", e);
+			System.exit(-3);
 		}
 
     }
@@ -85,26 +88,26 @@ public class SimonWorker implements WorkerInterface, Runnable {
 
 	@Override
 	public void run() {
-		if (log.isInfoEnabled())
-			log.info("Worker is running");
+		if (logger.isInfoEnabled())
+			logger.info("Worker is running");
 		controller.register(this.hashCode());
 		boolean moreSimulations = true;
 		while (moreSimulations) {
-			if (log.isDebugEnabled())
-				log.debug("Checking for more simulations");
+			if (logger.isDebugEnabled())
+				logger.debug("Checking for more simulations");
 			moreSimulations = controller.moreSimulations();
 			if (moreSimulations) {
-				if (log.isDebugEnabled())
-					log.debug("Running simulation");
+				if (logger.isDebugEnabled())
+					logger.debug("Running simulation");
 				FiniteTrajectory tr = simulationJob.runSingleSimulation();
-				if (log.isDebugEnabled())
-					log.debug("Adding simulation result");
+				if (logger.isDebugEnabled())
+					logger.debug("Adding simulation result");
 				controller.addSimulationResult(tr);
 			}
 		}
 		controller.unregister(this.hashCode());
-		if (log.isInfoEnabled())
-			log.info("Worker is shutting down");
+		if (logger.isInfoEnabled())
+			logger.info("Worker is shutting down");
 	}
 
 }

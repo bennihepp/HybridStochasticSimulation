@@ -2,6 +2,7 @@ package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -16,6 +17,8 @@ import org.apache.commons.math3.optim.linear.Relationship;
 import org.apache.commons.math3.optim.linear.SimplexSolver;
 import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
 import org.apache.commons.math3.util.FastMath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingCandidateFilter;
@@ -25,7 +28,11 @@ import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import com.google.common.base.Optional;
 
 
-public class AdaptiveMSHRN extends MSHybridReactionNetwork {
+public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private static final Logger logger = LoggerFactory.getLogger(AdaptiveMSHRN.class);
 
 	// TODO: Does xi make sense or just use the value of delta?
 	private double xi = 0.5;
@@ -139,7 +146,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 				zeroDeficiencySpeciesToAverageMask[vertex.getSpecies()] = true;
 			}
 		}
-		if (getPrintMessages()) {
+		if (getLogMessages()) {
 			HashSet<SpeciesVertex> speciesToAverage = new HashSet<SpeciesVertex>();
 			for (int s=0; s < getNumberOfSpecies(); s++)
 				if (zeroDeficiencySpeciesToAverageMask[s])
@@ -163,8 +170,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 
 	public void adapt(double t, double[] x, double[] xDot, double[] propensities) {
 
-		if (getPrintMessages())
-			System.out.println("Adapting at t=" + t);
+		if (getLogMessages() && logger.isInfoEnabled())
+			logger.info("Adapting at t={}", t);
 
 		// Recover true copy numbers from scaled species values
 		for (int s=0; s < getNumberOfSpecies(); s++)
@@ -182,7 +189,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 				x[s] = 0.0;
 		}
 
-		if (getPrintMessages())
+		if (getLogMessages())
 			Utilities.printArray(" alpha=", getAlpha());
 
 //		double[] reactionTimescales = computeReactionTimescales(x);
@@ -198,24 +205,24 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 
 		if (propensities != null) {
 
-			if (getPrintMessages()) {
-				int cnt = 0;
+			if (getLogMessages() && logger.isInfoEnabled()) {
+				int deterministicReactions = 0;
 				for (int r=0; r < getNumberOfReactions(); r++) {
 					ReactionType rt = getReactionType(r);
 					if (rt == ReactionType.DETERMINISTIC)
-						cnt++;
+						deterministicReactions++;
 				}
-				System.out.println(" Stochastic propensities (" + (getNumberOfReactions() - cnt) + ")");
+				logger.info(" Stochastic propensities ({})", (getNumberOfReactions() - deterministicReactions));
 				for (int r=0; r < getNumberOfReactions(); r++) {
 					ReactionType rt = getReactionType(r);
 					if (rt == ReactionType.STOCHASTIC)
-						System.out.println("  " + r + ": " + propensities[r]);
+						logger.info("  {}: {}", r, propensities[r]);
 				}
-				System.out.println(" Deterministic propensities (" + cnt + "):");
+				logger.info(" Deterministic propensities ({})", deterministicReactions);
 				for (int r=0; r < getNumberOfReactions(); r++) {
 					ReactionType rt = getReactionType(r);
 					if (rt == ReactionType.DETERMINISTIC)
-						System.out.println("  " + r + ": " + propensities[r]);
+						logger.info("  {}: {}", r, propensities[r]);
 				}
 			}
 
@@ -248,12 +255,14 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
 				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
 				overrideReactionTypes(reactionTypes);
-				if (getPrintMessages())
-					System.out.println(" Overriding reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + "<" + theta);
+				if (getLogMessages() && logger.isInfoEnabled())
+					logger.info(" Overriding reaction types ({}/{}={} < {})",
+							deterministicPropensitySum, stochasticPropensitySum, stochasticToDeterministicAvgWaitingTimeRatio, theta);
 			}
 			else
-				if (getPrintMessages())
-					System.out.println(" Keeping reaction types (" + deterministicPropensitySum + "/" + stochasticPropensitySum + "=" + stochasticToDeterministicAvgWaitingTimeRatio + ">" + theta + ")");
+				if (getLogMessages() && logger.isInfoEnabled())
+					logger.info(" Keeping reaction types ({}/{}={} >= {})",
+							deterministicPropensitySum, stochasticPropensitySum, stochasticToDeterministicAvgWaitingTimeRatio, theta);
 		}
 
 		// Scale copy numbers with new species scale factors.
@@ -349,8 +358,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 //				System.out.println("  " + r + ": " + propensityScale);
 		}
 		double[] speciesTimescales = new double[getNumberOfSpecies()];
-		if (getPrintMessages())
-			System.out.println(" Min Species timescales:");
+		if (getLogMessages() && logger.isInfoEnabled())
+			logger.info(" Min Species timescales:");
 		for (int s=0; s < getNumberOfSpecies(); s++) {
 			List<Integer> reactions = getInvolvedReactions(s);
 			double minTimescale = Double.POSITIVE_INFINITY;
@@ -361,8 +370,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 						minTimescale = timescale;
 			}
 			speciesTimescales[s] = minTimescale;
-			if (getPrintMessages())
-				System.out.println("  " + s + ": " + speciesTimescales[s]);
+			if (getLogMessages() && logger.isInfoEnabled())
+				logger.info("  {}: {}", s, speciesTimescales[s]);
 		}
 		return speciesTimescales;
 	}
@@ -381,12 +390,12 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			propensityScale += FastMath.log(getRateParameter(r)) / FastMath.log(getN());
 //			propensityscale *= getRateParameter(r);
 			propensityScales[r] = propensityScale;
-			if (getPrintMessages())
-				System.out.println("  " + r + ": " + propensityScale);
+			if (getLogMessages() && logger.isInfoEnabled())
+				logger.info("  {}: {}", r, propensityScale);
 		}
 		double[] speciesTimescales = new double[getNumberOfSpecies()];
-		if (getPrintMessages())
-			System.out.println(" Max Species timescales:");
+		if (getLogMessages() && logger.isInfoEnabled())
+			logger.info(" Max Species timescales:");
 		for (int s=0; s < getNumberOfSpecies(); s++) {
 			List<Integer> reactions = getInvolvedReactions(s);
 			double maxTimescale = Double.NEGATIVE_INFINITY;
@@ -397,8 +406,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 						maxTimescale = timescale;
 			}
 			speciesTimescales[s] = maxTimescale;
-			if (getPrintMessages())
-				System.out.println("  " + s + ": " + speciesTimescales[s]);
+			if (getLogMessages() && logger.isInfoEnabled())
+				logger.info("  {}: {}", s, speciesTimescales[s]);
 		}
 		return speciesTimescales;
 	}
@@ -477,7 +486,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork {
 			maxBeta[r] = b;
 		}
 
-		// Define linear objective function. Make sure that aphas are more important than betas.
+		// Define linear objective function. Make sure that alphas are more important than betas.
 		double alphaToBetaImportanceRatio = 100.0;
 		double[] qVector = new double[maxAlphaNZ.length + maxBeta.length];
 		for (int s=0; s < maxAlphaNZ.length; s++)

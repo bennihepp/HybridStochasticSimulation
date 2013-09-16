@@ -11,6 +11,6 @@ public interface ModularAveragingUnit extends AveragingUnit {
 
 	List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter);
 
-	void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies);
+	void resampleFromStationaryDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies);
 
 }

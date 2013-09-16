@@ -84,8 +84,14 @@ public class Repressilator extends SimulationConfiguration {
 		double t1 = 100.0;
 		double N = 100;
 		double gamma = 0;
-		double[] alpha = new double[x0.length];
+		double[] alpha = { 0, 1, 0, 1, 0, 1 };
 		double[] beta = new double[rateParameters.length];
+		beta[1] = 1;
+		beta[3] = 1;
+		beta[6] = 1;
+		beta[8] = 1;
+		beta[11] = 1;
+		beta[13] = 1;
 //		int[] importantSpecies = { 0 };
 
 		productionStochiometries = transpose(productionStochiometries);

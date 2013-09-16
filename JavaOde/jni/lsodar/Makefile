@@ -11,7 +11,7 @@ JDKPLATFORMDIR = $(JDKINCLUDEDIR)/linux
 #JDKDIR = /c/Program\ Files/Java/jdk1.7.0_21/include
 #JDKPLATFORMDIR = /c/Program\ Files/Java/jdk1.7.0_21/include/win32
 LDFLAGS = -shared -lgfortran -fno-omit-frame-pointer
-INCLUDES = -I../include -I./include/ -I$(JDKINCLUDEDIR) -I$(JDKPLATFORMDIR)
+INCLUDES = -I../include -I./include -I$(JDKINCLUDEDIR) -I$(JDKPLATFORMDIR)
 
 SOTARGET = lib/liblsodarjni.so
 TARGET = lib/liblsodarjni.la

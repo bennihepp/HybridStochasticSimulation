@@ -3,9 +3,17 @@ package ch.ethz.khammash.hybridstochasticsimulation.networks;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkElementIndex;
 
-import org.apache.commons.math3.util.FastMath;
+import java.io.Serializable;
 
-public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
+import org.apache.commons.math3.util.FastMath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private static final Logger logger = LoggerFactory.getLogger(MSHybridReactionNetwork.class);
 
 	public enum SpeciesType {
 		DISCRETE, CONTINUOUS, UNDEFINED
@@ -33,7 +41,8 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 	private SpeciesType[] speciesTypes;
 	private ReactionType[] reactionTypes;
 	private boolean reactionTermTypesInvalid;
-	private boolean printMessages;
+	// TODO: This can be handled with the logging configuration
+	private boolean logMessages;
 
 	public static MSHybridReactionNetwork create(int numOfSpecies, int numOfReactions, double N, double gamma, double[] alpha, double[] beta) {
 		return new MSHybridReactionNetwork(numOfSpecies, numOfReactions, N, gamma, alpha, beta);
@@ -69,7 +78,7 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		this(hrn, hrn.getN(), hrn.getGamma(), hrn.getAlpha(), hrn.getBeta());
 		setDelta(hrn.getDelta());
 		setTolerance(hrn.getTolerance());
-		setPrintMessages(hrn.getPrintMessages());
+		setLogMessages(hrn.getLogMessages());
 		setTolerance(hrn.getTolerance());
 	}
 
@@ -103,12 +112,12 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 		updateScaleFactors();
 	}
 
-	public void setPrintMessages(boolean printMessages) {
-		this.printMessages = printMessages;
+	public void setLogMessages(boolean logMessages) {
+		this.logMessages = logMessages;
 	}
 
-	protected boolean getPrintMessages() {
-		return printMessages;
+	protected boolean getLogMessages() {
+		return logMessages;
 	}
 
 	final protected void invalidateReactionTermTypes() {
@@ -381,8 +390,8 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
 //				else
 					return ReactionTermType.DETERMINISTIC;
 			else {
-				if (printMessages)
-					System.out.println("EXPLODING: alpha[" + species + "]=" + alpha[species] + ", gamma+rho[" + reaction + "]=" + gammaPlusRho);
+				if (logMessages && logger.isInfoEnabled())
+					logger.error("EXPLODING: alpha[{}]={}, gamma+rho[{}]={}", species, alpha[species], reaction, gammaPlusRho);
 				return ReactionTermType.EXPLODING;
 			}
 		} else

@@ -1,5 +1,8 @@
 package ch.ethz.khammash.hybridstochasticsimulation.examples;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
@@ -9,6 +12,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 
 public class BacteriumOperatorSiteNetwork extends SimulationConfiguration {
 
+	@Inject @Named("BacteriumOperatorSiteNetwork")
 	public BacteriumOperatorSiteNetwork() {
 		int[] deterministicReactions = { 2 };
 		double N = 100;

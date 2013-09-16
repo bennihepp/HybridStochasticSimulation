@@ -1,6 +1,6 @@
 package ch.ethz.khammash.hybridstochasticsimulation.batch;
 
-import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationOutput.OutputException;
+import ch.ethz.khammash.hybridstochasticsimulation.io.SimulationOutput.OutputException;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory;
 
 
@@ -46,13 +46,13 @@ public interface SimulationJob {
 //
 //	Type getSimulationType();
 
-	void runJob();
+	void runJob() throws InterruptedException;
 
 	FiniteTrajectory runSingleSimulation();
 
-	void initOutputs() throws OutputException;
+	void beginOutput() throws OutputException;
 
-	void writeOutputs() throws OutputException, OutputAlreadyWrittenException;
+	void endOutput() throws OutputException, OutputAlreadyWrittenException;
 
 	void addSimulationResult(FiniteTrajectory tr);
 

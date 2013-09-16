@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
+import org.ejml.data.DenseMatrix64F;
+
 
 
 public class ReactionNetworkUtils {
@@ -36,6 +38,19 @@ public class ReactionNetworkUtils {
 			if (network.getReactionLabel(r).equals(reactionName))
 				return r;
 		throw new NoSuchReactionException("No species with name \"" + reactionName + "\"");
+	}
+
+	public static DenseMatrix64F createStochiometryMatrix(UnaryBinaryReactionNetwork network) {
+		DenseMatrix64F matrix = new DenseMatrix64F(network.getNumberOfReactions(), network.getNumberOfSpecies());
+		for (int r=0; r < network.getNumberOfReactions(); r++) {
+			int[] productionStochtiometries = network.getProductionStochiometries(r);
+			int[] consumptionStochtiometries = network.getConsumptionStochiometries(r);
+			for (int s=0; s < network.getNumberOfSpecies(); s++) {
+				int stochiometry = productionStochtiometries[s] - consumptionStochtiometries[s];
+				matrix.set(r, s, stochiometry);
+			}
+		}
+		return matrix;
 	}
 
 }

@@ -2,9 +2,13 @@ package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
 import static com.google.common.base.Preconditions.checkElementIndex;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class HybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork {
+public class HybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
 
 	public enum ReactionType {
 		STOCHASTIC, DETERMINISTIC,

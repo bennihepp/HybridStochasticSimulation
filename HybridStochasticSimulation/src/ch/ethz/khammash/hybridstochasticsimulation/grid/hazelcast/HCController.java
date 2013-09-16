@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.AbstractController;
@@ -17,7 +17,7 @@ import com.hazelcast.core.ITopic;
 
 public class HCController extends AbstractController {
 
-	private static final Log log = LogFactory.getLog(HCController.class);
+	private static final Logger logger = LoggerFactory.getLogger(HCController.class);
 
 	public static void main(String[] args) throws FileNotFoundException {
 
@@ -36,8 +36,8 @@ public class HCController extends AbstractController {
 			hcUtils.shutdown();
 
 		} catch (ConfigurationException | IOException e) {
-			if (log.isInfoEnabled())
-				log.info("Failed to load configuration", e);
+			if (logger.isInfoEnabled())
+				logger.info("Failed to load configuration", e);
 			System.exit(1);
 		}
 

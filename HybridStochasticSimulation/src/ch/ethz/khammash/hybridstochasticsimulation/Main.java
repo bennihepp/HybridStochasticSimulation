@@ -34,12 +34,18 @@ public class Main {
 			Injector injector = Guice.createInjector(new BatchGuiceModule(config));
 			SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
 			// Run the simulation
-			simulationJob.runJob();
+			try {
+				simulationJob.runJob();
+			} catch (InterruptedException e) {
+				System.err.println("Interrupted while running simulation");
+				e.printStackTrace();
+				System.exit(-2);
+			}
 
 		} catch (ConfigurationException | IOException e) {
 			System.err.println("Failed to load configuration " + filename);
 			e.printStackTrace();
-			System.exit(1);
+			System.exit(-1);
 		}
 	}
 

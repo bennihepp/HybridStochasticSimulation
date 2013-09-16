@@ -1,5 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -88,6 +90,9 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
 //		rdg = new RandomDataGenerator();
 //		rdg.reSeed(105L);
+
+		checkArgument(model.getNumberOfSpecies() == x0.length, "Expected model.getNumberOfSpecies() == x0.length but found %s != %s",
+				model.getNumberOfSpecies(), x0.length);
 
 		double t = t0;
 		double[] x = new double[x0.length + 1];

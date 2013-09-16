@@ -5,12 +5,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.math3.util.FastMath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 import com.google.common.base.Predicate;
 
 public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
+
+	private static final Logger logger = LoggerFactory.getLogger(PseudoLinearAveragingUnit.class);
 
 	private List<Set<SpeciesVertex>> pseudoLinearSubnetworks = null;
 	private List<Set<SpeciesVertex>> averagingCandidates;
@@ -51,25 +57,11 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 
 	private List<Set<SpeciesVertex>> findPseudoLinearSubnetworks() {
 		List<Set<SpeciesVertex>> pseudoLinearSubnetworks = new ArrayList<Set<SpeciesVertex>>();
-//		Set<SpeciesVertex> allSpecies = graph.vertexSet();
-//		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
-//		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {
 		for (Set<SpeciesVertex> subnetworkSpecies : enumerateSubnetworks()) {
-			if (subnetworkSpecies.size() == network.getNumberOfSpecies() || subnetworkSpecies.isEmpty())
-				continue;
-			boolean hasImportantSpecies = false;
 			HashSet<Integer> subnetworkReactions = new HashSet<Integer>();
 			for (SpeciesVertex v : subnetworkSpecies) {
-				// Skip this subnetwork if it contains any important species
-				if (importantSpecies.contains(v)) {
-					hasImportantSpecies  = true;
-					break;
-				}
 				subnetworkReactions.addAll(network.getInvolvedReactions(v.getSpecies()));
 			}
-			if (hasImportantSpecies)
-				continue;
-
 			boolean isPseudoLinear = true;
 			// Make sure that the subnetwork has only pseudo-linear reactions
 			for (int r : subnetworkReactions) {
@@ -121,28 +113,44 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 				if (satisfied && averagingInvalid) {
 					averagingInvalid = false;
 					if (_warnIfAveragingBecomesInvalid)
-						System.out.println("WARNING: Averaging of pseudo linear subnetworks switched to being valid again at t=" + t);
+						logger.warn(getRevalidatedWarningMessage(t));
 				}
 				if (!satisfied && !averagingInvalid) {
 					averagingInvalid = true;
 					if (_stopIfAveragingBecomesInvalid)
-						throw new AveragingException("Averaging of pseudo linear subnetworks switched to being invalid at t=" + t);
+						throw new AveragingException(getInvalidWarningMessage(t));
 					if (_warnIfAveragingBecomesInvalid)
-						System.out.println("WARNING: Averaging of pseudo linear subnetworks isn't valid anymore at t=" + t);
+						logger.warn(getInvalidWarningMessage(t));
 				}
 			}
 		}
 		return averagingCandidates;
 	}
 
-	@Override
-	public void resampleFromSteadyStateDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
-		// TODO: round copy numbers of previously averaged species
+	private String getInvalidWarningMessage(double t) {
+		return "Averaging of pseudo linear subnetworks isn't valid anymore at t=" + t;
+	}
+
+	private String getRevalidatedWarningMessage(double t) {
+		return "Averaging of pseudo linear subnetworks switched to being valid again at t=" + t;
 	}
 
 	@Override
-	protected void computeAverageStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
+	public void resampleFromStationaryDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
+		// We don't know the stationary distribution of the subnetwork in general.
+		// Instead of sampling from the stationary distribution we just round the copy numbers of the subnetwork
+		for (SpeciesVertex v : subnetworkSpecies) {
+			double value = x[v.getSpecies()];
+			value = FastMath.round(value);
+			x[v.getSpecies()] = value;
+		}
+	}
+
+	@Override
+	protected void computeAverageStationaryStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
 		// TODO: Check if this is ok.
+		// As the stationary state of a pseudo-linear subnetwork is the same as the stationary solution of the corresponding
+		// deterministic system, we don't compute the stationary state and let the PDMP solver evolve the correct solution.
 	}
 
 }

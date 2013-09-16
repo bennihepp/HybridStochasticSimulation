@@ -34,17 +34,17 @@ public class DefaultUnaryBinaryReactionNetwork implements UnaryBinaryReactionNet
 	private int[][] consumptionStochiometry;
 	private int[][] stochiometry;
 	private double[] rateParameters;
-	private volatile List<int[]> choiceIndicesList;
-	private volatile List<List<Integer>> involvedSpeciesList;
-	private volatile List<List<Integer>> involvedReactionsList;
-	private volatile ReactionNetworkGraph graph;
+	private transient volatile List<int[]> choiceIndicesList = null;
+	private transient volatile List<List<Integer>> involvedSpeciesList = null;
+	private transient volatile List<List<Integer>> involvedReactionsList = null;
+	private transient volatile ReactionNetworkGraph graph = null;
 	private List<String> speciesLabels;
 	private List<String> reactionLabels;
 
-	final private Object choiceIndicesListMutex = new Object();
-	final private Object involvedSpeciesListMutex = new Object();
-	final private Object involvedReactionsListMutex = new Object();
-	final private Object graphMutex = new Object();
+	final transient private Object choiceIndicesListMutex = new Object();
+	final transient private Object involvedSpeciesListMutex = new Object();
+	final transient private Object involvedReactionsListMutex = new Object();
+	final transient private Object graphMutex = new Object();
 
 	public static DefaultUnaryBinaryReactionNetwork createFromNetwork(UnaryBinaryReactionNetwork network) {
 		return new DefaultUnaryBinaryReactionNetwork(network);

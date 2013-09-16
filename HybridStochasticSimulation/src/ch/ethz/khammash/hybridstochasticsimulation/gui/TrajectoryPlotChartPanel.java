@@ -3,7 +3,6 @@ package ch.ethz.khammash.hybridstochasticsimulation.gui;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Paint;
-import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -86,7 +85,7 @@ public class TrajectoryPlotChartPanel extends ChartPanel {
 				Iterator<Color> it = Iterators.cycle(colorList);
 				for (int i = 0; i < speciesNames.size(); i++) {
 					LegendItem li = new LegendItem(speciesNames.get(i), it.next());
-					li.setShape(new Rectangle(5, 5));
+//					li.setShape(new Rectangle(5, 5));
 					lic.add(li);
 				}
 				return lic;

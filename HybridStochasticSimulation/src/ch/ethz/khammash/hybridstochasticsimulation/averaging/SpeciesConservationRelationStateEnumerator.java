@@ -9,6 +9,8 @@ import org.apache.commons.math3.util.FastMath;
 import org.ejml.alg.dense.mult.VectorVectorMult;
 import org.ejml.data.DenseMatrix64F;
 
+import com.google.common.base.Supplier;
+
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 public class SpeciesConservationRelationStateEnumerator implements Iterable<double[]> {
@@ -20,6 +22,7 @@ public class SpeciesConservationRelationStateEnumerator implements Iterable<doub
 	private final int relationConstant;
 	private final int[] maxState;
 	private final int[] lc;
+	private final Supplier<Integer> numberOfStatesSupplier;
 
 	public SpeciesConservationRelationStateEnumerator(double[] x, SpeciesConservationRelation relation) {
 		List<SpeciesVertex> speciesList = relation.getConservedSpeciesList();
@@ -35,22 +38,30 @@ public class SpeciesConservationRelationStateEnumerator implements Iterable<doub
 		maxState = new int[speciesList.size()];
 		for (int i=0; i < maxState.length; i++)
 			maxState[i] = relationConstant / lc[i];
+		numberOfStatesSupplier = new Supplier<Integer>() {
+
+			@Override
+			public Integer get() {
+				int numOfStates = 0;
+				Iterator<double[]> it = iterator();
+				while (it.hasNext())
+					numOfStates++;
+				return numOfStates;
+			}
+
+		};
 	}
 
-//	/**
-//	 * Computes the number of possible states.
-//	 *
-//	 * @return the number of possible states
-//	 */
-//	// This method is final because it strictly depends on the implementation of the iterator() method
-//	final public int getNumberOfStates() {
-//		int stateIndex = 0;
-//		int cumulatedNumOfStates = 1;
-//		for (int j=maxState.length - 2; j >= 0; j--) {
-//			cumulatedNumOfStates *= maxState[j] / lc[j];
-//		}
-//		return stateIndex;
-//	}
+	/**
+	 * Computes the number of possible states.
+	 *
+	 * @return the number of possible states
+	 */
+	// This method is final because it strictly depends on the implementation of the iterator() method
+	// TODO: This implementation is inefficient (simply looping through all possible states)
+	final public int getNumberOfStates() {
+		return numberOfStatesSupplier.get();
+	}
 
 	/**
 	 * Computes the enumeration index for the provided state.

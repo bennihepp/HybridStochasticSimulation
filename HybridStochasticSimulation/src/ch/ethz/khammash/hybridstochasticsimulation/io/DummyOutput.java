@@ -1,4 +1,4 @@
-package ch.ethz.khammash.hybridstochasticsimulation.batch;
+package ch.ethz.khammash.hybridstochasticsimulation.io;
 
 import java.util.List;
 
@@ -13,7 +13,7 @@ public class DummyOutput implements SimulationOutput {
 	public DummyOutput() {}
 
 	@Override
-	public void init() throws OutputException {
+	public void begin() throws OutputException {
 	}
 
 	@Override
@@ -23,6 +23,6 @@ public class DummyOutput implements SimulationOutput {
 	public void addAll(String simulationName, List<FinitePlotData> plotDataList) {}
 
 	@Override
-	public void write() throws OutputException, OutputAlreadyWrittenException {}
+	public void end() throws OutputException, OutputAlreadyWrittenException {}
 
 }

@@ -1,7 +1,7 @@
 package ch.ethz.khammash.hybridstochasticsimulation.averaging;
 
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,27 +18,32 @@ import org.ejml.ops.CommonOps;
 import org.ejml.ops.SingularOps;
 import org.jgrapht.alg.StrongConnectivityInspector;
 import org.jgrapht.graph.DirectedSubgraph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ComplexEdge;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ComplexGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ComplexVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
-import ch.ethz.khammash.hybridstochasticsimulation.math.BroydenRootSolver;
-import ch.ethz.khammash.hybridstochasticsimulation.math.MultivariateFunction;
 import ch.ethz.khammash.hybridstochasticsimulation.math.RandomDataUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryDeterministicModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryModelUtils;
 import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryStochasticModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetworkUtils;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 import com.google.common.base.Predicate;
 
-public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
+public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private static final Logger logger = LoggerFactory.getLogger(ZeroDeficiencyAveragingUnit.class);
 
 	private RandomDataGenerator rdg;
-	private List<Set<SpeciesVertex>> zeroDeficiencySubnetworks = null;
-	private Map<Set<SpeciesVertex>, SubnetworkInformation> subnetworkInformationMap;
+	private transient List<Set<SpeciesVertex>> zeroDeficiencySubnetworks = null;
+	private transient Map<Set<SpeciesVertex>, SubnetworkInformation> subnetworkInformationMap;
 	private UnaryBinaryStochasticModel model;
 	private boolean printMessages;
 
@@ -61,7 +66,6 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 	public ZeroDeficiencyAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies, RandomDataGenerator rdg, boolean printMessages) {
 		super(network, importantSpecies);
 		this.printMessages = printMessages;
-		this.subnetworkInformationMap = new HashMap<>();
 		this.model = new UnaryBinaryStochasticModel(network);
 		this.rdg = rdg;
 	}
@@ -76,18 +80,6 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 //		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
 //		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {
 		for (Set<SpeciesVertex> subnetworkSpecies : enumerateSubnetworks()) {
-			if (subnetworkSpecies.size() == network.getNumberOfSpecies() || subnetworkSpecies.isEmpty())
-				continue;
-			boolean hasImportantSpecies = false;
-			for (SpeciesVertex v : subnetworkSpecies) {
-				// Skip this subnetwork if it contains any important species
-				if (importantSpecies.contains(v)) {
-					hasImportantSpecies  = true;
-					break;
-				}
-			}
-			if (hasImportantSpecies)
-				continue;
 			UnaryBinaryReactionNetwork subnetwork = createSubReactionNetwork(network, subnetworkSpecies);
 
 			SubnetworkInformation subnetworkInfo = new SubnetworkInformation();
@@ -95,9 +87,10 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 			UnaryBinaryDeterministicModel subnetworkModel = new UnaryBinaryDeterministicModel(subnetwork);
 			subnetworkInfo.setModel(subnetworkModel);
 
-			subnetworkInfo.setConservedSpeciesRelations(getConservedSpeciesRelations(subnetwork));
+			List<SpeciesConservationRelation> conservedSpeciesRelations = SpeciesConservationRelation.computeSpeciesConservationRelations(subnetwork);
+			subnetworkInfo.setConservedSpeciesRelations(conservedSpeciesRelations);
 			Set<SpeciesVertex> unconservedSpeciesSet = new HashSet<>(subnetworkSpecies);
-			for (ConservedSpeciesRelation relation : subnetworkInfo.getConservedSpeciesRelations())
+			for (SpeciesConservationRelation relation : subnetworkInfo.getConservedSpeciesRelations())
 				unconservedSpeciesSet.removeAll(relation.getConservedSpeciesList());
 			subnetworkInfo.setUnconservedSpecies(unconservedSpeciesSet);
 
@@ -119,7 +112,8 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 					continue;
 				subnetworkReactionIndices.add(reaction);
 			}
-			subnetworkInfo.setReactionIndices(subnetworkReactionIndices);
+			// Never used
+//			subnetworkInfo.setReactionIndices(subnetworkReactionIndices);
 
 			Map<SpeciesVertex, Integer> subnetworkIndexMap = new HashMap<>();
 			for (int i=0; i < subnetwork.getNumberOfSpecies(); i++) {
@@ -140,7 +134,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 				}
 				sb.delete(sb.length() - 2, sb.length());
 				sb.append("}");
-				System.out.println(sb.toString());
+				logger.info(sb.toString());
 			}
 			int deficiency = computeDeficiency(subnetwork, subnetworkComplexGraph);
 			if (deficiency != 0)
@@ -172,12 +166,12 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 			}
 		}
 		if (printMessages)
-			System.out.println("  Weakly reversible: " + weaklyReversible);
+			logger.info("  Weakly reversible: " + weaklyReversible);
 		return weaklyReversible;
 	}
 
 	private int computeDeficiency(UnaryBinaryReactionNetwork network, ComplexGraph complexGraph) {
-		DenseMatrix64F matrix = createStochiometryMatrix(network);
+		DenseMatrix64F matrix = ReactionNetworkUtils.createStochiometryMatrix(network);
 		int rank = computeRank(matrix);
 
 		List<Set<ComplexVertex>> connectedSets = complexGraph.getConnectedSets();
@@ -189,15 +183,15 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 		if (printMessages) {
 			for (Set<ComplexVertex> connectedSet : connectedSets) {
-				System.out.println("  Connected set:");
+				logger.info("  Connected set:");
 				for (ComplexVertex v : connectedSet) {
-					System.out.println("    " + v);
+					logger.info("    " + v);
 				}
 			}
-			System.out.println("  Number of complexes: " + numOfComplexes);
-			System.out.println("  Dimension of stochiometric subspace: " + dimOfStochiometricSubspace);
-			System.out.println("  Number of linkage classes: " + numOfLinkageClasses);
-			System.out.println("  Deficiency: " + deficiency);
+			logger.info("  Number of complexes: " + numOfComplexes);
+			logger.info("  Dimension of stochiometric subspace: " + dimOfStochiometricSubspace);
+			logger.info("  Number of linkage classes: " + numOfLinkageClasses);
+			logger.info("  Deficiency: " + deficiency);
 		}
 
 		return deficiency;
@@ -227,186 +221,242 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 	@Override
 	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
-		if (zeroDeficiencySubnetworks == null)
+		if (zeroDeficiencySubnetworks == null) {
+			this.subnetworkInformationMap = new HashMap<>();
 			this.zeroDeficiencySubnetworks = findZeroDeficiencySubnetworks();
+		}
 		// First find a list of subnetworks that could be averaged
 		List<Set<SpeciesVertex>> averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
 		for (Set<SpeciesVertex> subnetwork : zeroDeficiencySubnetworks) {
 			if (filter.apply(subnetwork))
 				averagingCandidates.add(subnetwork);
-//			if (checkAveragingConditions(subnetwork, x, reactionTimescales))
-//				averagingCandidates.add(subnetwork);
 		}
 		return averagingCandidates;
 	}
 
 	@Override
-	public void resampleFromSteadyStateDistribution(final double t, double[] x, final Set<SpeciesVertex> subnetworkSpecies) {
-		final int[] mapping = new int[subnetworkSpecies.size()];
-		final int[] reverseMapping = new int[x.length];
-		int i = 0;
-		for (SpeciesVertex v : subnetworkSpecies) {
-			mapping[i] = v.getSpecies();
-			reverseMapping[v.getSpecies()] = i;
-			i++;
-		}
-		final double[] tmpX = x.clone();
-		final double[] tmpXDot = new double[model.getNumberOfSpecies()];
+	public void resampleFromStationaryDistribution(final double t, double[] x, final Set<SpeciesVertex> subnetworkSpecies) {
+		// NOTE: We approximate the exact distribution of a reducible zero-deficiency subnetwork
+		// with a multinomial distribution.
+
 		SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetworkSpecies);
-		final Collection<Integer> subnetworkReactionIndices = subnetworkInfo.getReactionIndices();
-		MultivariateFunction rootFunction = new MultivariateFunction() {
+		UnaryBinaryDeterministicModel subnetworkModel = subnetworkInfo.getModel();
+		Map<SpeciesVertex, Integer> indexMap = subnetworkInfo.getIndexMap();
+		double[] subXSteadyState = UnaryBinaryModelUtils.computeSteadyState(subnetworkModel, t, x);
+		for (SpeciesVertex v : subnetworkSpecies) {
+			x[v.getSpecies()] = subXSteadyState[indexMap.get(v)];
+		}
 
-			@Override
-			public int getDimension() {
-				return mapping.length;
-			}
-
-			@Override
-			public void computeValue(double[] x, double[] y) {
-				for (int j=0; j < mapping.length; j++)
-					tmpX[mapping[j]] = x[j];
-				computeSubnetworkDerivatives(t, tmpX, tmpXDot);
-				for (int j=0; j < mapping.length; j++)
-					y[j] = tmpXDot[mapping[j]];
-			}
-
-			private void computeSubnetworkDerivatives(double t, double[] tmpX, double[] tmpXDot) {
-				Arrays.fill(tmpXDot, 0.0);
-				for (int reaction : subnetworkReactionIndices) {
-					double propensity = model.computePropensity(reaction, t, tmpX);
-					for (int s=0; s < model.getNumberOfSpecies(); s++) {
-						int stochiometry = network.getStochiometry(s, reaction);
-						tmpXDot[reverseMapping[s]] += propensity * stochiometry;
-					}
-				}
-			}
-
-		};
-
-		double[] subX = new double[mapping.length];
-		for (int j=0; j < mapping.length; j++)
-			subX[j] = x[mapping[j]];
-		BroydenRootSolver solver = new BroydenRootSolver(rootFunction);
-		double[] subXSteadyState = solver.findRoot(subX);
-
-		Map<SpeciesVertex, Integer> subnetworkIndexMap = subnetworkInfo.getIndexMap();
-		for (ConservedSpeciesRelation relation : subnetworkInfo.getConservedSpeciesRelations()) {
+		for (SpeciesConservationRelation relation : subnetworkInfo.getConservedSpeciesRelations()) {
 			List<SpeciesVertex> speciesList = relation.getConservedSpeciesList();
 			DenseMatrix64F lcVector = relation.getLinearCombination();
 			DenseMatrix64F yVector = new DenseMatrix64F(speciesList.size(), 1);
 			int[] alpha = new int[speciesList.size()];
 			for (int j=0; j < speciesList.size(); j++) {
 				SpeciesVertex v = speciesList.get(j);
-				int species = v.getSpecies();
-				int k = reverseMapping[species];
-				int subnetworkIndex = subnetworkIndexMap.get(v);
+				int k = indexMap.get(v);
 				yVector.set(j, 0, subXSteadyState[k]);
-				alpha[j] = (int)lcVector.get(subnetworkIndex, 0);
+				alpha[j] = lcVector.getIndex(j, 0);
 			}
-//			for (SpeciesVertex v : speciesList) {
-//				int species = v.getSpecies();
-//				int k = reverseMapping[species];
-//				yVector.set(k, 0, subXSteadyState[species]);
-//				alpha[k] = (int)lcVector.get(species, 0);
-//			}
 			double elementSum = CommonOps.elementSum(yVector);
 			if (elementSum == 0.0)
 				// All conserved species are zero so we don't need to sample anything
 				continue;
+			CommonOps.divide(elementSum, yVector);
 
-			if (elementSum > 0.0)
-				CommonOps.divide(elementSum, yVector);
 			double[] p = yVector.getData();
-//			int[] alpha = new int[lcVector.numRows];
-//			for (int j=0; j < alpha.length; j++)
-//				alpha[j] = (int)lcVector.get(j, 0);
 			int n = 0;
-//			for (int j=0; j < subXSteadyState.length; j++)
-//				n += alpha[j] * subXSteadyState[j];
 			for (int j=0; j < speciesList.size(); j++) {
 				SpeciesVertex v = speciesList.get(j);
-				int species = v.getSpecies();
-				int k = reverseMapping[species];
+				int k = indexMap.get(v);
 				n += alpha[j] * subXSteadyState[k];
 			}
-//			for (SpeciesVertex v : speciesList) {
-//				int species = v.getSpecies();
-//				int k = reverseMapping[species];
-//				n += alpha[k] * subXSteadyState[species];
-//			}
-//			double[] y = sampleFromMultinomialDistribution(n, p);
-			int[] y = RandomDataUtilities.sampleFromConstrainedMultinomialLikeDistribution(rdg, n, p, alpha);
+
+			int[] y = RandomDataUtilities.sampleFromMultinomialDistribution(rdg, n, p);
 			for (int j=0; j < speciesList.size(); j++) {
 				SpeciesVertex v = speciesList.get(j);
 				x[v.getSpecies()] = y[j];
-//				int k = reverseMapping[v.getSpecies()];
-//				x[v.getSpecies()] = y[k];
 			}
-//			for (SpeciesVertex v : speciesList) {
-//				int k = reverseMapping[v.getSpecies()];
-//				x[v.getSpecies()] = y[k];
-//			}
 		}
 
 		for (SpeciesVertex v : subnetworkInfo.getUnconservedSpecies()) {
-			int s = v.getSpecies();
-			double steadyState = subXSteadyState[reverseMapping[s]];
+			double steadyState = subXSteadyState[indexMap.get(v)];
 			long sample;
 			if (steadyState > 0.0)
 				sample = sampleFromPoissonDistribution(steadyState);
 			else
 				sample = 0;
-			x[s] = sample;
+			x[v.getSpecies()] = sample;
 		}
+
+//		final int[] mapping = new int[subnetworkSpecies.size()];
+//		final int[] reverseMapping = new int[x.length];
+//		int i = 0;
+//		for (SpeciesVertex v : subnetworkSpecies) {
+//			mapping[i] = v.getSpecies();
+//			reverseMapping[v.getSpecies()] = i;
+//			i++;
+//		}
+//		final double[] tmpX = x.clone();
+//		final double[] tmpXDot = new double[model.getNumberOfSpecies()];
+//		SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetworkSpecies);
+//		final Collection<Integer> subnetworkReactionIndices = subnetworkInfo.getReactionIndices();
+//		MultivariateFunction rootFunction = new MultivariateFunction() {
+//
+//			@Override
+//			public int getDimension() {
+//				return mapping.length;
+//			}
+//
+//			@Override
+//			public void computeValue(double[] x, double[] y) {
+//				for (int j=0; j < mapping.length; j++)
+//					tmpX[mapping[j]] = x[j];
+//				computeSubnetworkDerivatives(t, tmpX, tmpXDot);
+//				for (int j=0; j < mapping.length; j++)
+//					y[j] = tmpXDot[mapping[j]];
+//			}
+//
+//			private void computeSubnetworkDerivatives(double t, double[] tmpX, double[] tmpXDot) {
+//				Arrays.fill(tmpXDot, 0.0);
+//				for (int reaction : subnetworkReactionIndices) {
+//					double propensity = model.computePropensity(reaction, t, tmpX);
+//					for (int s=0; s < model.getNumberOfSpecies(); s++) {
+//						int stochiometry = network.getStochiometry(s, reaction);
+//						tmpXDot[reverseMapping[s]] += propensity * stochiometry;
+//					}
+//				}
+//			}
+//
+//		};
+//
+//		double[] subX = new double[mapping.length];
+//		for (int j=0; j < mapping.length; j++)
+//			subX[j] = x[mapping[j]];
+//		BroydenRootSolver solver = new BroydenRootSolver(rootFunction);
+//		double[] subXSteadyState = solver.findRoot(subX);
+
+////		Map<SpeciesVertex, Integer> subnetworkIndexMap = subnetworkInfo.getIndexMap();
+//		for (SpeciesConservationRelation relation : subnetworkInfo.getConservedSpeciesRelations()) {
+//			List<SpeciesVertex> speciesList = relation.getConservedSpeciesList();
+//			DenseMatrix64F lcVector = relation.getLinearCombination();
+//			DenseMatrix64F yVector = new DenseMatrix64F(speciesList.size(), 1);
+//			int[] alpha = new int[speciesList.size()];
+//			for (int j=0; j < speciesList.size(); j++) {
+//				SpeciesVertex v = speciesList.get(j);
+//				int species = v.getSpecies();
+//				int k = reverseMapping[species];
+//				yVector.set(j, 0, subXSteadyState[k]);
+////				int subnetworkIndex = subnetworkIndexMap.get(v);
+////				alpha[j] = (int)lcVector.get(subnetworkIndex, 0);
+//				alpha[j] = lcVector.getIndex(j, 0);
+//			}
+////			for (SpeciesVertex v : speciesList) {
+////				int species = v.getSpecies();
+////				int k = reverseMapping[species];
+////				yVector.set(k, 0, subXSteadyState[species]);
+////				alpha[k] = (int)lcVector.get(species, 0);
+////			}
+//			double elementSum = CommonOps.elementSum(yVector);
+//			if (elementSum == 0.0)
+//				// All conserved species are zero so we don't need to sample anything
+//				continue;
+//
+//			if (elementSum > 0.0)
+//				CommonOps.divide(elementSum, yVector);
+//			double[] p = yVector.getData();
+////			int[] alpha = new int[lcVector.numRows];
+////			for (int j=0; j < alpha.length; j++)
+////				alpha[j] = (int)lcVector.get(j, 0);
+//			int n = 0;
+////			for (int j=0; j < subXSteadyState.length; j++)
+////				n += alpha[j] * subXSteadyState[j];
+//			for (int j=0; j < speciesList.size(); j++) {
+//				SpeciesVertex v = speciesList.get(j);
+//				int species = v.getSpecies();
+//				int k = reverseMapping[species];
+//				n += alpha[j] * subXSteadyState[k];
+//			}
+////			for (SpeciesVertex v : speciesList) {
+////				int species = v.getSpecies();
+////				int k = reverseMapping[species];
+////				n += alpha[k] * subXSteadyState[species];
+////			}
+////			double[] y = sampleFromMultinomialDistribution(n, p);
+//			int[] y = RandomDataUtilities.sampleFromConstrainedMultinomialLikeDistribution(rdg, n, p, alpha);
+//			for (int j=0; j < speciesList.size(); j++) {
+//				SpeciesVertex v = speciesList.get(j);
+//				x[v.getSpecies()] = y[j];
+////				int k = reverseMapping[v.getSpecies()];
+////				x[v.getSpecies()] = y[k];
+//			}
+////			for (SpeciesVertex v : speciesList) {
+////				int k = reverseMapping[v.getSpecies()];
+////				x[v.getSpecies()] = y[k];
+////			}
+//		}
 	}
 
-	private List<ConservedSpeciesRelation> getConservedSpeciesRelations(UnaryBinaryReactionNetwork network) {
-		DenseMatrix64F nullSpace = computeNullSpaceOfReactionNetwork(network);
-		List<ConservedSpeciesRelation> conservedSpeciesRelations = new ArrayList<>();
-		for (int col=0; col < nullSpace.numCols; col++) {
-			List<SpeciesVertex> speciesList = new ArrayList<SpeciesVertex>();
-			boolean noConservationRelation = false;
-			double sign = 0.0;
-			for (int row=0; row < nullSpace.numRows; row++) {
-				double v = nullSpace.get(row, col);
-				if (sign == 0.0 && v != 0.0)
-					sign = v > 0.0 ? 1.0 : -1.0;
-				if (v * sign < 0.0) {
-					noConservationRelation = true;
-					break;
-				}
-				if (v != 0.0)
-					speciesList.add(network.getGraph().getSpeciesVertex(row));
-			}
-			if (noConservationRelation)
-				continue;
-			DenseMatrix64F lcVector = CommonOps.extract(nullSpace, 0, nullSpace.numRows, col, col + 1);
-			CommonOps.scale(sign, lcVector);
-			double elementMinNeqZero = Double.MAX_VALUE;
-			for (int i=0; i < lcVector.numRows; i++) {
-				double element = lcVector.get(i);
-				if (element < elementMinNeqZero && element > 0.0)
-					elementMinNeqZero = element;
-			}
-//			double elementMin = CommonOps.elementMin(lcVector);
-			CommonOps.divide(elementMinNeqZero, lcVector);
-			ConservedSpeciesRelation conservedSpeciesRelation = new ConservedSpeciesRelation(speciesList, lcVector);
-			conservedSpeciesRelations.add(conservedSpeciesRelation);
-		}
-		return conservedSpeciesRelations;
-	}
+//	private List<ConservedSpeciesRelation> getConservedSpeciesRelations(UnaryBinaryReactionNetwork network) {
+//		DenseMatrix64F nullSpace = computeNullSpaceOfReactionNetwork(network);
+//		List<ConservedSpeciesRelation> conservedSpeciesRelations = new ArrayList<>();
+//		for (int col=0; col < nullSpace.numCols; col++) {
+//			List<SpeciesVertex> speciesList = new ArrayList<SpeciesVertex>();
+//			boolean noConservationRelation = false;
+//			double sign = 0.0;
+//			for (int row=0; row < nullSpace.numRows; row++) {
+//				double v = nullSpace.get(row, col);
+//				if (sign == 0.0 && v != 0.0)
+//					sign = v > 0.0 ? 1.0 : -1.0;
+//				if (v * sign < 0.0) {
+//					noConservationRelation = true;
+//					break;
+//				}
+//				if (v != 0.0)
+//					speciesList.add(network.getGraph().getSpeciesVertex(row));
+//			}
+//			if (noConservationRelation)
+//				continue;
+//			DenseMatrix64F lcVector = CommonOps.extract(nullSpace, 0, nullSpace.numRows, col, col + 1);
+//			CommonOps.scale(sign, lcVector);
+//			double elementMinNeqZero = Double.MAX_VALUE;
+//			for (int i=0; i < lcVector.numRows; i++) {
+//				double element = lcVector.get(i);
+//				if (element < elementMinNeqZero && element > 0.0)
+//					elementMinNeqZero = element;
+//			}
+////			double elementMin = CommonOps.elementMin(lcVector);
+//			CommonOps.divide(elementMinNeqZero, lcVector);
+//			ConservedSpeciesRelation conservedSpeciesRelation = new ConservedSpeciesRelation(speciesList, lcVector);
+//			conservedSpeciesRelations.add(conservedSpeciesRelation);
+//		}
+//		return conservedSpeciesRelations;
+//	}
 
-	private DenseMatrix64F computeNullSpaceOfReactionNetwork(UnaryBinaryReactionNetwork network) {
-		DenseMatrix64F matrix = createStochiometryMatrix(network);
-		if (matrix.numRows == 0 || matrix.numCols == 0)
-			return new DenseMatrix64F(0, 0);
-		SingularValueDecomposition<DenseMatrix64F> svd = DecompositionFactory.svd(matrix.numRows, matrix.numCols, false, true, false);
-		if (!svd.decompose(matrix))
-			throw new AveragingException("Unable to perform singular value decomposition");
-		DenseMatrix64F nullSpace = new DenseMatrix64F(matrix.numRows, matrix.numCols);
-		SingularOps.nullSpace(svd, nullSpace, UtilEjml.EPS);
-		return nullSpace;
-	}
+//	private DenseMatrix64F computeNullSpaceOfReactionNetwork(UnaryBinaryReactionNetwork network) {
+//		DenseMatrix64F matrix = createStochiometryMatrix(network);
+//		if (matrix.numRows == 0 || matrix.numCols == 0)
+//			return new DenseMatrix64F(0, 0);
+//		SingularValueDecomposition<DenseMatrix64F> svd = DecompositionFactory.svd(matrix.numRows, matrix.numCols, false, true, false);
+//		if (!svd.decompose(matrix))
+//			throw new AveragingException("Unable to perform singular value decomposition");
+//		DenseMatrix64F nullSpace = new DenseMatrix64F(matrix.numRows, matrix.numCols);
+//		SingularOps.nullSpace(svd, nullSpace, UtilEjml.EPS);
+//		return nullSpace;
+//	}
+
+//	private DenseMatrix64F createStochiometryMatrix(UnaryBinaryReactionNetwork network) {
+//		DenseMatrix64F matrix = new DenseMatrix64F(network.getNumberOfReactions(), network.getNumberOfSpecies());
+//		for (int r=0; r < network.getNumberOfReactions(); r++) {
+//			int[] productionStochtiometries = network.getProductionStochiometries(r);
+//			int[] consumptionStochtiometries = network.getConsumptionStochiometries(r);
+//			for (int s=0; s < network.getNumberOfSpecies(); s++) {
+//				int stochiometry = productionStochtiometries[s] - consumptionStochtiometries[s];
+//				matrix.set(r, s, stochiometry);
+//			}
+//		}
+//		return matrix;
+//	}
 
 	protected int[] sampleFromMultinomialDistribution(int n, double[] p) {
 		return RandomDataUtilities.sampleFromMultinomialDistribution(rdg, n, p);
@@ -416,26 +466,14 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 		return rdg.nextPoisson(lambda);
 	}
 
-	private DenseMatrix64F createStochiometryMatrix(UnaryBinaryReactionNetwork network) {
-		DenseMatrix64F matrix = new DenseMatrix64F(network.getNumberOfReactions(), network.getNumberOfSpecies());
-		for (int r=0; r < network.getNumberOfReactions(); r++) {
-			int[] productionStochtiometries = network.getProductionStochiometries(r);
-			int[] consumptionStochtiometries = network.getConsumptionStochiometries(r);
-			for (int s=0; s < network.getNumberOfSpecies(); s++) {
-				int stochiometry = productionStochtiometries[s] - consumptionStochtiometries[s];
-				matrix.set(r, s, stochiometry);
-			}
-		}
-		return matrix;
-	}
-
 	@Override
-	protected void computeAverageStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
-		// TODO: Is this really necessary?
+	protected void computeAverageStationaryStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
+		// NOTE: We approximate the exact distribution of a reducible zero-deficiency subnetwork
+		// with a multinomial distribution. Thus the average stationary state is equal to the deterministic stationary state.
 		for (Set<SpeciesVertex> subnetworkSpecies : subnetworksToAverage) {
-			SubnetworkInformation subnetworkInformation = subnetworkInformationMap.get(subnetworkSpecies);
-			UnaryBinaryDeterministicModel subnetworkModel = subnetworkInformation.getModel();
-			Map<SpeciesVertex, Integer> indexMap = subnetworkInformation.getIndexMap();
+			SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetworkSpecies);
+			UnaryBinaryDeterministicModel subnetworkModel = subnetworkInfo.getModel();
+			Map<SpeciesVertex, Integer> indexMap = subnetworkInfo.getIndexMap();
 			double[] subXSteadyState = UnaryBinaryModelUtils.computeSteadyState(subnetworkModel, t, x);
 			for (SpeciesVertex v : subnetworkSpecies) {
 				x[v.getSpecies()] = subXSteadyState[indexMap.get(v)];
@@ -445,17 +483,18 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 	private class SubnetworkInformation {
 
-		private Collection<ConservedSpeciesRelation> conservedSpeciesRelations;
+		private Collection<SpeciesConservationRelation> conservedSpeciesRelations;
 		private Collection<SpeciesVertex> unconservedSpecies;
-		private Collection<Integer> reactionIndices;
+		// Never used
+//		private Collection<Integer> reactionIndices;
 		private UnaryBinaryDeterministicModel model;
 		private Map<SpeciesVertex, Integer> indexMap;
 
-		public Collection<ConservedSpeciesRelation> getConservedSpeciesRelations() {
+		public Collection<SpeciesConservationRelation> getConservedSpeciesRelations() {
 			return conservedSpeciesRelations;
 		}
 
-		public void setConservedSpeciesRelations(Collection<ConservedSpeciesRelation> conservedSpeciesRelations) {
+		public void setConservedSpeciesRelations(Collection<SpeciesConservationRelation> conservedSpeciesRelations) {
 			this.conservedSpeciesRelations = conservedSpeciesRelations;
 		}
 
@@ -467,13 +506,15 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 			this.unconservedSpecies = unconservedSpecies;
 		}
 
-		public Collection<Integer> getReactionIndices() {
-			return reactionIndices;
-		}
+		// Never used
+//		public Collection<Integer> getReactionIndices() {
+//			return reactionIndices;
+//		}
 
-		public void setReactionIndices(Collection<Integer> reactionIndices) {
-			this.reactionIndices = reactionIndices;
-		}
+		// Never used
+//		public void setReactionIndices(Collection<Integer> reactionIndices) {
+//			this.reactionIndices = reactionIndices;
+//		}
 
 		public void setModel(UnaryBinaryDeterministicModel model) {
 			this.model = model;
@@ -489,26 +530,6 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit {
 
 		public Map<SpeciesVertex, Integer> getIndexMap() {
 			return indexMap;
-		}
-
-	}
-
-	private class ConservedSpeciesRelation {
-
-		private List<SpeciesVertex> conservedSpeciesList;
-		private DenseMatrix64F linearCombination;
-
-		public ConservedSpeciesRelation(List<SpeciesVertex> conservedSpeciesList, DenseMatrix64F linearCombination) {
-			this.conservedSpeciesList = conservedSpeciesList;
-			this.linearCombination = linearCombination;
-		}
-
-		public DenseMatrix64F getLinearCombination() {
-			return linearCombination;
-		}
-
-		public List<SpeciesVertex> getConservedSpeciesList() {
-			return conservedSpeciesList;
 		}
 
 	}

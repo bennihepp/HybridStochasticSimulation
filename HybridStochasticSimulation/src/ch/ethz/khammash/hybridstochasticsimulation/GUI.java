@@ -1,17 +1,12 @@
 package ch.ethz.khammash.hybridstochasticsimulation;
 
-import java.io.IOException;
 import java.util.List;
 
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.commons.math3.util.FastMath;
-import org.xml.sax.SAXException;
 
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.GUIEvent.EventType;
 import ch.ethz.khammash.hybridstochasticsimulation.gui.PlotWindow;
-import ch.ethz.khammash.hybridstochasticsimulation.io.StochKitNetworkReader.FileFormatException;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
 
 import com.google.common.eventbus.Subscribe;
@@ -45,15 +40,15 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.vilarOscillatorNetwork();
 
 //							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
-//								List<FinitePlotData> plotDataList = Examples.fastIsomerization();
+//							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
 //							List<FinitePlotData> plotDataList = Examples.fastDimerization();
 //							List<FinitePlotData> plotDataList = Examples.haploinsufficiencyNetwork();
 //							List<FinitePlotData> plotDataList = Examples.simpleCrystallizationNetwork();
 //							List<FinitePlotData> plotDataList = Examples.stochasticFocusingNetwork();
 //							List<FinitePlotData> plotDataList = Examples.conversionCycleNetwork();
 
-//							List<FinitePlotData> plotDataList = Examples.repressilator();
-							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
+							List<FinitePlotData> plotDataList = Examples.repressilator();
+//							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
 //							try {
 //								List<FinitePlotData> plotDataList = Examples.heatShockMassAction();
 //								List<FinitePlotData> plotDataList = Examples.enzymeKinetics1();

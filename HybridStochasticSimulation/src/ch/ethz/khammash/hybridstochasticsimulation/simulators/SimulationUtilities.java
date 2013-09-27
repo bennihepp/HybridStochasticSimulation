@@ -336,7 +336,7 @@ public class SimulationUtilities {
 			CombiningAveragingUnit averagingUnit = new CombiningAveragingUnit();
 			averagingUnit.setSubnetworkEnumerator(subnetworkEnumerator);
 			averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
-			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
+//			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
 //			averagingUnit.addAveragingUnit(finiteMarkovChainAveragingUnit);
 			hrn.setAveragingUnit(averagingUnit);
 //			hrn.setAveragingUnit(finiteMarkovChainAveragingUnit);
@@ -368,8 +368,8 @@ public class SimulationUtilities {
 
 				@Override
 				public Simulator<PDMPModel> get() {
-//					CVodeSolver solver = new CVodeSolver(1e-6, 1e-6);
-					CVodeSolver solver = new CVodeSolver();
+					CVodeSolver solver = new CVodeSolver(1e-6, 1e-6);
+//					CVodeSolver solver = new CVodeSolver();
 //					solver.setMinStep(1e-3);
 //					solver.setMaxStep(1e-3);
 //					solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);

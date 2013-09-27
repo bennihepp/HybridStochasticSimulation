@@ -22,29 +22,47 @@ public class HDF5Output implements SimulationOutput {
 
 	private static final Logger logger = LoggerFactory.getLogger(HDF5Output.class);
 
-    private File outputFile;
-	private boolean overwrite;
+	public static HDF5Output open(String filename, boolean overwrite, boolean truncate) throws IOException {
+		return new HDF5Output(filename, overwrite, truncate);
+	}
+
+//	public static HDF5Output create(String filename) throws IOException {
+//		return create(filename, false);
+//	}
+
+//	public static HDF5Output create(String filename, boolean overwrite) throws IOException {
+//		Mode mode = overwrite ? Mode.CREATE_AND_OVERWRITE : Mode.CREATE_OR_OPEN;
+//		return new HDF5Output(filename, mode);
+//	}
+
+//	private static enum Mode {
+//		CREATE_OR_OPEN, CREATE_AND_OVERWRITE, OPEN,
+//	}
+
+    private final File file;
+	private final boolean overwrite;
+	private final boolean truncate;
     private boolean outputWritten = false;
 	private int chunkSize = 64;
 	private int gzipLevel = 0;
 	private HDF5File h5file;
-//	private H5File h5file;
 	private HDF5Group simulationsGroup;
 	private Map<String, HDF5File.HDF5Dataset> datasetMap;
 
-    public HDF5Output(String outputFilename, boolean overwrite) throws IOException {
-        this(new File(outputFilename), overwrite);
+    private HDF5Output(String filename, boolean overwrite, boolean truncate) throws IOException {
+    	this(new File(filename), overwrite, truncate);
     }
 
-    public HDF5Output(File outputFile, boolean overwrite) throws IOException {
-        this.outputFile = outputFile;
+    private HDF5Output(File file, boolean overwrite, boolean truncate) throws IOException {
+        this.file = file;
         this.overwrite = overwrite;
+        this.truncate = truncate;
         datasetMap = new HashMap<>();
     }
 
     @Override
     public String toString() {
-        return outputFile.getAbsolutePath();
+        return file.getAbsolutePath();
     }
 
     public void setChunkSize(int chunkSize) {
@@ -62,23 +80,32 @@ public class HDF5Output implements SimulationOutput {
 	public void begin() throws OutputException {
     	if (outputWritten)
     		throw new OutputAlreadyWrittenException("The output has already been written to the file");
-        if (!overwrite && outputFile.exists())
+    	if (!overwrite && file.exists())
         	throw new OutputException("Output file already exists");
-        try {
-            outputFile.createNewFile();
-        } catch (IOException e) {
-        	throw new OutputException("Unable to create file for output", e);
-        }
-        if (!outputFile.canWrite())
+    	if (!file.exists() || truncate) {
+	        try {
+	            file.createNewFile();
+	        } catch (IOException e) {
+	        	throw new OutputException("Unable to create file for output", e);
+	        }
+    	}
+        if (!file.canWrite())
         	throw new OutputException("Unable to write to output file");
 
     	try {
 
-    		h5file = HDF5File.openForWriting(outputFile);
-    		h5file.open();
+    		if (truncate)
+    			h5file = HDF5File.createForWriting(file);
+			else
+    			h5file = HDF5File.openForWriting(file);
+
+			h5file.open();
 
     		 HDF5Group rootGroup = h5file.getRootGroup();
-    		 simulationsGroup = rootGroup.createGroup("simulations");
+    		 if (rootGroup.hasGroup("simulations"))
+    			 simulationsGroup = rootGroup.getGroup("simulations");
+    		 else
+    			 simulationsGroup = rootGroup.createGroup("simulations");
 
 		} catch (Exception e) {
 			throw new OutputException(e);
@@ -119,30 +146,46 @@ public class HDF5Output implements SimulationOutput {
     		if (datasetMap.containsKey(simulationName)) {
     			xSeriesDataset = datasetMap.get(simulationName);
     		} else {
-    			HDF5Group simulationGroup = simulationsGroup.createGroup(simulationName);
-    			HDF5Datatype dtype = h5file.getDoubleDatatype();
-				double[] tSeries = plotData.gettSeries();
-				long[] tSeriesDims1D = { tSeries.length };
-				HDF5Dimension tSeriesDim = new HDF5Dimension(tSeriesDims1D);
-				simulationGroup.createDataset("tSeries", dtype, tSeriesDim, tSeries);
-				long[] xSeriesDims3D = { 0, plotData.getNumberOfStates(), plotData.getNumberOfTimePoints() };
-				long[] xSeriesMaxDims3D = { Integer.MAX_VALUE, plotData.getNumberOfStates(), plotData.getNumberOfTimePoints() };
-				long[] xSeriesChunks = xSeriesDims3D.clone();
-				xSeriesChunks[0] = chunkSize;
-				HDF5Dimension xSeriesDim = new HDF5Dimension(xSeriesDims3D, xSeriesMaxDims3D, xSeriesChunks);
-    	    	if (logger.isDebugEnabled()) {
-    	    		logger.debug("Creating dataset with dimension={}, gzipLevel={}", xSeriesDim, gzipLevel);
-    	    	}
-    	    	xSeriesDataset = simulationGroup.createDataset("xSeries", dtype, xSeriesDim, gzipLevel);
-//				xSeriesDataset = (H5ScalarDS)h5file.createScalarDS("xSeries", simulationGroup, dtype, xSeriesDims3D, xSeriesMaxDims3D, xSeriesChunks, 0, null);
-				xSeriesDataset.init();
-				long[] selected = xSeriesDataset.getSelectedDims();
-				selected[0] = 1;
-				selected[1] = xSeriesDims3D[1];
-				selected[2] = xSeriesDims3D[2];
-				long[] start = xSeriesDataset.getStartDims();
-				start[0]--;
-				datasetMap.put(simulationName, xSeriesDataset);
+    			if (simulationsGroup.hasGroup(simulationName)) {
+    				// File already contains a corresponding simulation group
+    				HDF5Group simulationGroup = simulationsGroup.getGroup(simulationName);
+    				xSeriesDataset = simulationGroup.getDataset("xSeries");
+					xSeriesDataset.init();
+					long[] dims3D = xSeriesDataset.getDims();
+					long[] selected = xSeriesDataset.getSelectedDims();
+					selected[0] = 1;
+					selected[1] = dims3D[1];
+					selected[2] = dims3D[2];
+					long[] start = xSeriesDataset.getStartDims();
+					start[0] = dims3D[0] - 1;
+    				datasetMap.put(simulationName, xSeriesDataset);
+    			} else {
+    				// Create a new simulation group and dataset
+	    			HDF5Group simulationGroup = simulationsGroup.createGroup(simulationName);
+	    			HDF5Datatype dtype = h5file.getDoubleDatatype();
+					double[] tSeries = plotData.gettSeries();
+					long[] tSeriesDims1D = { tSeries.length };
+					HDF5Dimension tSeriesDim = new HDF5Dimension(tSeriesDims1D);
+					simulationGroup.createDataset("tSeries", dtype, tSeriesDim, tSeries);
+					long[] xSeriesDims3D = { 0, plotData.getNumberOfStates(), plotData.getNumberOfTimePoints() };
+					long[] xSeriesMaxDims3D = { Integer.MAX_VALUE, plotData.getNumberOfStates(), plotData.getNumberOfTimePoints() };
+					long[] xSeriesChunks = xSeriesDims3D.clone();
+					xSeriesChunks[0] = chunkSize;
+					HDF5Dimension xSeriesDim = new HDF5Dimension(xSeriesDims3D, xSeriesMaxDims3D, xSeriesChunks);
+	    	    	if (logger.isDebugEnabled()) {
+	    	    		logger.debug("Creating dataset with dimension={}, gzipLevel={}", xSeriesDim, gzipLevel);
+	    	    	}
+	    	    	xSeriesDataset = simulationGroup.createDataset("xSeries", dtype, xSeriesDim, gzipLevel);
+	//				xSeriesDataset = (H5ScalarDS)h5file.createScalarDS("xSeries", simulationGroup, dtype, xSeriesDims3D, xSeriesMaxDims3D, xSeriesChunks, 0, null);
+					xSeriesDataset.init();
+					long[] selected = xSeriesDataset.getSelectedDims();
+					selected[0] = 1;
+					selected[1] = xSeriesDims3D[1];
+					selected[2] = xSeriesDims3D[2];
+					long[] start = xSeriesDataset.getStartDims();
+					start[0]--;
+					datasetMap.put(simulationName, xSeriesDataset);
+    			}
     		}
 			// extend dataset
 			long[] xSeriesDims3D = xSeriesDataset.getDims();

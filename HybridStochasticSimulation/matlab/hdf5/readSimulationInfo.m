@@ -1,4 +1,4 @@
-function info = selectSimulation(filename, simulationName)
+function info = readSimulationInfo(filename, simulationName)
     if nargin < 1
         filename = selectFile;
     end

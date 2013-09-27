@@ -30,8 +30,8 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //  R9:  pB      -> -
 // R10:  pA      -> mA + pA
 // R11:  pB      -> mB + pB
-// R12:  pA      -> pA + PC
-// R13:  pB      -> pB + PD
+// R12:  pA      -> pA + pC
+// R13:  pB      -> pB + pD
 // R14:  pC      -> ~
 // R15:  pD      -> ~
 

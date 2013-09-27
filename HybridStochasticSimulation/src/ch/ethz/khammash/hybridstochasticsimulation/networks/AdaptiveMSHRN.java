@@ -20,7 +20,6 @@ import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingCandidateFilter;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
@@ -151,7 +150,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 			for (int s=0; s < getNumberOfSpecies(); s++)
 				if (zeroDeficiencySpeciesToAverageMask[s])
 					speciesToAverage.add(getGraph().getSpeciesVertex(s));
-			Utilities.printCollection(" Species to average", speciesToAverage);
+			if (logger.isInfoEnabled())
+				logger.info(" Species to average {}", speciesToAverage);
 		}
 	
 		for (Set<SpeciesVertex> subnetwork : subnetworksToAverage) {
@@ -189,8 +189,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 				x[s] = 0.0;
 		}
 
-		if (getLogMessages())
-			Utilities.printArray(" alpha=", getAlpha());
+		if (getLogMessages() && logger.isInfoEnabled())
+			logger.info(" alpha = {}", getAlpha());
 
 //		double[] reactionTimescales = computeReactionTimescales(x);
 

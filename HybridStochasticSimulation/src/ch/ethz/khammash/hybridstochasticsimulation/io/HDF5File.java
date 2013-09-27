@@ -1,11 +1,13 @@
 package ch.ethz.khammash.hybridstochasticsimulation.io;
 
 import java.io.File;
+import java.util.List;
 
 import ncsa.hdf.object.Dataset;
 import ncsa.hdf.object.Datatype;
 import ncsa.hdf.object.FileFormat;
 import ncsa.hdf.object.Group;
+import ncsa.hdf.object.HObject;
 import ncsa.hdf.object.h5.H5File;
 import ncsa.hdf.object.h5.H5ScalarDS;
 
@@ -15,6 +17,10 @@ import com.google.common.base.Suppliers;
 public class HDF5File {
 
 	public static HDF5File openForWriting(File file) throws HDF5Exception {
+		return new HDF5File(openH5File(file));
+	}
+
+	public static HDF5File createForWriting(File file) throws HDF5Exception {
 		return new HDF5File(createH5File(file));
 	}
 
@@ -49,13 +55,61 @@ public class HDF5File {
 			return group.getFullName();
 		}
 
-		public HDF5Group createGroup(String string) throws HDF5Exception {
+		public HDF5Group createGroup(String name) throws HDF5Exception {
 			try {
-				return new HDF5Group(h5file.createGroup("simulations", this.group));
+				return new HDF5Group(h5file.createGroup(name, this.group));
 			} catch (Exception e) {
 				throw new HDF5Exception(String.format("Unable to create child group for %s", this), e);
 			}
 		}
+
+		public HDF5Group getGroup(String name) throws HDF5Exception {
+			HObject member = getMember(name);
+			if (member instanceof Group)
+				return new HDF5Group((Group)member);
+			throw new HDF5Exception(String.format("No such group: %s", name));
+		}
+
+		public HDF5Dataset getDataset(String name) throws HDF5Exception {
+			HObject member = getMember(name);
+			if (member instanceof Dataset)
+				return new HDF5Dataset((Dataset)member);
+			throw new HDF5Exception(String.format("No such dataset: %s", name));
+		}
+
+		public boolean hasGroup(String name) {
+			HObject member = getMemberWithoutException(name);
+			if (member instanceof Group)
+				return true;
+			return false;
+		}
+
+		public boolean hasDataset(String name) {
+			HObject member = getMemberWithoutException(name);
+			if (member instanceof Dataset)
+				return true;
+			return false;
+		}
+
+		private HObject getMember(String name) throws HDF5Exception {
+			HObject member = getMemberWithoutException(name);
+			if (member == null)
+				throw new HDF5Exception(String.format("No such member: %s", name));
+			return member;
+		}
+
+		private HObject getMemberWithoutException(String name) {
+			List<HObject> members = group.getMemberList();
+			for (HObject member : members) {
+				if (member.getName().equals(name))
+					return member;
+			}
+			return null;
+		}
+
+//		private boolean hasMember(String name) {
+//			return getMemberWithoutException(name) != null;
+//		}
 
 		public Group getNativeGroup() {
 			return group;
@@ -196,11 +250,15 @@ public class HDF5File {
 			this.ff = ff;
 		}
 
-		public H5File createNativeFile(File file) throws HDF5Exception {
+		public H5File openNativeFile(File file, boolean truncate) throws HDF5Exception {
 	    	try {
-	    		// If the specified file already exists, it is truncated.
+	    		H5File h5File;
 	    		// The default HDF5 file creation and access properties are used.
-	    		H5File h5File = (H5File)ff.createFile(file.getAbsolutePath(), FileFormat.FILE_CREATE_DELETE);
+	    		if (truncate)
+		    		// If the specified file already exists, it is truncated.
+	    			h5File = (H5File)ff.createFile(file.getAbsolutePath(), FileFormat.FILE_CREATE_DELETE);
+	    		else
+		    		h5File = (H5File)ff.createFile(file.getAbsolutePath(), FileFormat.FILE_CREATE_OPEN);
 
 	    		// Check for error condition and report.
 	    		if (h5File == null)
@@ -245,9 +303,14 @@ public class HDF5File {
 		return memoizedRootGroup.get();
 	}
 
+    private static H5File openH5File(File file) throws HDF5Exception {
+    	HDF5FileFormat fileFormat = HDF5FileFormat.createHDF5FileFormat();
+    	return fileFormat.openNativeFile(file, false);
+	}
+
     private static H5File createH5File(File file) throws HDF5Exception {
     	HDF5FileFormat fileFormat = HDF5FileFormat.createHDF5FileFormat();
-    	return fileFormat.createNativeFile(file);
+    	return fileFormat.openNativeFile(file, true);
 	}
 
 //    private static H5File createGzipH5File(File file) throws HDF5Exception {

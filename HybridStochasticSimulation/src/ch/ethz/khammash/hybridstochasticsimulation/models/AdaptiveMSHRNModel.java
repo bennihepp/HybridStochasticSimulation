@@ -72,6 +72,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 			seh.setBoundType(BoundType.UPPER);
 		} else {
 			// TODO: Multiply by x oder not?
+			// TOOD: Which lower bounds
 			double lowerBound1 = x * Math.pow(hrn.getN(), -hrn.getEta());
 			double lowerBound2 = hrn.getInverseSpeciesScaleFactor(s) * FastMath.pow(hrn.getN(), hrn.getXi() - hrn.getEta());
 			double lowerBound = Math.max(lowerBound1, lowerBound2);

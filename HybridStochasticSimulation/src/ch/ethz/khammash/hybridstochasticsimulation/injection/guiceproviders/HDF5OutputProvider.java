@@ -18,11 +18,13 @@ public class HDF5OutputProvider extends AbstractProvider<SimulationOutput> {
 
 	@Override
 	public SimulationOutput get() {
-		boolean overwrite = config().getBoolean("overwrite");
+		// TODO: Change names of settings
+		boolean overwrite = config().getBoolean("overwrite", false);
+		boolean truncate = config().getBoolean("truncate", false);
 		String filename = config().getString("filename");
 		HDF5Output output;
 		try {
-			output = new HDF5Output(filename, overwrite);
+			output = HDF5Output.open(filename, overwrite, truncate);
 			if (config().containsKey("chunkSize")) {
 				output.setChunkSize(config().getInt("chunkSize"));
 			}

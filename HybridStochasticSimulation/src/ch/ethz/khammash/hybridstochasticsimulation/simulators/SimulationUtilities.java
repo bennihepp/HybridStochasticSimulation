@@ -4,13 +4,16 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.util.FastMath;
 
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.CombiningAveragingUnit;
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.FiniteMarkovChainAveragingUnit;
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.MaximumSizeSubnetworkEnumerator;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.AllSubnetworkEnumerator;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.FilteredSubnetworkEnumerator;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.MaximumSizeSubnetworkFilter;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.PseudoLinearAveragingUnit;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.SubnetworkEnumerator;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.ZeroDeficiencyAveragingUnit;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.PDMPSimulationController;
 import ch.ethz.khammash.hybridstochasticsimulation.controllers.StochasticSimulationController;
@@ -18,6 +21,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.examples.SimulationConfigurat
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.DefaultReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.ReactionNetworkGraph;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
+import ch.ethz.khammash.hybridstochasticsimulation.math.MathUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.HybridModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.HybridReactionNetworkModel;
@@ -29,6 +33,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetw
 import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryDeterministicModel;
 import ch.ethz.khammash.hybridstochasticsimulation.models.UnaryBinaryStochasticModel;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.DiscreteSubnetworkFilter;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.HybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
@@ -44,6 +49,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDist
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFinitePlotData;
 import ch.ethz.khammash.ode.cvode.CVodeSolver;
 import ch.ethz.khammash.ode.lsodar.LsodarDirectSolver;
+import ch.ethz.khammash.ode.nonstiff.EulerSolver;
 
 import com.google.common.primitives.Doubles;
 
@@ -314,41 +320,53 @@ public class SimulationUtilities {
 	}
 
 	public static List<VectorFinitePlotData> simulateAdaptiveMSPDMP(SimulationConfiguration nss, double[] tSeries, boolean printTiming, final boolean printMessages, final boolean recordOptionalTrajectory, boolean doAveraging) {
+//		nss.rng.setSeed(16L);
+		if (nss.rng == null)
+			nss.rng = new MersenneTwister();
+		long seed = nss.rng.nextLong();
+		System.out.println(String.format("Seed=%dL", seed));
+		nss.rng.setSeed(seed);
 		final ObjProvider<RandomDataGenerator> rdgProvider = new RandomDataGeneratorProvider(nss.rng);
 		AdaptiveMSHRN hrn = AdaptiveMSHRN.createFrom(nss.net, nss.N, nss.gamma);
 		hrn.setLogMessages(printMessages);
-		if (doAveraging) {
-			int maxSize = 10;
-			ReactionNetworkGraph graph = hrn.getGraph();
-			HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
-			for (int s : nss.importantSpecies)
-				importantSpeciesVertices.add(graph.getSpeciesVertex(s));
-			MaximumSizeSubnetworkEnumerator subnetworkEnumerator = new MaximumSizeSubnetworkEnumerator(graph, maxSize);
-			PseudoLinearAveragingUnit pseudoLinearAveragingUnit = new PseudoLinearAveragingUnit(hrn, importantSpeciesVertices);
-			pseudoLinearAveragingUnit.stopIfAveragingBecomesInvalid(false);
-			pseudoLinearAveragingUnit.performPseudoLinearAveragingOnlyOnce(false);
-			pseudoLinearAveragingUnit.setSubnetworkEnumerator(subnetworkEnumerator);
-			ZeroDeficiencyAveragingUnit zeroDeficiencyAveragingUnit = new ZeroDeficiencyAveragingUnit(
-					hrn, importantSpeciesVertices, rdgProvider.get(), printMessages);
-			zeroDeficiencyAveragingUnit.setSubnetworkEnumerator(subnetworkEnumerator);
-			FiniteMarkovChainAveragingUnit finiteMarkovChainAveragingUnit = new FiniteMarkovChainAveragingUnit(hrn, importantSpeciesVertices);
-			finiteMarkovChainAveragingUnit.setSubnetworkEnumerator(subnetworkEnumerator);
-			CombiningAveragingUnit averagingUnit = new CombiningAveragingUnit();
-			averagingUnit.setSubnetworkEnumerator(subnetworkEnumerator);
-			averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
-//			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
-//			averagingUnit.addAveragingUnit(finiteMarkovChainAveragingUnit);
-			hrn.setAveragingUnit(averagingUnit);
-//			hrn.setAveragingUnit(finiteMarkovChainAveragingUnit);
-//			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
-//			hrn.setAveragingUnit(pseudoLinearAveragingUnit);
-		}
 		hrn.setDelta(nss.delta);
 		hrn.setEta(nss.eta);
 		hrn.setXi(nss.xi);
 		hrn.setTheta(nss.theta);
 		hrn.setTolerance(nss.tolerance);
 		AdaptiveMSHRNModel model = new AdaptiveMSHRNModel(hrn);
+		if (doAveraging) {
+			int maxSize = 10;
+			ReactionNetworkGraph graph = hrn.getGraph();
+			HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
+			for (int s : nss.importantSpecies)
+				importantSpeciesVertices.add(graph.getSpeciesVertex(s));
+			SubnetworkEnumerator allSubnetworksEnumerator = new AllSubnetworkEnumerator(nss.net);
+			MaximumSizeSubnetworkFilter maximumSizeFilter = new MaximumSizeSubnetworkFilter(maxSize);
+			FilteredSubnetworkEnumerator subnetworksEnumerator = new FilteredSubnetworkEnumerator(allSubnetworksEnumerator, maximumSizeFilter);
+//			PseudoLinearAveragingUnit pseudoLinearAveragingUnit = new PseudoLinearAveragingUnit(hrn, importantSpeciesVertices);
+//			pseudoLinearAveragingUnit.stopIfAveragingBecomesInvalid(false);
+//			pseudoLinearAveragingUnit.performPseudoLinearAveragingOnlyOnce(false);
+//			pseudoLinearAveragingUnit.setSubnetworkEnumerator(subnetworksEnumerator);
+			DiscreteSubnetworkFilter discreteFilter = new DiscreteSubnetworkFilter(hrn);
+			FilteredSubnetworkEnumerator discreteSubnetworksEnumerator = new FilteredSubnetworkEnumerator(subnetworksEnumerator, discreteFilter);
+			ZeroDeficiencyAveragingUnit zeroDeficiencyAveragingUnit = new ZeroDeficiencyAveragingUnit(
+					hrn, importantSpeciesVertices, rdgProvider.get());
+			zeroDeficiencyAveragingUnit.setSubnetworkEnumerator(discreteSubnetworksEnumerator);
+//			FiniteMarkovChainAveragingUnit finiteMarkovChainAveragingUnit = new FiniteMarkovChainAveragingUnit(hrn, importantSpeciesVertices);
+//			finiteMarkovChainAveragingUnit.setSubnetworkEnumerator(subnetworkEnumerator);
+//			CombiningAveragingUnit averagingUnit = new CombiningAveragingUnit();
+//			averagingUnit.setSubnetworkEnumerator(subnetworkEnumerator);
+//			averagingUnit.addAveragingUnit(zeroDeficiencyAveragingUnit);
+//			averagingUnit.addAveragingUnit(pseudoLinearAveragingUnit);
+//			averagingUnit.addAveragingUnit(finiteMarkovChainAveragingUnit);
+//			hrn.setAveragingUnit(averagingUnit);
+//			hrn.setAveragingUnit(finiteMarkovChainAveragingUnit);
+//			hrn.setAveragingUnit(zeroDeficiencyAveragingUnit);
+			model.setAveragingUnit(zeroDeficiencyAveragingUnit);
+//			model.setAveragingUnit(pseudoLinearAveragingUnit);
+		}
+//		CustomAdaptiveMSHRNModel model = new CustomAdaptiveMSHRNModel(hrn);
 		model.setExposeOptionalState(recordOptionalTrajectory);
 		final FiniteTrajectoryRecorder optionalTr;
 		final FiniteTrajectoryRecorder simulationInformationTr;
@@ -368,11 +386,15 @@ public class SimulationUtilities {
 
 				@Override
 				public Simulator<PDMPModel> get() {
-					CVodeSolver solver = new CVodeSolver(1e-6, 1e-6);
+//					CVodeSolver solver = new CVodeSolver(1e-2, 1e-2);
 //					CVodeSolver solver = new CVodeSolver();
 //					solver.setMinStep(1e-3);
 //					solver.setMaxStep(1e-3);
-//					solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);
+//					try {
+//						solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);
+//					} catch (InvalidMultistepTypeException e) {
+//						e.printStackTrace();
+//					}
 //					solver.setIterationType(CVodeSolver.ITERATIONTYPE_FUNCTIONAL);
 //					solver.setMaxNumOfSteps(5000);
 //					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
@@ -383,7 +405,16 @@ public class SimulationUtilities {
 //					EulerSolver solver = new EulerSolver(1e-4);
 //					RungeKutta4thOrderSolver solver = new RungeKutta4thOrderSolver(1e-3);
 //					AdaptiveRungeKutta4thOrderSolver solver = new AdaptiveRungeKutta4thOrderSolver(1e-8, 1e-8);
-					PDMPSimulator simulator = new PDMPSimulator(solver, rdgProvider.get());
+//					NewPDMPSimulator simulator = new NewPDMPSimulator(solver, rdgProvider.get());
+//					NewSimplePDMPSimulator simulator = new NewSimplePDMPSimulator(rdgProvider.get());
+//					PDMPSimulator simulator = new PDMPSimulator(solver, rdgProvider.get());
+//					CustomPDMPSimulator simulator = new CustomPDMPSimulator(solver, rdgProvider.get());
+					EulerSolver solver = new EulerSolver(0.5);
+					FixedStepPDMPSimulator simulator = new FixedStepPDMPSimulator(solver, rdgProvider.get());
+//					CVodeSolver solver = new CVodeSolver(1e-2, 1e-2);
+//					solver.setMultistepType(CVodeSolver.MULTISTEPTYPE_ADAMS);
+//					solver.setIterationType(CVodeSolver.ITERATIONTYPE_FUNCTIONAL);
+//					AdaptiveStepPDMPSimulator simulator = new AdaptiveStepPDMPSimulator(solver, rdgProvider.get());
 					if (optionalTr != null) {
 						simulator.addOptionalTrajectoryRecorder(optionalTr);
 						simulator.addSimulationInformationTrajectoryRecorder(simulationInformationTr);
@@ -416,7 +447,14 @@ public class SimulationUtilities {
 		String[] scaledNames = new String[hrn.getNumberOfSpecies()];
 		String[] speciesTypeNames = new String[hrn.getNumberOfSpecies()];
 		String[] reactionTypeNames = new String[hrn.getNumberOfReactions()];
-		String[] simulationInformationNames = { "IntState", "IntCount", "ReactionCount" };
+		String[] simulationInformationNamesPart1 = { "IntState", "IntCount", "Total ReactionCount" };
+		String[] simulationInformationNamesPart2 = new String[hrn.getNumberOfReactions()];
+		for (int r=0; r < hrn.getNumberOfReactions(); r++)
+			simulationInformationNamesPart2[r] = String.format("ReactionCount %d", r);
+		String[] simulationInformationNamesPart3 = simulationInformationNamesPart2.clone();
+		int[] simulationInformationIndicesPart1 = { 0, 1, 2 };
+		int[] simulationInformationIndicesPart2 = MathUtilities.intRange(3, 3 + hrn.getNumberOfReactions());
+		int[] simulationInformationIndicesPart3 = MathUtilities.intRange(3 + hrn.getNumberOfReactions(), 3 + 2 * hrn.getNumberOfReactions());
 		for (int s=0; s < alphaNames.length; s++)
 			alphaNames[s] = "a_" + nss.speciesNames[s];
 		for (int r=0; r < rhoNames.length; r++)
@@ -467,17 +505,28 @@ public class SimulationUtilities {
 			pd = new VectorFinitePlotData(subTr);
 			pd.setStateNames(reactionTypeNames);
 			result.add(pd);
-			// Simulation information
-			pd = new VectorFinitePlotData(simulationInformationTr);
-			double integratorCounterMax = Doubles.max(simulationInformationTr.getxSeries()[1]);
-			if (integratorCounterMax == 0.0)
-				integratorCounterMax = 1.0;
-			double reactionCounterMax = Doubles.max(simulationInformationTr.getxSeries()[2]);
-			pd.setPlotScale(0, 0.1 * integratorCounterMax);
-			pd.setPlotScale(2, - integratorCounterMax / reactionCounterMax);
-			pd.setStateNames(simulationInformationNames);
+			// Simulation information part 1
+			subTr = ArrayFiniteTrajectory.createSubTrajectory(simulationInformationTr, simulationInformationIndicesPart1);
+			pd = new VectorFinitePlotData(subTr);
+			double integratorCounterMax = Doubles.max(pd.getxSeries()[1]);
+			double reactionCounterMax = Doubles.max(pd.getxSeries()[2]);
+			pd.setPlotScale(0, 0.1 * FastMath.max(integratorCounterMax, reactionCounterMax));
+			pd.setPlotScale(1, 1.0);
+			pd.setPlotScale(2, - 1.0);
+			pd.setStateNames(simulationInformationNamesPart1);
+			result.add(pd);
+			// Simulation information part 2
+			subTr = ArrayFiniteTrajectory.createSubTrajectory(simulationInformationTr, simulationInformationIndicesPart2);
+			pd = new VectorFinitePlotData(subTr);
+			pd.setStateNames(simulationInformationNamesPart2);
+			result.add(pd);
+			// Simulation information part 3
+			subTr = ArrayFiniteTrajectory.createSubTrajectory(simulationInformationTr, simulationInformationIndicesPart3);
+			pd = new VectorFinitePlotData(subTr);
+			pd.setStateNames(simulationInformationNamesPart3);
 			result.add(pd);
 		}
+		System.out.println(String.format("Seed=%dL", seed));
 		return result;
 	}
 
@@ -519,6 +568,8 @@ public class SimulationUtilities {
 				public Simulator<PDMPModel> get() {
 					CVodeSolver solver = new CVodeSolver();
 //					LsodarDirectSolver solver = LsodarDirectSolver.getInstance();
+//					NewPDMPSimulator simulator = new NewPDMPSimulator(solver, rdgProvider.get());
+//					NewSimplePDMPSimulator simulator = new NewSimplePDMPSimulator(solver, rdgProvider.get());
 					PDMPSimulator simulator = new PDMPSimulator(solver, rdgProvider.get());
 					simulator.setPrintMessages(printMessages);
 					return simulator;
@@ -901,11 +952,10 @@ public class SimulationUtilities {
 		HashSet<SpeciesVertex> importantSpeciesVertices = new HashSet<SpeciesVertex>(nss.importantSpecies.length);
 		for (int s : nss.importantSpecies)
 			importantSpeciesVertices.add(graph.getSpeciesVertex(s));
-//		final PseudoLinearAveragingUnit averagingUnit = new PseudoLinearAveragingUnit(hrn, importantSpeciesVertices);
-//		averagingUnit.performPseudoLinearAveragingOnlyOnce(false);
-		final ZeroDeficiencyAveragingUnit averagingUnit = new ZeroDeficiencyAveragingUnit(
-				hrn, importantSpeciesVertices, rdgProvider.get(), true);
-		hrn.setAveragingUnit(averagingUnit);
+		final PseudoLinearAveragingUnit averagingUnit = new PseudoLinearAveragingUnit(hrn, importantSpeciesVertices);
+		averagingUnit.performPseudoLinearAveragingOnlyOnce(false);
+//		final ZeroDeficiencyAveragingUnit averagingUnit = new ZeroDeficiencyAveragingUnit(
+//				hrn, importantSpeciesVertices, rdgProvider.get());
 		hrn.setDelta(nss.delta);
 		hrn.setEta(nss.eta);
 		hrn.setXi(nss.xi);
@@ -958,10 +1008,11 @@ public class SimulationUtilities {
 			@Override
 			public PDMPModel get() {
 				AdaptiveMSHRN hrnCopy = AdaptiveMSHRN.createCopy(hrn);
-				ZeroDeficiencyAveragingUnit averagingUnitClone = ZeroDeficiencyAveragingUnit.createCopy(averagingUnit, rdgProvider.get());
-//				PseudoLinearAveragingUnit averagingUnitClone = PseudoLinearAveragingUnit.createCopy(averagingUnit);
-				hrnCopy.setAveragingUnit(averagingUnitClone);
-				return new AdaptiveMSHRNModel(hrnCopy);
+//				ZeroDeficiencyAveragingUnit averagingUnitClone = ZeroDeficiencyAveragingUnit.createCopy(averagingUnit, rdgProvider.get());
+				PseudoLinearAveragingUnit averagingUnitClone = PseudoLinearAveragingUnit.createCopy(averagingUnit);
+				AdaptiveMSHRNModel model = new AdaptiveMSHRNModel(hrnCopy);
+				model.setAveragingUnit(averagingUnitClone);
+				return model;
 			}
 		};
 		final long startTime = System.currentTimeMillis();

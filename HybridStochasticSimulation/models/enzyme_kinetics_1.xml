@@ -5,35 +5,35 @@
   <ParametersList>
     <Parameter>
       <Id>k1on</Id>
-      <Expression>1.0</Expression>
+      <Expression>10.0</Expression>
     </Parameter>
     <Parameter>
       <Id>k1off</Id>
-      <Expression>1.0</Expression>
+      <Expression>10.0</Expression>
     </Parameter>
     <Parameter>
       <Id>k2on</Id>
-      <Expression>1.0</Expression>
+      <Expression>0.001</Expression>
     </Parameter>
     <Parameter>
       <Id>k2off</Id>
-      <Expression>1.0</Expression>
+      <Expression>0.0001</Expression>
     </Parameter>
     <Parameter>
       <Id>kE</Id>
-      <Expression>10.0</Expression>
+      <Expression>0.0</Expression>
     </Parameter>
     <Parameter>
       <Id>gammaE</Id>
-      <Expression>0.01</Expression>
+      <Expression>0.0</Expression>
     </Parameter>
     <Parameter>
       <Id>kS</Id>
-      <Expression>10.0</Expression>
+      <Expression>0.0</Expression>
     </Parameter>
     <Parameter>
       <Id>gammaS</Id>
-      <Expression>0.01</Expression>
+      <Expression>0.0</Expression>
     </Parameter>
   </ParametersList>
   <ReactionsList>
@@ -121,11 +121,11 @@
   <SpeciesList>
     <Species>
       <Id>E</Id>
-      <InitialPopulation>0.000000</InitialPopulation>
+      <InitialPopulation>100.000000</InitialPopulation>
     </Species>
     <Species>
       <Id>S</Id>
-      <InitialPopulation>0.000000</InitialPopulation>
+      <InitialPopulation>1000.000000</InitialPopulation>
     </Species>
     <Species>
       <Id>ES</Id>

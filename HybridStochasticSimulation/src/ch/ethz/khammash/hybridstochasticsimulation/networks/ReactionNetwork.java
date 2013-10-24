@@ -11,23 +11,23 @@ public interface ReactionNetwork {
 
 	int getNumberOfReactions();
 
-	int getStochiometry(int species, int reaction);
+	int getStoichiometry(int species, int reaction);
 
-	int[] getStochiometries(int reaction);
+	int[] getStoichiometries(int reaction);
 
-	int[][] getStochiometries();
+	int[][] getStoichiometries();
 
-	int getProductionStochiometry(int species, int reaction);
+	int getProductionStoichiometry(int species, int reaction);
 
-	int getConsumptionStochiometry(int species, int reaction);
+	int getConsumptionStoichiometry(int species, int reaction);
 
-	int[] getProductionStochiometries(int reaction);
+	int[] getProductionStoichiometries(int reaction);
 
-	int[] getConsumptionStochiometries(int reaction);
+	int[] getConsumptionStoichiometries(int reaction);
 
-	int[][] getProductionStochiometries();
+	int[][] getProductionStoichiometries();
 
-	int[][] getConsumptionStochiometries();
+	int[][] getConsumptionStoichiometries();
 
 	List<Integer> getInvolvedSpecies(int reaction);
 

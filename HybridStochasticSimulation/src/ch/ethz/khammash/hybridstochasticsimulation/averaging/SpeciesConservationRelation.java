@@ -70,7 +70,7 @@ public class SpeciesConservationRelation {
 		for (int col=0; col < nullSpace.numCols; col++) {
 			DenseMatrix64F fullLcVector = CommonOps.extract(nullSpace, 0, nullSpace.numRows, col, col + 1);
 			List<SpeciesVertex> speciesList = new ArrayList<>();
-			List<Integer> lcList = new ArrayList<>();
+			List<Double> lcList = new ArrayList<>();
 			boolean noConservationRelation = false;
 			double sign = 0.0;
 			for (int row=0; row < nullSpace.numRows; row++) {
@@ -83,7 +83,7 @@ public class SpeciesConservationRelation {
 				}
 				if (v != 0.0) {
 					speciesList.add(network.getGraph().getSpeciesVertex(row));
-					lcList.add((int)fullLcVector.get(row));
+					lcList.add(fullLcVector.get(row));
 				}
 			}
 			if (noConservationRelation)

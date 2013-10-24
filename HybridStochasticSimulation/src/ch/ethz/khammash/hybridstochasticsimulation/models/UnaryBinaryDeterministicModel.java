@@ -51,7 +51,7 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 			}
 			rateParameters[r] = net.getRateParameter(r);
 			for (int s = 0; s < net.getNumberOfSpecies(); s++)
-				reactionStochiometries[r][s] = net.getStochiometry(s, r);
+				reactionStochiometries[r][s] = net.getStoichiometry(s, r);
 		}
 	}
 
@@ -125,6 +125,12 @@ public class UnaryBinaryDeterministicModel implements HybridModel, FirstOrderDif
 	@Override
 	public void computePropensities(double t, double[] x, double[] propensities) {
 		Arrays.fill(propensities, 0, getNumberOfReactions(), 0.0);
+	}
+
+	@Override
+	public double computePropensitiesAndSum(double t, double[] x, double[] propensities) {
+		Arrays.fill(propensities, 0, getNumberOfReactions(), 0.0);
+		return 0.0;
 	}
 
 	@Override

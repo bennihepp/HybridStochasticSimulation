@@ -11,7 +11,7 @@ public class CVodeSolverProvider extends AbstractObjProvider<Solver> {
 
 	@Inject
 	public CVodeSolverProvider(HierarchicalConfiguration config) {
-		super(config, "SimulationParameters.solver");
+		super(config, "SimulationParameters.simulator.solver");
 	}
 
 	@Override

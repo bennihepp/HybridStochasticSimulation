@@ -1,13 +1,14 @@
 package ch.ethz.khammash.hybridstochasticsimulation.matlab;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import matlabcontrol.MatlabInvocationException;
 import matlabcontrol.MatlabProxy;
 import matlabcontrol.extensions.MatlabNumericArray;
 import matlabcontrol.extensions.MatlabTypeConverter;
-import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FinitePlotData;
+import ch.ethz.khammash.hybridstochasticsimulation.trajectories.VectorFiniteDistributionPlotData;
 
 public class MatlabPlotter {
 
@@ -38,6 +39,12 @@ public class MatlabPlotter {
 
 	public MatlabPlotter(MatlabSession session) {
 		this.session = session;
+	}
+
+	public void plot(FinitePlotData plotData) throws MatlabInvocationException {
+		List<FinitePlotData> plotDataList = new ArrayList<>(1);
+		plotDataList.add(plotData);
+		plot(plotDataList, 1, 1);
 	}
 
 	public void plot(List<FinitePlotData> plotDataList, int rows, int cols) throws MatlabInvocationException {

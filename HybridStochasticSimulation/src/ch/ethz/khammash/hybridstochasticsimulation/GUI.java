@@ -25,7 +25,7 @@ public class GUI {
 						@Override
 						public void run() {
 							window.getStatusBar().setText("Running simulation");
-//							try {
+							try {
 //							List<FinitePlotData> plotDataList = Examples.trivialNetwork();
 							// Maybe example
 //							List<FinitePlotData> plotDataList = Examples.regulatedTranscriptionNetwork();
@@ -36,7 +36,7 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.lambdaPhageToggleSwitchNetwork();
 //							List<FinitePlotData> plotDataList = Examples.repressedBacteriumOperonNetwork();
 							// Example 3
-//							List<FinitePlotData> plotDataList = Examples.heatShockResponseNetwork();
+							List<FinitePlotData> plotDataList = Examples.heatShockResponseNetwork();
 //							List<FinitePlotData> plotDataList = Examples.vilarOscillatorNetwork();
 
 //							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
@@ -47,7 +47,7 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.stochasticFocusingNetwork();
 //							List<FinitePlotData> plotDataList = Examples.conversionCycleNetwork();
 
-							List<FinitePlotData> plotDataList = Examples.repressilator();
+//							List<FinitePlotData> plotDataList = Examples.repressilator();
 //							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
 //							try {
 //								List<FinitePlotData> plotDataList = Examples.heatShockMassAction();
@@ -71,9 +71,9 @@ public class GUI {
 //							} catch (ParserConfigurationException | SAXException | IOException | FileFormatException e) {
 //								e.printStackTrace();
 //								window.getStatusBar().setText("Simulation failed!");
-//							} catch (InterruptedException e) {
-//								window.getStatusBar().setText("Simulation was interrupted", 2000);
-//							}
+							} catch (InterruptedException e) {
+								window.getStatusBar().setText("Simulation was interrupted", 2000);
+							}
 						}
 					};
 					t.start();
@@ -83,7 +83,11 @@ public class GUI {
 						@Override
 						public void run() {
 							window.getStatusBar().setText("Running benchmark");
-							Examples.vilarOscillatorNetwork();
+							try {
+								Examples.vilarOscillatorNetwork();
+							} catch (InterruptedException e) {
+								window.getStatusBar().setText("Benchmark was interrupted", 2000);
+							}
 							window.getStatusBar().setText("Finished benchmark", 2000, true);
 						}
 					};

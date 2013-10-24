@@ -43,8 +43,8 @@ public class ComplexGraph extends DefaultDirectedGraph<ComplexVertex, ComplexEdg
 
     final private void init(ReactionNetwork net) {
 		for (int r=0; r < net.getNumberOfReactions(); r++) {
-			int[] consumptionStochiometries = net.getConsumptionStochiometries(r);
-			int[] productionStochiometries = net.getProductionStochiometries(r);
+			int[] consumptionStochiometries = net.getConsumptionStoichiometries(r);
+			int[] productionStochiometries = net.getProductionStoichiometries(r);
 			ComplexVertex consumptionVertex = getComplexVertex(consumptionStochiometries);
 			ComplexVertex productionVertex = getComplexVertex(productionStochiometries);
 			addComplexEdge(consumptionVertex, productionVertex);

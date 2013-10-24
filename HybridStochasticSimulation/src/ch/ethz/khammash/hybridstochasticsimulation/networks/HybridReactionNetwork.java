@@ -32,7 +32,7 @@ public class HybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork imp
 
 	public HybridReactionNetwork(UnaryBinaryReactionNetwork net, int[] deterministicReactions) {
 		super(net.getNumberOfSpecies(), net.getNumberOfReactions());
-		setStochiometries(net.getProductionStochiometries(), net.getConsumptionStochiometries());
+		setStoichiometries(net.getProductionStoichiometries(), net.getConsumptionStoichiometries());
 		setRateParameters(net.getRateParameters());
 		initReactionTypes();
 		this.setDeterministicReactions(deterministicReactions);

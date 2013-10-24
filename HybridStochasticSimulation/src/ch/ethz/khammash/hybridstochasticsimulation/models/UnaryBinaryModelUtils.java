@@ -7,6 +7,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.math.MultivariateFunction;
 
 public class UnaryBinaryModelUtils {
 
+	// TODO: This can probably be done better
 	public static double[] computeSteadyState(final UnaryBinaryDeterministicModel model, final double t, double[] initialX) {
 		MultivariateFunction rootFunction = new MultivariateFunction() {
 

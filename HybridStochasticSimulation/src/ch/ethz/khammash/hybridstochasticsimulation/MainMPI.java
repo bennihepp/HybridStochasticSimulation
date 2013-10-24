@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import cern.colt.Arrays;
 import ch.ethz.khammash.hybridstochasticsimulation.batch.SimulationJob;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.mpi.MPIController;
 import ch.ethz.khammash.hybridstochasticsimulation.grid.mpi.MPIWorker;
@@ -120,62 +120,60 @@ public class MainMPI {
 //				worker.call();
 //			}
 	
-			try {
+			ExecutorService executor = Executors.newFixedThreadPool(numOfThreads);
+			CompletionService<Void> ecs = new ExecutorCompletionService<>(executor);
 
-				ExecutorService executor = Executors.newFixedThreadPool(numOfThreads);
-				CompletionService<Void> ecs = new ExecutorCompletionService<>(executor);
-
-				List<Future<Void>> futureList = new ArrayList<>(mpiRank == 0 ? 1 : numOfThreads);
-				if (mpiRank == 0) {
-					// List all threads with corresponding rank
-					Set<RankIndexPair> runningChildren = new HashSet<>(mpiSize * numOfThreads - 1);
-					for (int rank=1; rank < mpiSize; rank++) {
-						for (int i=0; i < numOfThreads; i++)
-							runningChildren.add(new RankIndexPair(rank, i));
-					}
-	
-					// Spawn controller thread
-					SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
-	//				ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
-	//				ObjectOutputStream objOut = new ObjectOutputStream(out);
-	//				objOut.writeObject(simulationJob);
-					// TODO: Make simulationJob serializable
-	//				Object[] buf = { simulationJob };
-	//				MPI.COMM_WORLD.Send(buf, 0, 1, MPI.OBJECT, 1, MPI_TAG + 2);
-					Callable<Void> controller = new MPIController(MPI_TAG, simulationJob, runningChildren);
-					futureList.add(ecs.submit(controller));
-
-				} else {
-					for (int i=0; i < numOfThreads; i++) {
-						SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
-	
-						// Spawn worker threads
-						MPIWorker worker = new MPIWorker(MPI_TAG, simulationJob);
-						futureList.add(ecs.submit(worker));
-					}
+			List<Future<Void>> futureList = new ArrayList<>(mpiRank == 0 ? 1 : numOfThreads);
+			if (mpiRank == 0) {
+				// List all threads with corresponding rank
+				Set<RankIndexPair> runningChildren = new HashSet<>(mpiSize * numOfThreads - 1);
+				for (int rank=1; rank < mpiSize; rank++) {
+					for (int i=0; i < numOfThreads; i++)
+						runningChildren.add(new RankIndexPair(rank, i));
 				}
-	
-		        executor.shutdown();
 
-	            for (int i=0; i < futureList.size(); i++) {
-	            	if (logger.isDebugEnabled())
-	            		logger.debug("Waiting for future {}", i + 1);
-	                try {
-	                	ecs.take().get();
-	                } catch (ExecutionException e) {
-	                	if (logger.isErrorEnabled()) {
-	                		logger.error("Exception while executing task", e);
-	                	}
-		            } catch (InterruptedException e) {
-	                	if (logger.isErrorEnabled()) {
-	                		logger.error("Task was interrupted", e);
-	                	}
-		            }
-		        }
+				// Spawn controller thread
+				SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
+//				ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
+//				ObjectOutputStream objOut = new ObjectOutputStream(out);
+//				objOut.writeObject(simulationJob);
+				// TODO: Make simulationJob serializable
+//				Object[] buf = { simulationJob };
+//				MPI.COMM_WORLD.Send(buf, 0, 1, MPI.OBJECT, 1, MPI_TAG + 2);
+				Callable<Void> controller = new MPIController(MPI_TAG, simulationJob, runningChildren);
+				futureList.add(ecs.submit(controller));
+
+			} else {
+				for (int i=0; i < numOfThreads; i++) {
+					SimulationJob simulationJob = injector.getInstance(SimulationJob.class);
+
+					// Spawn worker threads
+					MPIWorker worker = new MPIWorker(MPI_TAG, simulationJob);
+					futureList.add(ecs.submit(worker));
+				}
+			}
+
+	        executor.shutdown();
+
+            for (int i=0; i < futureList.size(); i++) {
             	if (logger.isDebugEnabled())
-            		logger.debug("All futures finished");
+            		logger.debug("Waiting for future {}", i + 1);
+                try {
+                	ecs.take().get();
+                } catch (ExecutionException e) {
+                	if (logger.isErrorEnabled()) {
+                		logger.error("Exception while executing task", e);
+                	}
+	            } catch (InterruptedException e) {
+                	if (logger.isErrorEnabled()) {
+                		logger.error("Task was interrupted", e);
+                	}
+	            }
+	        }
+        	if (logger.isDebugEnabled())
+        		logger.debug("All futures finished");
 
-		        while (!executor.awaitTermination(Long.MAX_VALUE,  TimeUnit.DAYS));
+	        while (!executor.awaitTermination(Long.MAX_VALUE,  TimeUnit.DAYS));
 
 //		} catch (FileNotFoundException | ConfigurationException e) {
 //			if (logger.isErrorEnabled())
@@ -193,22 +191,6 @@ public class MainMPI {
 //			exitCode = -3;
 //		}
 
-			} finally {
-		        if (logger.isDebugEnabled())
-		        	logger.debug("Waiting for all processes (MPI Barrier) [rank={}]", mpiRank);
-				MPI.COMM_WORLD.Barrier();
-	
-				if (logger.isInfoEnabled()) {
-					logger.info("Rank {} shutting down", mpiRank);
-				}
-	
-		        if (logger.isDebugEnabled())
-		        	logger.debug("Calling MPI.Finalize [rank={}]", mpiRank);
-				MPI.Finalize();
-		        if (logger.isDebugEnabled())
-		        	logger.debug("Called MPI.Finalize [rank={}]", mpiRank);
-				}
-
 		} catch (ConfigurationException | IOException e) {
 			if (logger.isErrorEnabled())
 				logger.error("Failed to load configuration", e);
@@ -217,8 +199,23 @@ public class MainMPI {
 			if (logger.isErrorEnabled())
 				logger.error("Interrupted while waiting for executor to shutdown", e);
 			exitCode = -2;
-		}
 
+		} finally {
+	        if (logger.isDebugEnabled())
+	        	logger.debug("Waiting for all processes (MPI Barrier) [rank={}]", mpiRank);
+			MPI.COMM_WORLD.Barrier();
+
+			if (logger.isInfoEnabled()) {
+				logger.info("Rank {} shutting down", mpiRank);
+			}
+
+	        if (logger.isDebugEnabled())
+	        	logger.debug("Calling MPI.Finalize [rank={}]", mpiRank);
+			MPI.Finalize();
+	        if (logger.isDebugEnabled())
+	        	logger.debug("Called MPI.Finalize [rank={}]", mpiRank);
+
+		}
 
 		System.exit(exitCode);
 	}

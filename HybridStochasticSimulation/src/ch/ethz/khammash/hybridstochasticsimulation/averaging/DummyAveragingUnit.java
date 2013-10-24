@@ -2,11 +2,10 @@ package ch.ethz.khammash.hybridstochasticsimulation.averaging;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import javax.inject.Inject;
 
-import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
+import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 
 import com.google.common.base.Predicate;
 
@@ -16,8 +15,8 @@ public class DummyAveragingUnit implements AveragingUnit {
 	public DummyAveragingUnit() {}
 
 	@Override
-	public List<Set<SpeciesVertex>> getSubnetworksToAverageAndResampleState(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
-		return Collections.<Set<SpeciesVertex>>emptyList();
+	public List<SubnetworkDescription> getSubnetworksToAverageAndResampleState(double t, double[] x, Predicate<SubnetworkDescription> filter) {
+		return Collections.emptyList();
 	}
 
 	@Override
@@ -26,6 +25,24 @@ public class DummyAveragingUnit implements AveragingUnit {
 
 	@Override
 	public void setSubnetworkEnumerator(SubnetworkEnumerator subnetworksEnumerator) {
+	}
+
+	@Override
+	public void updateAveraging(AdaptiveMSHRNModel model, double t, double[] x,
+			SubnetworkDescription subnetwork) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void sampleSubnetworkState(double t, double[] x,
+			SubnetworkDescription subnetwork) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void updateSubnetworkState(AdaptiveMSHRNModel model, double t,
+			double[] x, SubnetworkDescription subnetwork) {
+		throw new UnsupportedOperationException();
 	}
 
 }

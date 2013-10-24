@@ -51,7 +51,7 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 		update();
 	}
 
-	protected void update() {
+	public void update() {
 		LinkedList<Integer> stochasticReactionIndicesList = new LinkedList<Integer>();
 		LinkedList<Integer> deterministicReactionIndicesList = new LinkedList<Integer>();
 
@@ -87,9 +87,9 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 			List<Integer> speciesIndicesList = new ArrayList<Integer>(getNumberOfSpecies());
 			List<Double> indexedStochiometriesList = new ArrayList<Double>(getNumberOfSpecies());
 			for (int s = 0; s < getNetwork().getNumberOfSpecies(); s++) {
-				if (getNetwork().getStochiometry(s, r) != 0) {
+				if (getNetwork().getStoichiometry(s, r) != 0) {
 					double outsideScale = hrn.getInverseSpeciesScaleFactor(s);
-					double v = outsideScale * getNetwork().getStochiometry(s, r);
+					double v = outsideScale * getNetwork().getStoichiometry(s, r);
 					speciesIndicesList.add(s);
 					indexedStochiometriesList.add(v);
 				}
@@ -97,13 +97,13 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 			reactionSpeciesIndices[r] = ArrayUtils.toPrimitive(speciesIndicesList.toArray(new Integer[0]));
 			reactionIndexedStochiometries[r] = ArrayUtils.toPrimitive(indexedStochiometriesList.toArray(new Double[0]));
 			switch (reactionType) {
-			case EXPLODING:
+			case UNDEFINED:
 				String msg = String.format("Exploding reaction term encountered (reaction=%d)!", r);
 				throw new UnsupportedOperationException(msg);
-			case DETERMINISTIC:
+			case CONTINUOUS:
 				deterministicReactionIndicesList.add(Integer.valueOf(r));
 				break;
-			case STOCHASTIC:
+			case DISCRETE:
 				stochasticReactionIndicesList.add(Integer.valueOf(r));
 				break;
 			case NONE:
@@ -231,7 +231,7 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 	}
 
 	@Override
-	final public double computePropensity(int reaction, double t, double[] x) {
+	public double computePropensity(int reaction, double t, double[] x) {
 		double p = modelRateParameters[reaction];
 		int choiceIndex1 = reactionChoiceIndices1[reaction];
 		int choiceIndex2 = reactionChoiceIndices2[reaction];
@@ -247,8 +247,28 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 		return p;
 	}
 
-	@Override
-	public void computePropensities(double t, double[] x, double[] propensities) {
+	public double computePropensitySum(double t, double[] x) {
+		double propSum = 0.0;
+		for (int r : stochasticReactionIndices) {
+			double p = modelRateParameters[r];
+			int choiceIndex1 = reactionChoiceIndices1[r];
+			int choiceIndex2 = reactionChoiceIndices2[r];
+			if (choiceIndex1 != -1) {
+				p *= x[choiceIndex1];
+				if (choiceIndex2 != -1) {
+					double q = x[choiceIndex2];
+					if (choiceIndex1 == choiceIndex2)
+						q -= inverseSpeciesScaleFactors[choiceIndex2];
+					p *= q;
+				}
+			}
+			propSum += p;
+		}
+		return propSum;
+	}
+
+	public double computePropensitiesAndSum(double t, double[] x, double[] propensities) {
+		double propSum = 0.0;
 		// We don't check the length of x and propensities for performance reasons
 		Arrays.fill(propensities, 0, modelRateParameters.length, 0.0);
 //		for (int r : stochasticReactionIndices)
@@ -267,7 +287,38 @@ public class MSHybridReactionNetworkModel implements HybridModel,
 				}
 			}
 			propensities[r] = p;
+			propSum += p;
 		}
+		return propSum;
+	}
+
+	@Override
+	public void computePropensities(double t, double[] x, double[] propensities) {
+		computePropensitiesAndSum(t, x, propensities);
+	}
+
+	public double[] computeAllPropensities(double t, double[] x) {
+		double[] propensities = new double[getNumberOfReactions()];
+		for (int r=0; r < getNumberOfReactions(); r++)
+			propensities[r] = computePropensity(r, t, x);
+		return propensities;
+	}
+
+	public void computeAllPropensities(double t, double[] x, double[] propensities) {
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			double propensity = computePropensity(r, t, x);
+			propensities[r] = propensity;
+		}
+	}
+
+	public double computeAllPropensitiesAndSum(double t, double[] x, double[] propensities) {
+		double propensitiesSum = 0.0;
+		for (int r=0; r < getNumberOfReactions(); r++) {
+			double propensity = computePropensity(r, t, x);
+			propensities[r] = propensity;
+			propensitiesSum += propensity;
+		}
+		return propensitiesSum;
 	}
 
 	@Override

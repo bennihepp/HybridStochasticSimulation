@@ -10,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
+import ch.ethz.khammash.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
+import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork.SpeciesType;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
 
 import com.google.common.base.Predicate;
@@ -18,8 +21,8 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 
 	private static final Logger logger = LoggerFactory.getLogger(PseudoLinearAveragingUnit.class);
 
-	private List<Set<SpeciesVertex>> pseudoLinearSubnetworks = null;
-	private List<Set<SpeciesVertex>> averagingCandidates;
+	private List<SubnetworkDescription> pseudoLinearSubnetworks = null;
+	private List<SubnetworkDescription> averagingCandidates;
 	private boolean averagingInvalid;
 	private boolean _stopIfAveragingBecomesInvalid = true;
 	private boolean _warnIfAveragingBecomesInvalid = true;
@@ -55,51 +58,57 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 		_performPseudoLinearAveragingOnlyOnce = onlyOnce;
 	}
 
-	private List<Set<SpeciesVertex>> findPseudoLinearSubnetworks() {
-		List<Set<SpeciesVertex>> pseudoLinearSubnetworks = new ArrayList<Set<SpeciesVertex>>();
-		for (Set<SpeciesVertex> subnetworkSpecies : enumerateSubnetworks()) {
-			HashSet<Integer> subnetworkReactions = new HashSet<Integer>();
-			for (SpeciesVertex v : subnetworkSpecies) {
-				subnetworkReactions.addAll(network.getInvolvedReactions(v.getSpecies()));
-			}
-			boolean isPseudoLinear = true;
-			// Make sure that the subnetwork has only pseudo-linear reactions
-			for (int r : subnetworkReactions) {
-				int[] choiceIndices = network.getChoiceIndices(r);
-				int c = 0;
-				for (int s : choiceIndices) {
-					SpeciesVertex choiceVertex = graph.getSpeciesVertex(s);
-					if (subnetworkSpecies.contains(choiceVertex))
-						c++;
-				}
-				if (c >= 2) {
-					isPseudoLinear = false;
-					break;
-				}
-			}
-			if (!isPseudoLinear)
-				continue;
-
-			pseudoLinearSubnetworks.add(subnetworkSpecies);
+	private List<SubnetworkDescription> findPseudoLinearSubnetworks() {
+		List<SubnetworkDescription> pseudoLinearSubnetworks = new ArrayList<>();
+		for (SubnetworkDescription subnetwork : enumerateSubnetworks()) {
+			if (isPseudoLinear(subnetwork))
+				pseudoLinearSubnetworks.add(subnetwork);
 		}
 		return pseudoLinearSubnetworks;
+	}
+
+	private boolean isPseudoLinear(SubnetworkDescription subnetwork) {
+		Set<Integer> involvedReactions = findInvolvedReactions(subnetwork.getSubnetworkSpecies());
+		// Check if all involved reactions are pseudo-linear with respect to the subnetwork
+		for (int r : involvedReactions) {
+			int[] choiceIndices = network.getChoiceIndices(r);
+			int c = 0;
+			for (int s : choiceIndices) {
+				SpeciesVertex choiceVertex = graph.getSpeciesVertex(s);
+				if (subnetwork.getSubnetworkSpecies().contains(choiceVertex))
+					c++;
+			}
+			if (c >= 2)
+				return false;
+		}
+		return true;
+	}
+
+	private Set<Integer> findInvolvedReactions(Set<SpeciesVertex> subnetworkSpecies) {
+		HashSet<Integer> involvedReactions = new HashSet<Integer>();
+		for (SpeciesVertex v : subnetworkSpecies) {
+			involvedReactions.addAll(network.getInvolvedReactions(v.getSpecies()));
+		}
+		return involvedReactions;
 	}
 
 	@Override
 	public void reset() {
 		averagingCandidates = null;
 		averagingInvalid = false;
+		pseudoLinearSubnetworks = null;
+		super.reset();
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
+	public List<SubnetworkDescription> findAveragingCandidates(double t, double[] x, Predicate<SubnetworkDescription> filter) {
 		if (pseudoLinearSubnetworks == null)
 			pseudoLinearSubnetworks = findPseudoLinearSubnetworks();
 		if (!_performPseudoLinearAveragingOnlyOnce)
 			averagingCandidates = null;
 		if (averagingCandidates == null) {
-			averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
-			for (Set<SpeciesVertex> subnetwork : pseudoLinearSubnetworks) {
+			averagingCandidates = new ArrayList<>();
+			for (SubnetworkDescription subnetwork : pseudoLinearSubnetworks) {
 				if (filter.apply(subnetwork))
 					averagingCandidates.add(subnetwork);
 //				if (checkAveragingConditions(subnetwork, x, reactionTimescales))
@@ -107,7 +116,7 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 			}
 		} else {
 			// Check whether the conditions for averaging of the pseudo linear subnetworks are still valid
-			for (Set<SpeciesVertex> subnetwork : averagingCandidates) {
+			for (SubnetworkDescription subnetwork : averagingCandidates) {
 				boolean satisfied = filter.apply(subnetwork);
 //				boolean satisfied = checkAveragingConditions(subnetwork, x, reactionTimescales);
 				if (satisfied && averagingInvalid) {
@@ -135,22 +144,44 @@ public class PseudoLinearAveragingUnit extends AbstractAveragingUnit {
 		return "Averaging of pseudo linear subnetworks switched to being valid again at t=" + t;
 	}
 
+//	@Override
+//	protected void computeAverageStationaryStateOfSubnetworks(double t, double[] x, List<SubnetworkDescription> subnetworksToAverage) {
+//		// TODO: Check if this is ok.
+//		// As the stationary state of a pseudo-linear subnetwork is the same as the stationary solution of the corresponding
+//		// deterministic system, we don't compute the stationary state and let the PDMP solver evolve the correct solution.
+//	}
+
 	@Override
-	public void resampleFromStationaryDistribution(double t, double[] x, Set<SpeciesVertex> subnetworkSpecies) {
+	public double[] computeFirstMoments(double t, double[] x, SubnetworkDescription subnetwork) {
+		return x.clone();
+	}
+
+	@Override
+	public double[][] computeSecondMoments(double t, double[] x, SubnetworkDescription subnetwork) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void updateAveraging(AdaptiveMSHRNModel model, double t, double[] x,
+			SubnetworkDescription subnetwork) {
+		for (int r : subnetwork.getSubnetworkReactions()) {
+			model.getNetwork().overrideReactionType(r, ReactionType.CONTINUOUS);
+		}
+		for (int s : subnetwork.getSubnetworkSpeciesIndices()) {
+			model.getNetwork().overrideSpeciesType(s, SpeciesType.CONTINUOUS);
+		}
+		model.update();
+	}
+
+	@Override
+	public void sampleSubnetworkState(double t, double[] x, SubnetworkDescription subnetwork) {
 		// We don't know the stationary distribution of the subnetwork in general.
 		// Instead of sampling from the stationary distribution we just round the copy numbers of the subnetwork
-		for (SpeciesVertex v : subnetworkSpecies) {
+		for (SpeciesVertex v : subnetwork.getSubnetworkSpecies()) {
 			double value = x[v.getSpecies()];
 			value = FastMath.round(value);
 			x[v.getSpecies()] = value;
 		}
-	}
-
-	@Override
-	protected void computeAverageStationaryStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
-		// TODO: Check if this is ok.
-		// As the stationary state of a pseudo-linear subnetwork is the same as the stationary solution of the corresponding
-		// deterministic system, we don't compute the stationary state and let the PDMP solver evolve the correct solution.
 	}
 
 }

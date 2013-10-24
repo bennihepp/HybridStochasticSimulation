@@ -4,10 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.commons.math3.optim.PointValuePair;
 import org.apache.commons.math3.optim.linear.LinearConstraint;
@@ -20,13 +18,11 @@ import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingCandidateFilter;
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingUnit;
-import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
-import com.google.common.base.Optional;
-
-
+/**
+ * @author bhepp
+ *
+ */
 public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -37,8 +33,8 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 	private double xi = 0.5;
 	private double eta = 0.1;
 	private double theta = 10.0;
-	private Optional<AveragingUnit> averagingUnitOptional;
-	private AveragingCandidateFilter subnetworkFilter;
+	// TODO: Should be configurable
+	private double boundTolerance = 1e-3;
 
 	public static AdaptiveMSHRN createFrom(UnaryBinaryReactionNetwork net, double N, double gamma) {
 		return new AdaptiveMSHRN(net, N, gamma);
@@ -54,12 +50,12 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 
 	protected AdaptiveMSHRN(UnaryBinaryReactionNetwork net, double N, double gamma) {
 		super(net, N, gamma);
-		_init();
+		init();
 	}
 
 	protected AdaptiveMSHRN(MSHybridReactionNetwork hrn) {
 		super(hrn);
-		_init();
+		init();
 	}
 
 	protected AdaptiveMSHRN(AdaptiveMSHRN hrn) {
@@ -67,34 +63,15 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 		setEta(hrn.getEta());
 		setXi(hrn.getXi());
 		setTheta(hrn.getTheta());
-		_init();
-		if (hrn.averagingUnitOptional.isPresent())
-			setAveragingUnit(hrn.averagingUnitOptional.get());
-	}
-
-	final private void _init() {
-		subnetworkFilter = new SpeciesTimescaleSeparationSubnetworkFilter(this);
-		unsetAveragingUnit();
 		init();
 	}
 
-	// Important: reset() must be called after changing the averaging unit
-	public void setAveragingUnit(AveragingUnit averagingUnit) {
-		if (averagingUnit == null)
-			unsetAveragingUnit();
-		else {
-			this.averagingUnitOptional = Optional.of(averagingUnit);
-			averagingUnit.reset();
-		}
+	public double getBoundTolerance() {
+		return boundTolerance;
 	}
 
-	public void setSubnetworkFilter(AveragingCandidateFilter subnetworkFilter) {
-		this.subnetworkFilter = subnetworkFilter;
-	}
-
-	// Important: reset() must be called after changing the averaging unit
-	final public void unsetAveragingUnit() {
-		this.averagingUnitOptional = Optional.absent();
+	public void setBoundTolerance(double boundTolerance) {
+		this.boundTolerance = boundTolerance;
 	}
 
 	final public double getXi() {
@@ -133,49 +110,29 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 			setBetaUnchecked(r, FastMath.log(getRateParameter(r)) / FastMath.log(getN()));
 		invalidateReactionTermTypes();
 		updateScaleFactors();
-		if (averagingUnitOptional.isPresent()) {
-			averagingUnitOptional.get().reset();
+	}
+
+	public void unscaleStateInPlace(double[] x) {
+		// Scale copy numbers with new species scale factors.
+		for (int s=0; s < getNumberOfSpecies(); s++) {
+			x[s] *= getSpeciesScaleFactor(s);
 		}
 	}
 
-	private void averageSubnetworks(List<Set<SpeciesVertex>> subnetworksToAverage) {
-		boolean[] zeroDeficiencySpeciesToAverageMask = new boolean[getNumberOfSpecies()];
-		for (Set<SpeciesVertex> subnetwork : subnetworksToAverage) {
-			for (SpeciesVertex vertex : subnetwork) {
-				zeroDeficiencySpeciesToAverageMask[vertex.getSpecies()] = true;
-			}
-		}
-		if (getLogMessages()) {
-			HashSet<SpeciesVertex> speciesToAverage = new HashSet<SpeciesVertex>();
-			for (int s=0; s < getNumberOfSpecies(); s++)
-				if (zeroDeficiencySpeciesToAverageMask[s])
-					speciesToAverage.add(getGraph().getSpeciesVertex(s));
-			if (logger.isInfoEnabled())
-				logger.info(" Species to average {}", speciesToAverage);
-		}
-	
-		for (Set<SpeciesVertex> subnetwork : subnetworksToAverage) {
-			for (SpeciesVertex vertex : subnetwork) {
-				overrideSpeciesType(vertex.getSpecies(), SpeciesType.CONTINUOUS);
-			}
-		}
-		// Recompute the type of all reactions considered to be stochastic
-		for (int r=0; r < getNumberOfReactions(); r++)
-			if (getReactionType(r) == ReactionType.STOCHASTIC)
-				computeReactionTermType(r);
-//		for (SpeciesVertex vertex : speciesToAverage)
-//			for (int reaction : getInvolvedReactions(vertex.getSpecies()))
-//				overrideReactionType(reaction, ReactionType.DETERMINISTIC);
+	public void scaleStateInPlace(double[] x) {
+		// Recover true copy numbers from scaled species values
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			x[s] *= getInverseSpeciesScaleFactor(s);
 	}
 
-	public void adapt(double t, double[] x, double[] xDot, double[] propensities) {
+	/**
+	 * @param t the current time
+	 * @param x the unscaled state
+	 */
+	public void adapt(double t, double[] x) {
 
 		if (getLogMessages() && logger.isInfoEnabled())
 			logger.info("Adapting at t={}", t);
-
-		// Recover true copy numbers from scaled species values
-		for (int s=0; s < getNumberOfSpecies(); s++)
-			x[s] *= getSpeciesScaleFactor(s);
 
 		// Compute new values for alpha and beta
 		findOptimalScaling(x);
@@ -194,101 +151,98 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 
 //		double[] reactionTimescales = computeReactionTimescales(x);
 
-		if (averagingUnitOptional.isPresent()) {
-			AveragingUnit averagingUnit = averagingUnitOptional.get();
-//			List<Set<SpeciesVertex>> subnetworksToAverage
-//				= averagingUnit.getSubnetworksToAverageAndResampleState(t, x, reactionTimescales);
-			List<Set<SpeciesVertex>> subnetworksToAverage
-				= averagingUnit.getSubnetworksToAverageAndResampleState(t, x, subnetworkFilter.getFilterPredicate(t, x));
-			averageSubnetworks(subnetworksToAverage);
-		}
-
-		if (propensities != null) {
-
-			if (getLogMessages() && logger.isInfoEnabled()) {
-				int deterministicReactions = 0;
-				for (int r=0; r < getNumberOfReactions(); r++) {
-					ReactionType rt = getReactionType(r);
-					if (rt == ReactionType.DETERMINISTIC)
-						deterministicReactions++;
-				}
-				logger.info(" Stochastic propensities ({})", (getNumberOfReactions() - deterministicReactions));
-				for (int r=0; r < getNumberOfReactions(); r++) {
-					ReactionType rt = getReactionType(r);
-					if (rt == ReactionType.STOCHASTIC)
-						logger.info("  {}: {}", r, propensities[r]);
-				}
-				logger.info(" Deterministic propensities ({})", deterministicReactions);
-				for (int r=0; r < getNumberOfReactions(); r++) {
-					ReactionType rt = getReactionType(r);
-					if (rt == ReactionType.DETERMINISTIC)
-						logger.info("  {}: {}", r, propensities[r]);
-				}
-			}
-
-			// Compute waiting times for stochastic and deterministic reactions
-			double stochasticPropensitySum = 0.0;
-			double deterministicPropensitySum = 0.0;
-			for (int r=0; r < getNumberOfReactions(); r++) {
-				if (propensities[r] > 0) {
-					ReactionType rt = getReactionType(r);
-					if (rt == ReactionType.STOCHASTIC) {
-						stochasticPropensitySum += propensities[r];
-//						if (propensities[r] > stochasticPropensitySum)
-//							stochasticPropensitySum = propensities[r];
-					} else if (rt == ReactionType.DETERMINISTIC) {
-						deterministicPropensitySum += propensities[r];
-//						if (propensities[r] > deterministicPropensitySum)
-//							deterministicPropensitySum = propensities[r];
-					}
-				}
-			}
-
-			// If the timescale-separation between stochastic and deterministic reactions is too small
-			// treat all reactions as stochastic
-			double stochasticToDeterministicAvgWaitingTimeRatio = Double.POSITIVE_INFINITY;
-			if (stochasticPropensitySum > 0.0)
-				stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensitySum / stochasticPropensitySum;
-        	// TODO: Make this value configurable
-			double theta = 10;
-			if (stochasticToDeterministicAvgWaitingTimeRatio < theta) {
-				ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
-				Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
-				overrideReactionTypes(reactionTypes);
-				if (getLogMessages() && logger.isInfoEnabled())
-					logger.info(" Overriding reaction types ({}/{}={} < {})",
-							deterministicPropensitySum, stochasticPropensitySum, stochasticToDeterministicAvgWaitingTimeRatio, theta);
-			}
-			else
-				if (getLogMessages() && logger.isInfoEnabled())
-					logger.info(" Keeping reaction types ({}/{}={} >= {})",
-							deterministicPropensitySum, stochasticPropensitySum, stochasticToDeterministicAvgWaitingTimeRatio, theta);
-		}
-
-		// Scale copy numbers with new species scale factors.
-		for (int s=0; s < getNumberOfSpecies(); s++) {
-			x[s] *= getInverseSpeciesScaleFactor(s);
-		}
+		// TODO
+//		if (propensities != null) {
+//			checkStochasticWaitingTimeSeparation(propensities);
+//		}
 
 	}
+
+	public void updateReactionTypes(double[] propensities) {
+		computeReactionTermTypes();
+		// TODO
+//		checkStochasticWaitingTimeSeparation(propensities);
+	}
+
+//	private void checkStochasticWaitingTimeSeparation(double[] propensities) {
+//		if (getLogMessages() && logger.isInfoEnabled()) {
+//			int deterministicReactions = 0;
+//			for (int r=0; r < getNumberOfReactions(); r++) {
+//				ReactionType rt = getReactionType(r);
+//				if (rt == ReactionType.DETERMINISTIC)
+//					deterministicReactions++;
+//			}
+//			logger.info(" Stochastic propensities ({})", (getNumberOfReactions() - deterministicReactions));
+//			for (int r=0; r < getNumberOfReactions(); r++) {
+//				ReactionType rt = getReactionType(r);
+//				if (rt == ReactionType.STOCHASTIC)
+//					logger.info("  {}: {}", r, propensities[r]);
+//			}
+//			logger.info(" Deterministic propensities ({})", deterministicReactions);
+//			for (int r=0; r < getNumberOfReactions(); r++) {
+//				ReactionType rt = getReactionType(r);
+//				if (rt == ReactionType.DETERMINISTIC)
+//					logger.info("  {}: {}", r, propensities[r]);
+//			}
+//		}
+//
+//		// Compute waiting times for stochastic and deterministic reactions
+//		double stochasticPropensitySum = 0.0;
+//		double deterministicPropensitySum = 0.0;
+//		for (int r=0; r < getNumberOfReactions(); r++) {
+//			if (propensities[r] > 0) {
+//				ReactionType rt = getReactionType(r);
+//				if (rt == ReactionType.STOCHASTIC) {
+//					stochasticPropensitySum += propensities[r];
+////					if (propensities[r] > stochasticPropensitySum)
+////						stochasticPropensitySum = propensities[r];
+//				} else if (rt == ReactionType.DETERMINISTIC) {
+//					deterministicPropensitySum += propensities[r];
+////					if (propensities[r] > deterministicPropensitySum)
+////						deterministicPropensitySum = propensities[r];
+//				}
+//			}
+//		}
+//
+//		// If the timescale-separation between stochastic and deterministic reactions is too small
+//		// treat all reactions as stochastic
+//		double stochasticToDeterministicAvgWaitingTimeRatio = Double.POSITIVE_INFINITY;
+//		if (stochasticPropensitySum > 0.0)
+//			stochasticToDeterministicAvgWaitingTimeRatio = deterministicPropensitySum / stochasticPropensitySum;
+//    	// TODO: Make this value configurable
+//		double theta = 10;
+//		if (stochasticToDeterministicAvgWaitingTimeRatio < theta) {
+//			ReactionType[] reactionTypes = new ReactionType[getNumberOfReactions()];
+//			Arrays.fill(reactionTypes, ReactionType.STOCHASTIC);
+//			overrideReactionTypes(reactionTypes);
+//			if (getLogMessages() && logger.isInfoEnabled())
+//				logger.info(" Overriding reaction types ({}/{}={} < {})",
+//						deterministicPropensitySum, stochasticPropensitySum, stochasticToDeterministicAvgWaitingTimeRatio, theta);
+//		}
+//		else
+//			if (getLogMessages() && logger.isInfoEnabled())
+//				logger.info(" Keeping reaction types ({}/{}={} >= {})",
+//						deterministicPropensitySum, stochasticPropensitySum, stochasticToDeterministicAvgWaitingTimeRatio, theta);
+//	}
 
 	public double[] computeReactionTimescales(double t, double[] x) {
 		double[] reactionTimescales = new double[getNumberOfReactions()];
 		for (int r=0; r < getNumberOfReactions(); r++) {
-			String rLabel = getReactionLabel(r);
 			int[] choiceIndices = getChoiceIndices(r);
 			// This is unnecessary as the scales are only compared to each other so the constant
 			// offset of gamma doesn't change anything.
 			double propensityScale = getGamma();
 			for (int i=0; i < choiceIndices.length; i++) {
-				String sLabel = getSpeciesLabel(choiceIndices[i]);
 //				propensityScale += getAlpha(choiceIndices[i]);
 				double copyNumber = x[choiceIndices[i]];
 				if (copyNumber > 0)
 					propensityScale += FastMath.log(copyNumber) / FastMath.log(getN());
 			}
 			propensityScale += FastMath.log(getRateParameter(r)) / FastMath.log(getN());
-			reactionTimescales[r] = - propensityScale;
+			if (getRateParameter(r) == 0.0)
+				reactionTimescales[r] = Double.NEGATIVE_INFINITY;
+			else
+				reactionTimescales[r] = - propensityScale;
 		}
 		return reactionTimescales;
 //		double[] reactionTimescales = new double[getNumberOfReactions()];
@@ -332,7 +286,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 		for (int s=0; s < getNumberOfSpecies(); s++) {
 			List<Integer> reactions = getInvolvedReactions(s);
 			for (int r : reactions) {
-				if (getStochiometry(s, r) != 0) {
+				if (getStoichiometry(s, r) != 0) {
 					double timescale = - propensityScales[r];
 					networkTimescales[s][r] = timescale;
 				}
@@ -446,7 +400,6 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 
 	// Solve a linear program to find alpha and beta
 	private void findOptimalScaling(double[] x) {
-		final double boundTolerance = 1e-3;
 		// We only optimize for alpha_i which are allowed to be > 0
 		boolean[] nonZeroAlphaMask = new boolean[getNumberOfSpecies()];
 		int[] nonZeroAlphaIndex = new int[getNumberOfSpecies()];
@@ -462,7 +415,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 			else
 				// TODO: Use (+ 1) or not?
 				a = FastMath.log(x[s]) / FastMath.log(getN());
-			if (a < boundTolerance)
+			if (a < getBoundTolerance())
 				a = 0.0;
 			if (a == 0.0) {
 				nonZeroAlphaMask[s] = false;
@@ -481,7 +434,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 		for (int r=0; r < getNumberOfReactions(); r++) {
 			// TODO: Use (+ 1) or not
 			double b = FastMath.log(getRateParameter(r)) / FastMath.log(getN());
-			if (b < boundTolerance)
+			if (b < getBoundTolerance())
 				b = 0.0;
 			maxBeta[r] = b;
 		}
@@ -499,17 +452,20 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 		LinkedList<LinearConstraint> constraintList = new LinkedList<LinearConstraint>();
 		for (int i=0; i < qVector.length; i++)
 			qVector[i] = 0.0;
+		// Constraints: 0 <= alpha_i <= maxAlphaNZ_i
 		for (int s=0; s < maxAlphaNZ.length; s++) {
 			qVector[s] = 1.0;
 			constraintList.add(new LinearConstraint(qVector, Relationship.GEQ, 0.0));
 			constraintList.add(new LinearConstraint(qVector, Relationship.LEQ, maxAlphaNZ[s]));
 			qVector[s] = 0.0;
 		}
+		// Constraints: beta_k <= maxBeta_k
 		for (int r=0; r < getNumberOfReactions(); r++) {
 			qVector[maxAlphaNZ.length + r] = 1.0;
 			constraintList.add(new LinearConstraint(qVector, Relationship.LEQ, maxBeta[r]));
 			qVector[maxAlphaNZ.length + r] = 0.0;
 		}
+		// Constraints: beta_k + alpha * nu' - alpha_i <= -gamma (if nu'_{ik} != 0)
 		for (int r=0; r < getNumberOfReactions(); r++) {
 			qVector[maxAlphaNZ.length + r] = 1.0;
 			int[] choiceIndices = getChoiceIndices(r);
@@ -518,7 +474,7 @@ public class AdaptiveMSHRN extends MSHybridReactionNetwork implements Serializab
 					if (nonZeroAlphaMask[choiceIndex])
 						qVector[nonZeroAlphaIndex[choiceIndex]] += 1.0;
 			for (int s=0; s < getNumberOfSpecies(); s++) {
-				if (getStochiometry(s, r) != 0) {
+				if (getStoichiometry(s, r) != 0) {
 					if (nonZeroAlphaMask[s]) {
 						qVector[nonZeroAlphaIndex[s]] -= 1.0;
 						constraintList.add(new LinearConstraint(qVector, Relationship.LEQ, -getGamma()));

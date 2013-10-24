@@ -42,7 +42,7 @@ public class BacteriumOperatorSiteNetwork extends SimulationConfiguration {
 				4.8e-4,
 		};
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
-		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = { "G", "G*", "P" };
 

@@ -4,6 +4,8 @@ import java.util.Collection;
 
 public class Utilities {
 
+	public static String DEFAULT_DOUBLE_FORMAT = "%f";
+
 	public static void printArray(String name, int[] array) {
 		Integer[] temp = new Integer[array.length];
 		for (int i=0; i < array.length; i++)
@@ -19,10 +21,14 @@ public class Utilities {
 	}
 
 	public static void printArray(String name, double[] array) {
+		printArray(name, array, DEFAULT_DOUBLE_FORMAT);
+	}
+
+	public static void printArray(String name, double[] array, String format) {
 		Double[] temp = new Double[array.length];
 		for (int i=0; i < array.length; i++)
 			temp[i] = Double.valueOf(array[i]);
-		printArray(name, temp);
+		printArray(name, temp, format);
 	}
 
 	public static void printArray(String name, boolean[] array) {
@@ -33,11 +39,18 @@ public class Utilities {
 	}
 
 	public static <T> void printArray(String name, T[] array) {
+		printArray(name, array, null);
+	}
+
+	public static <T> void printArray(String name, T[] array, String format) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(name);
 		sb.append(": [");
 		for (int i=0; i < array.length; i++) {
-			sb.append(array[i]);
+			if (format == null)
+				sb.append(array[i]);
+			else
+				sb.append(String.format(format, array[i]));
 			if (i < array.length - 1)
 				sb.append(", ");
 		}

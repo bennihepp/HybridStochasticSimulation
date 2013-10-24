@@ -18,6 +18,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.CSVO
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.CVodeSolverProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.CombiningAveragingUnitProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.DeterministicModelProvider;
+import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.EulerSolverProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.FiniteMarkovChainAveragingUnitProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.FiniteTrajectoryRecorderProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.injection.guiceproviders.HDF5OutputProvider;
@@ -39,6 +40,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.models.StochasticReactionNetw
 import ch.ethz.khammash.hybridstochasticsimulation.networks.AdaptiveMSHRN;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.MSHybridReactionNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.providers.FixedStepPDMPSimulatorProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.ObjProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.PDMPSimulatorProvider;
 import ch.ethz.khammash.hybridstochasticsimulation.providers.RandomDataGeneratorProvider;
@@ -48,6 +50,7 @@ import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectory
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FiniteTrajectoryRecorder;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.FixedTimepointsTrajectoryMapper;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.ScalingTrajectoryMapper;
+import ch.ethz.khammash.ode.FixedStepSolver;
 import ch.ethz.khammash.ode.Solver;
 
 import com.google.inject.AbstractModule;
@@ -93,8 +96,39 @@ public class BatchGuiceModule extends AbstractModule {
 		bind(AdaptiveMSHRN.class).toProvider(AdaptiveMSHRNProvider.class);
 		// FiniteTrajectoryRecorderFactory
 		bind(new TypeLiteral<ObjProvider<FiniteTrajectoryRecorder>>() {}).to(FiniteTrajectoryRecorderProvider.class);
+		// SimulatorFactory
+		String simulatorType = config.getString("SimulationParameters.simulator.type", "StochasticSimulator");
+		String modelType = config.getString("SimulationParameters.simulator.modelType", "<default>");
+		String defaultModelType = null;
+		boolean usePDMPSimulator = false;
+		switch (simulatorType) {
+		case "StochasticSimulator":
+			defaultModelType = "Stochastic";
+			bind(SimulationJob.class).toProvider(StochasticSimulationJobProvider.class);
+			bind(SimulationController.class).to(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {});
+			bind(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {}).toProvider(StochasticSimulationControllerProvider.class);
+			bind(new TypeLiteral<ObjProvider<Simulator<StochasticReactionNetworkModel>>>() {}).to(StochasticSimulatorProvider.class);
+			break;
+		case "FixedStepPDMPSimulator":
+			usePDMPSimulator = true;
+			bind(new TypeLiteral<ObjProvider<Simulator<PDMPModel>>>() {}).to(FixedStepPDMPSimulatorProvider.class);
+			break;
+		case "PDMPSimulator":
+			usePDMPSimulator = true;
+			bind(new TypeLiteral<ObjProvider<Simulator<PDMPModel>>>() {}).to(PDMPSimulatorProvider.class);
+			break;
+		default:
+			throw new ConfigurationException(String.format("Unknown simulator type: %s", simulatorType));
+		}
+		if (usePDMPSimulator) {
+			defaultModelType = "AdaptiveMSHRN";
+			bind(SimulationJob.class).toProvider(PDMPSimulationJobProvider.class);
+			bind(SimulationController.class).to(new TypeLiteral<SimulationController<PDMPModel>>() {});
+			bind(new TypeLiteral<SimulationController<PDMPModel>>() {}).toProvider(PDMPSimulationControllerProvider.class);
+		}
+		if (modelType.equals("<default>"))
+			modelType = defaultModelType;
 		// ModelFactory
-		String modelType = config.getString("ModelParameters.modelType", "Stochastic");
 		switch (modelType) {
 		case "Stochastic":
 //			bind(ObjProvider.class).to(new TypeLiteral<ObjProvider<StochasticReactionNetworkModel>>() {});
@@ -112,9 +146,11 @@ public class BatchGuiceModule extends AbstractModule {
 //			bind(ObjProvider.class).to(new TypeLiteral<ObjProvider<PDMPModel>>() {});
 			bind(new TypeLiteral<ObjProvider<PDMPModel>>() {}).to(DeterministicModelProvider.class);
 			break;
+		default:
+			throw new ConfigurationException(String.format("Unknown modelType: %s", modelType));
 		}
 		// Averaging
-		String averagingType = config.getString("SimulationParameters.averagingType", "None");
+		String averagingType = config.getString("SimulationParameters.averaging type", "None");
 		switch (averagingType) {
 		case "None":
 		case "Dummy":
@@ -132,6 +168,8 @@ public class BatchGuiceModule extends AbstractModule {
 		case "CombiningAveragingUnit":
 			bind(AveragingUnit.class).toProvider(CombiningAveragingUnitProvider.class);
 			break;
+		default:
+			throw new ConfigurationException(String.format("Unknown averaging type: %s", averagingType));
 		}
 		String averagingUnitsKey = "AveragingParameters.averagingUnits";
 		if (config.getMaxIndex(averagingUnitsKey) >= 0) {
@@ -149,6 +187,8 @@ public class BatchGuiceModule extends AbstractModule {
 				case "PseudoLinearAveragingUnit":
 					auBinder.addBinding().to(PseudoLinearAveragingUnitProvider.class);
 					break;
+				default:
+					throw new ConfigurationException(String.format("Unknown averaging type: %s", averagingUnitString));
 				}
 			}
 		}
@@ -167,6 +207,8 @@ public class BatchGuiceModule extends AbstractModule {
 		case "Dummy":
 			bind(SimulationOutput.class).to(DummyOutput.class);
 			break;
+		default:
+			throw new ConfigurationException(String.format("Unknown output type: %s", outputType));
 		}
 		// Output mapper
 		String mapperType = config.getString("OutputParameters.trajectoryMapper.type");
@@ -178,30 +220,20 @@ public class BatchGuiceModule extends AbstractModule {
 		case "ScalingTrajectoryMapper":
 			bind(FiniteTrajectoryMapper.class).to(ScalingTrajectoryMapper.class);
 			break;
+		default:
+			throw new ConfigurationException(String.format("Unknown mapper type: %s", mapperType));
 		}
-		// SimulationJob and SimulationController
-		switch (modelType) {
-		case "Stochastic":
-			bind(SimulationJob.class).toProvider(StochasticSimulationJobProvider.class);
-			bind(SimulationController.class).to(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {});
-			bind(new TypeLiteral<SimulationController<StochasticReactionNetworkModel>>() {}).toProvider(StochasticSimulationControllerProvider.class);
-			bind(new TypeLiteral<ObjProvider<Simulator<StochasticReactionNetworkModel>>>() {}).to(StochasticSimulatorProvider.class);
-			break;
-		case "AdaptiveMSHRN":
-		case "MSHybridReactionNetwork":
-		case "Deterministic":
-			bind(SimulationJob.class).toProvider(PDMPSimulationJobProvider.class);
-			bind(SimulationController.class).to(new TypeLiteral<SimulationController<PDMPModel>>() {});
-			bind(new TypeLiteral<SimulationController<PDMPModel>>() {}).toProvider(PDMPSimulationControllerProvider.class);
-			bind(new TypeLiteral<ObjProvider<Simulator<PDMPModel>>>() {}).to(PDMPSimulatorProvider.class);
-			break;
-		}
-		String solverType = config.getString("SimulationParameters.solver.type", null);
+		String solverType = config.getString("SimulationParameters.simulator.solver.type", null);
 		if (solverType != null) {
 			switch (solverType) {
 			case "CVodeSolver":
 				bind(new TypeLiteral<ObjProvider<Solver>>() {}).to(CVodeSolverProvider.class);
 				break;
+			case "EulerSolver":
+				bind(new TypeLiteral<ObjProvider<FixedStepSolver>>() {}).to(EulerSolverProvider.class);
+				break;
+			default:
+				throw new ConfigurationException(String.format("Unknown solver type: %s", solverType));
 			}
 		}
 	}

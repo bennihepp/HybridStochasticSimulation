@@ -37,6 +37,10 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 public class Repressilator extends SimulationConfiguration {
 
 	public Repressilator() {
+		this(false);
+	}
+
+	public Repressilator(boolean modifiedParameters) {
 
 		int[][] productionStochiometries = {
 		//   R0  R1  R2  R3  R4  R5  R6  R7  R8  R9 R10 R11 R12 R13 R14
@@ -62,22 +66,23 @@ public class Repressilator extends SimulationConfiguration {
 		x0[0] = 10;
 		x0[1] = 500;
 
+		double highParameterValue = modifiedParameters ? 5.0 : 50.0;
 		double[] rateParameters = new double[productionStochiometries[0].length];
 		// Reaction propensities
 		rateParameters[0]  = 0.1;
-		rateParameters[1]  = 50.0;
+		rateParameters[1]  = highParameterValue;
 		rateParameters[2]  = 0.01;
-		rateParameters[3]  = 50.0;
+		rateParameters[3]  = highParameterValue;
 		rateParameters[4]  = 0.01;
 		rateParameters[5]  = 0.1;
-		rateParameters[6]  = 50.0;
+		rateParameters[6]  = highParameterValue;
 		rateParameters[7]  = 0.01;
-		rateParameters[8]  = 50.0;
+		rateParameters[8]  = highParameterValue;
 		rateParameters[9]  = 0.01;
 		rateParameters[10] = 0.1;
-		rateParameters[11] = 50.0;
+		rateParameters[11] = highParameterValue;
 		rateParameters[12] = 0.01;
-		rateParameters[13] = 50.0;
+		rateParameters[13] = highParameterValue;
 		rateParameters[14] = 0.01;
 
 		double t0 = 0.0;
@@ -97,7 +102,7 @@ public class Repressilator extends SimulationConfiguration {
 		productionStochiometries = transpose(productionStochiometries);
 		consumptionStochiometries = transpose(consumptionStochiometries);
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(x0.length, rateParameters.length);
-		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = {
 		    "mA",

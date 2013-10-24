@@ -1,11 +1,15 @@
 package ch.ethz.khammash.hybridstochasticsimulation.networks;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.AveragingCandidateFilter;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.SubnetworkDescription;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 
 import com.google.common.base.Predicate;
@@ -15,26 +19,19 @@ public class SpeciesTimescaleSeparationSubnetworkFilter implements AveragingCand
 	private static final long serialVersionUID = 1L;
 
 	private AdaptiveMSHRN hrn;
-//	private double t;
-//	private double[] x;
 
 	public SpeciesTimescaleSeparationSubnetworkFilter(AdaptiveMSHRN hrn) {
 		this.hrn = hrn;
 	}
 
 	@Override
-	public Predicate<Set<SpeciesVertex>> getFilterPredicate(double t, double[] x) {
-//		this.t = t;
-//		this.x = x;
-//		final double[][] networkTimescales = hrn.computeNetworkTimescales(t, x);
-//		final double[] minSpeciesTimescales = hrn.computeMinSpeciesTimescales(t, x);
-//		final double[] maxSpeciesTimescales = hrn.computeMaxSpeciesTimescales(t, x);
+	public Predicate<SubnetworkDescription> getFilterPredicate(double t, double[] x) {
 		final double[] reactionTimescales = hrn.computeReactionTimescales(t, x);
-		return new Predicate<Set<SpeciesVertex>>() {
+		return new Predicate<SubnetworkDescription>() {
 
 			@Override
-			public boolean apply(Set<SpeciesVertex> subnetworkSpecies) {
-				double timescaleSeparation = computeSubnetworkSpeciesTimescaleSeparation(subnetworkSpecies, reactionTimescales);
+			public boolean apply(SubnetworkDescription subnetwork) {
+				double timescaleSeparation = computeSubnetworkSpeciesTimescaleSeparation(subnetwork, reactionTimescales);
 				boolean result = timescaleSeparation >= hrn.getTheta();
 				return result;
 			}
@@ -42,60 +39,22 @@ public class SpeciesTimescaleSeparationSubnetworkFilter implements AveragingCand
 		};
 	}
 
-	// TODO: extract this into a data structure "SubnetworkDescription" or something similar
-	protected double computeSubnetworkSpeciesTimescaleSeparation(Set<SpeciesVertex> subnetworkSpecies, double[] reactionTimescales) {
-		Set<Integer> subnetworkSpeciesIndices = new HashSet<>(hrn.getNumberOfSpecies());
+	protected double computeSubnetworkSpeciesTimescaleSeparation(SubnetworkDescription subnetwork, double[] reactionTimescales) {
+		Set<SpeciesVertex> subnetworkSpecies = subnetwork.getSubnetworkSpecies();
+		Set<Integer> subnetworkSpeciesIndices = new HashSet<>(subnetworkSpecies.size());
 		for (SpeciesVertex v : subnetworkSpecies)
 			subnetworkSpeciesIndices.add(v.getSpecies());
 
-//		double maxSubnetworkTimescale = Double.NEGATIVE_INFINITY;
-//		if (subnetworkSpecies.size() == 0)
-//			// TODO: return immediately?
-//			maxSubnetworkTimescale = Double.POSITIVE_INFINITY;
-//		for (int species : subnetworkSpeciesIndices) {
-//			for (int reaction : hrn.getInvolvedReactions(species)) {
-//				if (hrn.getStochiometry(species, reaction) != 0) {
-//					double timescale = reactionTimescales[reaction] + hrn.getAlpha(species);
-//					if (maxSubnetworkTimescale < timescale)
-//						maxSubnetworkTimescale = timescale;
-//				}
-//			}
-//		}
-
-		Set<Integer> allInvolvedReactions = new HashSet<>(hrn.getNumberOfReactions());
-		for (SpeciesVertex v : subnetworkSpecies) {
-			allInvolvedReactions.addAll(hrn.getInvolvedReactions(v.getSpecies()));
-		}
-		Set<Integer> borderReactions = new HashSet<>(hrn.getNumberOfReactions());
-		Set<Integer> subnetworkReactions = new HashSet<>(hrn.getNumberOfReactions());
-		for (int reaction : allInvolvedReactions) {
-			String rLabel = hrn.getReactionLabel(reaction);
-			List<Integer> involvedSpecies = hrn.getInvolvedSpecies(reaction);
-			boolean subnetworkReactionFlag = true;
-			for (int species : involvedSpecies) {
-				String sLabel = hrn.getSpeciesLabel(species);
-				if (hrn.getStochiometry(species, reaction) != 0) {
-					if (!subnetworkSpeciesIndices.contains(species)) {
-						subnetworkReactionFlag = false;
-						break;
-					}
-				}
-			}
-			if (subnetworkReactionFlag)
-				subnetworkReactions.add(reaction);
-			else
-				borderReactions.add(reaction);
-		}
+		Set<Integer> surroundingReactions = subnetwork.getSurroundingReactions();
+		Set<Integer> subnetworkReactions = subnetwork.getSubnetworkReactions();
 
 		double maxSubnetworkTimescale = Double.NEGATIVE_INFINITY;
 		if (subnetworkReactions.size() == 0)
 			// TODO: return immediately?
 			maxSubnetworkTimescale = Double.POSITIVE_INFINITY;
 		for (int reaction : subnetworkReactions) {
-			String rLabel = hrn.getReactionLabel(reaction);
 			for (int species : hrn.getInvolvedSpecies(reaction)) {
-				String sLabel = hrn.getSpeciesLabel(species);
-				if (hrn.getStochiometry(species, reaction) != 0) {
+				if (hrn.getStoichiometry(species, reaction) != 0) {
 					double timescale = reactionTimescales[reaction];
 					if (maxSubnetworkTimescale < timescale)
 						maxSubnetworkTimescale = timescale;
@@ -103,42 +62,98 @@ public class SpeciesTimescaleSeparationSubnetworkFilter implements AveragingCand
 			}
 		}
 
-		double minBorderTimescale = Double.POSITIVE_INFINITY;;
-		for (int reaction : borderReactions) {
-			String rLabel = hrn.getReactionLabel(reaction);
+		double minSurroundingTimescale = Double.POSITIVE_INFINITY;;
+		for (int reaction : surroundingReactions) {
+			double minAlpha = 0.0;
+			double minTimescale = Double.POSITIVE_INFINITY;
 			for (int species : hrn.getInvolvedSpecies(reaction)) {
-				String sLabel = hrn.getSpeciesLabel(species);
-				if (hrn.getStochiometry(species, reaction) != 0) {
-					double timescale = reactionTimescales[reaction] + hrn.getAlpha(species);
-					if (minBorderTimescale > timescale)
-						minBorderTimescale = timescale;
+				if (subnetworkSpeciesIndices.contains(species)) {
+					// If a surrounding reaction modifies a species of a subnetwork
+					// then the timescale has to be considered without abundances of outside species
+					if (hrn.getStoichiometry(species, reaction) != 0)
+						minAlpha = 0.0;
+				} else if (hrn.getStoichiometry(species, reaction) != 0) {
+					double timescale = reactionTimescales[reaction];
+					if (minTimescale > timescale)
+						minTimescale = timescale;
 				}
 			}
+			minTimescale += minAlpha;
+			if (minTimescale < minSurroundingTimescale)
+				minSurroundingTimescale = minTimescale;
 		}
 
-//		Set<Integer> borderSpeciesIndices = new HashSet<>(hrn.getNumberOfSpecies());
-//		for (int reaction : allInvolvedReactions) {
-//			List<Integer> involvedSpecies = hrn.getInvolvedSpecies(reaction);
-//			for (int species : involvedSpecies) {
-//				if (!subnetworkSpeciesIndices.contains(species))
-//					borderSpeciesIndices.add(species);
-//			}
-//		}
+		double timescaleSeparation = minSurroundingTimescale - maxSubnetworkTimescale;
 
-//		double minBorderTimescale = Double.POSITIVE_INFINITY;;
-//		for (int species : borderSpeciesIndices) {
-//			for (int reaction : hrn.getInvolvedReactions(species)) {
-//				if (hrn.getStochiometry(species, reaction) != 0) {
-//					double timescale = reactionTimescales[reaction] + hrn.getAlpha(species);
-//					if (minBorderTimescale > timescale)
-//						minBorderTimescale = timescale;
+		return timescaleSeparation;
+	}
+
+//	protected double computeSubnetworkSpeciesTimescaleSeparation2(SubnetworkDescription subnetwork, final double[] reactionTimescales) {
+//		Set<SpeciesVertex> subnetworkSpecies = subnetwork.getSubnetworkSpecies();
+//		Set<Integer> subnetworkSpeciesIndices = new HashSet<>(subnetworkSpecies.size());
+//		for (SpeciesVertex v : subnetworkSpecies)
+//			subnetworkSpeciesIndices.add(v.getSpecies());
+//
+//		// Get all reactions $k$ such that $\nu_ik != 0$ or $\xi_ik != 0$ for some $i \in subnetwork$
+//		Set<Integer> subnetworkReactions = subnetwork.getSubnetworkReactions();
+//		List<Integer> reactions = new ArrayList<>(subnetworkReactions);
+//		Collections.sort(reactions, new Comparator<Integer>() {
+//
+//			@Override
+//			public int compare(Integer o1, Integer o2) {
+//				double tau1 = reactionTimescales[o1];
+//				double tau2 = reactionTimescales[o2];
+//				return Double.compare(tau1, tau2);
+//			}
+//
+//		});
+//
+//		double maxDeltaTau = 0.0;
+//		int upperIndex = 0;
+//		for (int i=reactions.size() - 1; i > 0; i--) {
+//			double tauUpper = reactionTimescales[reactions.get(i)];
+//			double tauLower = reactionTimescales[reactions.get(i - 1)];
+//			double deltaTau = tauUpper - tauLower;
+//		}
+//
+//		double maxSubnetworkTimescale = Double.NEGATIVE_INFINITY;
+//		if (subnetworkReactions.size() == 0)
+//			// TODO: return immediately?
+//			maxSubnetworkTimescale = Double.POSITIVE_INFINITY;
+//		for (int reaction : subnetworkReactions) {
+//			for (int species : hrn.getInvolvedSpecies(reaction)) {
+//				if (hrn.getStoichiometry(species, reaction) != 0) {
+//					double timescale = reactionTimescales[reaction];
+//					if (maxSubnetworkTimescale < timescale)
+//						maxSubnetworkTimescale = timescale;
 //				}
 //			}
 //		}
-
-//		double timescaleSeparation = minBorderTimescale / maxSubnetworkTimescale;
-		double timescaleSeparation = minBorderTimescale - maxSubnetworkTimescale;
-		return timescaleSeparation;
-	}
+//
+//		double minSurroundingTimescale = Double.POSITIVE_INFINITY;;
+//		for (int reaction : surroundingReactions) {
+//			double minAlpha = 0.0;
+//			double minTimescale = Double.POSITIVE_INFINITY;
+//			for (int species : hrn.getInvolvedSpecies(reaction)) {
+//				if (subnetworkSpeciesIndices.contains(species)) {
+//					// If a surrounding reaction modifies a species of a subnetwork
+//					// then the timescale has to be considered without abundances of outside species
+//					if (hrn.getStoichiometry(species, reaction) != 0)
+//						minAlpha = 0.0;
+//				} else if (hrn.getStoichiometry(species, reaction) != 0) {
+//					double timescale = reactionTimescales[reaction];
+//					if (minTimescale > timescale)
+//						minTimescale = timescale;
+//				}
+//			}
+//			minTimescale += minAlpha;
+//			if (minTimescale < minSurroundingTimescale)
+//				minSurroundingTimescale = minTimescale;
+//		}
+//
+//		double timescaleSeparation = minSurroundingTimescale - maxSubnetworkTimescale;
+//
+//		return timescaleSeparation;
+//	}
 
 }

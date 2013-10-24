@@ -3,15 +3,15 @@ package ch.ethz.khammash.hybridstochasticsimulation.simulators.ode;
 import java.util.List;
 
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
-import ch.ethz.khammash.hybridstochasticsimulation.simulators.SimulationInformation;
+import ch.ethz.khammash.hybridstochasticsimulation.simulators.PDMPSimulationInformation;
 import ch.ethz.khammash.hybridstochasticsimulation.trajectories.TrajectoryRecorder;
 
 public class ExtendedStateObserverAdapter extends StateObserverAdapter {
 
-	private SimulationInformation simInfo;
+	private PDMPSimulationInformation simInfo;
 	private List<TrajectoryRecorder> simulationInformationTrajectoryRecorders;
 
-	public ExtendedStateObserverAdapter(SimulationInformation simInfo, PDMPModel model,
+	public ExtendedStateObserverAdapter(PDMPSimulationInformation simInfo, PDMPModel model,
 			List<TrajectoryRecorder> trajectoryRecorders, List<TrajectoryRecorder> optionalTrajectoryRecorders,
 			List<TrajectoryRecorder> simulationInformationTrajectoryRecorders) {
 		super(model, trajectoryRecorders, optionalTrajectoryRecorders);

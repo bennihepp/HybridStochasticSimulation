@@ -2,9 +2,19 @@ package ch.ethz.khammash.hybridstochasticsimulation.simulators;
 
 public interface SimulationInformation {
 
-	long getIntegrationCount();
+	void setIntegrationOn();
 
-	long getReactionCount();
+	void setIntegrationOff();
+
+	void increaseReactionCount(int reaction);
+
+	long getIntegrationSteps();
+
+	long getTotalReactionCount();
+
+	long getReactionCount(int reaction);
+
+	double getRelativeReactionCount(int reaction);
 
 	boolean isIntegrating();
 

@@ -151,6 +151,11 @@ public class PDMPMSHRNModel extends MSHybridReactionNetworkModel implements PDMP
 		return primaryState;
 	}
 
+	public void computePrimaryState(double t, double[] x, double[] pm) {
+		for (int s=0; s < getNumberOfSpecies(); s++)
+			pm[s] = x[s] * getNetwork().getSpeciesScaleFactor(s);
+	}
+
 	public List<Integer> getPrimaryStateIndices() {
 		return MathUtilities.intRangeList(0, getNumberOfSpecies());
 	}

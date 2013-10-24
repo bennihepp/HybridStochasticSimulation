@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.math3.random.RandomDataGenerator;
+import org.apache.commons.math3.util.FastMath;
 import org.ejml.UtilEjml;
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.factory.DecompositionFactory;
@@ -42,10 +43,10 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 	private static final Logger logger = LoggerFactory.getLogger(ZeroDeficiencyAveragingUnit.class);
 
 	private RandomDataGenerator rdg;
-	private transient List<Set<SpeciesVertex>> zeroDeficiencySubnetworks = null;
-	private transient Map<Set<SpeciesVertex>, SubnetworkInformation> subnetworkInformationMap;
+	private transient List<SubnetworkDescription> zeroDeficiencySubnetworks = null;
+	private transient Map<SubnetworkDescription, SubnetworkInformation> subnetworkInformationMap;
 	private UnaryBinaryStochasticModel model;
-	private boolean printMessages;
+	private boolean printMessages = false;
 
 //	public static ZeroDeficiencyAveragingProvider createInstance(double theta, UnaryBinaryReactionNetwork network,
 //			ReactionNetworkGraph graph, Set<SpeciesVertex> importantSpecies, RandomDataGenerator rdg, boolean printMessages) {
@@ -63,33 +64,42 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 		return copy;
 	}
 
-	public ZeroDeficiencyAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies, RandomDataGenerator rdg, boolean printMessages) {
+	public ZeroDeficiencyAveragingUnit(UnaryBinaryReactionNetwork network, Set<SpeciesVertex> importantSpecies, RandomDataGenerator rdg) {
 		super(network, importantSpecies);
-		this.printMessages = printMessages;
 		this.model = new UnaryBinaryStochasticModel(network);
 		this.rdg = rdg;
+	}
+
+	public void setPrintMessages(boolean printMessages) {
+		this.printMessages = printMessages;
 	}
 
 	protected ZeroDeficiencyAveragingUnit() {
 		super();
 	}
 
-	private List<Set<SpeciesVertex>> findZeroDeficiencySubnetworks() {
-		List<Set<SpeciesVertex>> zeroDeficiencySubnetworks = new ArrayList<Set<SpeciesVertex>>();
+	@Override
+	public void reset() {
+		zeroDeficiencySubnetworks = null;
+		super.reset();
+	}
+
+	private List<SubnetworkDescription> findZeroDeficiencySubnetworks() {
+		List<SubnetworkDescription> zeroDeficiencySubnetworks = new ArrayList<>();
 //		Set<SpeciesVertex> allSpecies = graph.vertexSet();
 //		Set<Set<SpeciesVertex>> speciesPowerset = Sets.powerSet(allSpecies);
 //		for (Set<SpeciesVertex> subnetworkSpecies : speciesPowerset) {
-		for (Set<SpeciesVertex> subnetworkSpecies : enumerateSubnetworks()) {
-			UnaryBinaryReactionNetwork subnetwork = createSubReactionNetwork(network, subnetworkSpecies);
+		for (SubnetworkDescription subnetworkDescr : enumerateSubnetworks()) {
+			UnaryBinaryReactionNetwork subnetwork = createSubReactionNetwork(network, subnetworkDescr.getSubnetworkSpecies());
 
-			SubnetworkInformation subnetworkInfo = new SubnetworkInformation();
+			SubnetworkInformation subnetworkInfo = new SubnetworkInformation(subnetworkDescr);
 
 			UnaryBinaryDeterministicModel subnetworkModel = new UnaryBinaryDeterministicModel(subnetwork);
 			subnetworkInfo.setModel(subnetworkModel);
 
 			List<SpeciesConservationRelation> conservedSpeciesRelations = SpeciesConservationRelation.computeSpeciesConservationRelations(subnetwork);
 			subnetworkInfo.setConservedSpeciesRelations(conservedSpeciesRelations);
-			Set<SpeciesVertex> unconservedSpeciesSet = new HashSet<>(subnetworkSpecies);
+			Set<SpeciesVertex> unconservedSpeciesSet = new HashSet<>(subnetworkDescr.getSubnetworkSpecies());
 			for (SpeciesConservationRelation relation : subnetworkInfo.getConservedSpeciesRelations())
 				unconservedSpeciesSet.removeAll(relation.getConservedSpeciesList());
 			subnetworkInfo.setUnconservedSpecies(unconservedSpeciesSet);
@@ -97,14 +107,14 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 			// TODO: It might be more efficient to look for all reactions involved with outside species and then take the difference
 			// of all reactions and those "outside reactions"
 			Set<Integer> subspeciesReactionIndices = new HashSet<>();
-			for (SpeciesVertex v : subnetworkSpecies)
+			for (SpeciesVertex v : subnetworkDescr.getSubnetworkSpecies())
 				subspeciesReactionIndices.addAll(network.getInvolvedReactions(v.getSpecies()));
 			Set<Integer> subnetworkReactionIndices = new HashSet<>();
 			for (int reaction : subspeciesReactionIndices) {
 				boolean interactsWithOutsideSpecies = false;
 				List<Integer> involvedSpecies = network.getInvolvedSpecies(reaction);
 				for (int species : involvedSpecies)
-					if (!subnetworkSpecies.contains(graph.getSpeciesVertex(species))) {
+					if (!subnetworkDescr.getSubnetworkSpecies().contains(graph.getSpeciesVertex(species))) {
 						interactsWithOutsideSpecies = true;
 						break;
 					}
@@ -122,19 +132,23 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 			}
 			subnetworkInfo.setIndexMap(subnetworkIndexMap);
 
-			subnetworkInformationMap.put(subnetworkSpecies, subnetworkInfo);
-
 			ComplexGraph subnetworkComplexGraph = createComplexGraphOfSubnetwork(subnetwork);
 			if (printMessages) {
 				StringBuilder sb = new StringBuilder();
 				sb.append("Computing deficiency for {");
-				for (SpeciesVertex v : subnetworkSpecies) {
+				for (SpeciesVertex v : subnetworkDescr.getSubnetworkSpecies()) {
 					sb.append(v);
 					sb.append(", ");
 				}
 				sb.delete(sb.length() - 2, sb.length());
 				sb.append("}");
 				logger.info(sb.toString());
+			}
+			List<Integer> subnetworkSpecies = subnetworkDescr.getSubnetworkSpeciesIndices();
+			if (subnetworkSpecies.contains(5) && subnetworkSpecies.contains(7) && subnetworkSpecies.contains(8) && subnetworkSpecies.size() == 3) {
+				subnetworkInformationMap.put(subnetworkInfo, subnetworkInfo);
+				zeroDeficiencySubnetworks.add(subnetworkInfo);
+				continue;
 			}
 			int deficiency = computeDeficiency(subnetwork, subnetworkComplexGraph);
 			if (deficiency != 0)
@@ -143,7 +157,9 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 			if (!weaklyReversible)
 				continue;
 
-			zeroDeficiencySubnetworks.add(subnetworkSpecies);
+			subnetworkInformationMap.put(subnetworkInfo, subnetworkInfo);
+
+			zeroDeficiencySubnetworks.add(subnetworkInfo);
 		}
 		return zeroDeficiencySubnetworks;
 	}
@@ -220,14 +236,14 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 	}
 
 	@Override
-	public List<Set<SpeciesVertex>> findAveragingCandidates(double t, double[] x, Predicate<Set<SpeciesVertex>> filter) {
+	public List<SubnetworkDescription> findAveragingCandidates(double t, double[] x, Predicate<SubnetworkDescription> filter) {
 		if (zeroDeficiencySubnetworks == null) {
 			this.subnetworkInformationMap = new HashMap<>();
 			this.zeroDeficiencySubnetworks = findZeroDeficiencySubnetworks();
 		}
 		// First find a list of subnetworks that could be averaged
-		List<Set<SpeciesVertex>> averagingCandidates = new ArrayList<Set<SpeciesVertex>>();
-		for (Set<SpeciesVertex> subnetwork : zeroDeficiencySubnetworks) {
+		List<SubnetworkDescription> averagingCandidates = new ArrayList<>();
+		for (SubnetworkDescription subnetwork : zeroDeficiencySubnetworks) {
 			if (filter.apply(subnetwork))
 				averagingCandidates.add(subnetwork);
 		}
@@ -235,17 +251,17 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 	}
 
 	@Override
-	public void resampleFromStationaryDistribution(final double t, double[] x, final Set<SpeciesVertex> subnetworkSpecies) {
+	public void sampleSubnetworkState(double t, double[] x, SubnetworkDescription subnetwork) {
 		// NOTE: We approximate the exact distribution of a reducible zero-deficiency subnetwork
 		// with a multinomial distribution.
 
-		SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetworkSpecies);
+		SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetwork);
 		UnaryBinaryDeterministicModel subnetworkModel = subnetworkInfo.getModel();
 		Map<SpeciesVertex, Integer> indexMap = subnetworkInfo.getIndexMap();
 		double[] subXSteadyState = UnaryBinaryModelUtils.computeSteadyState(subnetworkModel, t, x);
-		for (SpeciesVertex v : subnetworkSpecies) {
-			x[v.getSpecies()] = subXSteadyState[indexMap.get(v)];
-		}
+//		for (SpeciesVertex v : subnetwork.getSubnetworkSpecies()) {
+//			x[v.getSpecies()] = subXSteadyState[indexMap.get(v)];
+//		}
 
 		for (SpeciesConservationRelation relation : subnetworkInfo.getConservedSpeciesRelations()) {
 			List<SpeciesVertex> speciesList = relation.getConservedSpeciesList();
@@ -255,9 +271,13 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 			for (int j=0; j < speciesList.size(); j++) {
 				SpeciesVertex v = speciesList.get(j);
 				int k = indexMap.get(v);
-				yVector.set(j, 0, subXSteadyState[k]);
-				alpha[j] = lcVector.getIndex(j, 0);
+				alpha[j] = (int)FastMath.round(lcVector.get(j, 0));
+//				alpha[j] = lcVector.getIndex(j, 0);
+				yVector.set(j, 0, alpha[j] * subXSteadyState[k]);
 			}
+
+			int n = (int)FastMath.round(CommonOps.elementSum(yVector));
+
 			double elementSum = CommonOps.elementSum(yVector);
 			if (elementSum == 0.0)
 				// All conserved species are zero so we don't need to sample anything
@@ -265,17 +285,17 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 			CommonOps.divide(elementSum, yVector);
 
 			double[] p = yVector.getData();
-			int n = 0;
-			for (int j=0; j < speciesList.size(); j++) {
-				SpeciesVertex v = speciesList.get(j);
-				int k = indexMap.get(v);
-				n += alpha[j] * subXSteadyState[k];
-			}
+//			for (int j=0; j < speciesList.size(); j++) {
+//				SpeciesVertex v = speciesList.get(j);
+//				int k = indexMap.get(v);
+//				nDouble += alpha[j] * subXSteadyState[k];
+//			}
+//			int n = (int)FastMath.round(nDouble);
 
 			int[] y = RandomDataUtilities.sampleFromMultinomialDistribution(rdg, n, p);
 			for (int j=0; j < speciesList.size(); j++) {
 				SpeciesVertex v = speciesList.get(j);
-				x[v.getSpecies()] = y[j];
+				x[v.getSpecies()] = y[j] / alpha[j];
 			}
 		}
 
@@ -466,22 +486,30 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 		return rdg.nextPoisson(lambda);
 	}
 
-	@Override
-	protected void computeAverageStationaryStateOfSubnetworks(double t, double[] x, List<Set<SpeciesVertex>> subnetworksToAverage) {
-		// NOTE: We approximate the exact distribution of a reducible zero-deficiency subnetwork
-		// with a multinomial distribution. Thus the average stationary state is equal to the deterministic stationary state.
-		for (Set<SpeciesVertex> subnetworkSpecies : subnetworksToAverage) {
-			SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetworkSpecies);
-			UnaryBinaryDeterministicModel subnetworkModel = subnetworkInfo.getModel();
-			Map<SpeciesVertex, Integer> indexMap = subnetworkInfo.getIndexMap();
-			double[] subXSteadyState = UnaryBinaryModelUtils.computeSteadyState(subnetworkModel, t, x);
-			for (SpeciesVertex v : subnetworkSpecies) {
-				x[v.getSpecies()] = subXSteadyState[indexMap.get(v)];
-			}
-		}
-	}
+//	@Override
+//	protected void computeAverageStationaryStateOfSubnetworks(double t, double[] x, List<SubnetworkDescription> subnetworksToAverage) {
+//		// NOTE: We approximate the exact distribution of a reducible zero-deficiency subnetwork
+//		// with a multinomial distribution. Thus the average stationary state is equal to the deterministic stationary state.
+//		for (SubnetworkDescription subnetwork : subnetworksToAverage) {
+//			SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetwork);
+//			UnaryBinaryDeterministicModel subnetworkModel = subnetworkInfo.getModel();
+//			Map<SpeciesVertex, Integer> indexMap = subnetworkInfo.getIndexMap();
+//			double[] subXSteadyState = UnaryBinaryModelUtils.computeSteadyState(subnetworkModel, t, x);
+//			for (SpeciesVertex v : subnetwork.getSubnetworkSpecies()) {
+//				x[v.getSpecies()] = subXSteadyState[indexMap.get(v)];
+//			}
+//		}
+//	}
 
-	private class SubnetworkInformation {
+	private class SubnetworkInformation extends SubnetworkDescription {
+
+		public SubnetworkInformation(Set<SpeciesVertex> subnetworkSpecies, UnaryBinaryReactionNetwork network) {
+			super(subnetworkSpecies, network);
+		}
+
+		public SubnetworkInformation(SubnetworkDescription subnetworkDescr) {
+			super(subnetworkDescr);
+		}
 
 		private Collection<SpeciesConservationRelation> conservedSpeciesRelations;
 		private Collection<SpeciesVertex> unconservedSpecies;
@@ -532,6 +560,27 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 			return indexMap;
 		}
 
+	}
+
+	@Override
+	protected double[] computeFirstMoments(double t, double[] x, SubnetworkDescription subnetwork) {
+		// NOTE: We approximate the exact distribution of a reducible zero-deficiency subnetwork
+		// with a multinomial distribution. Thus the average stationary state is equal to the deterministic stationary state.
+		double[] firstMoments = new double[x.length];
+		SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetwork);
+		UnaryBinaryDeterministicModel subnetworkModel = subnetworkInfo.getModel();
+		Map<SpeciesVertex, Integer> indexMap = subnetworkInfo.getIndexMap();
+		double[] subXSteadyState = UnaryBinaryModelUtils.computeSteadyState(subnetworkModel, t, x);
+		for (SpeciesVertex v : subnetwork.getSubnetworkSpecies()) {
+			firstMoments[v.getSpecies()] = subXSteadyState[indexMap.get(v)];
+		}
+		return firstMoments;
+	}
+
+	@Override
+	protected double[][] computeSecondMoments(double t, double[] x, SubnetworkDescription subnetwork) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

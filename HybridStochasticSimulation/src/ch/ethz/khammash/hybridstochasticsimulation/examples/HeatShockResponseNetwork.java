@@ -21,17 +21,17 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 //S8: J-Recombinant protein
 //reactions:
 //R0:  ~ -> S7             (k1) [Recombinant protein synthesis]
-//R1:  S1 -> S2            (k2) [Holoenzyme association]
-//R2:  S2 -> S1            (k3) [Holoenzyme disassociation]
+//R1:  S1 -> S2            (k2) [Holoenzyme association] *
+//R2:  S2 -> S1            (k3) [Holoenzyme disassociation] *
 //R3:  S0 -> S0 + S1       (k4) [sigma32 translation]
 //R4:  S2 -> S1 + S4       (k5) [GroEL synthesis]
 //R5:  S2 -> S1 + S3       (k6) [FtsH synthesis]
-//R6:  S2 -> S1 + S5       (k7) [J-production]
+//R6:  S2 -> S1 + S5       (k7) [J-production] *
 //R7:  S6 -> S1 + S5       (k8) [sigma32-J-disassociation]
 //R8:  S1 + S5 -> S6       (k9) [sigma32-J-association]
-//R9:  S5 + S7 -> S8       (k10) [Recombinant protein-J association]
+//R9:  S5 + S7 -> S8       (k10) [Recombinant protein-J association] *
 //R10: S7 -> ~             (k11) [Recombinant protein degradation]
-//R11: S8 -> S5 + S7       (k12) [Recombinant protein-J disassociation]
+//R11: S8 -> S5 + S7       (k12) [Recombinant protein-J disassociation] *
 //R12: ~ -> S0             (k13) [sigma32 transcription]
 //R13: S0 -> ~             (k14) [sigma32 mRNA decay]
 //R14: S3 + S6 -> S3 + S5  (k15) [sigma32 degradation]
@@ -144,7 +144,7 @@ public class HeatShockResponseNetwork extends SimulationConfiguration {
 //		double[] rho = {  0,  1,  1, -1,  0,  0,  0, -2, -1,  0,  0,  0, -2, -2, -1,  0, -2,  0 };
 
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(x0.length, rateParameters.length);
-		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = {
 		    "sigma32 mRNA",

@@ -141,7 +141,7 @@ public class RepressedBacteriumOperonNetwork extends SimulationConfiguration {
 		double t0 = 0.0;
 		double t1 = 3;
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
-		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = {
 				"R",

@@ -13,8 +13,6 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetwork;
 public class HybridReactionNetworkModel implements HybridModel,
 		FirstOrderDifferentialEquations, StochasticReactionNetworkModel {
 
-//	public static double[] globalxDot;
-
 	private int dimension;
 
 	private int[] stochasticReactionIndices;
@@ -45,7 +43,7 @@ public class HybridReactionNetworkModel implements HybridModel,
 
 		for (int r = 0; r < hrn.getNumberOfReactions(); r++) {
 			for (int s = 0; s < hrn.getNumberOfSpecies(); s++) {
-				reactionStochiometries[r][s] = hrn.getStochiometry(s, r);
+				reactionStochiometries[r][s] = hrn.getStoichiometry(s, r);
 			}
 			modelRateParameters[r] = hrn.getRateParameter(r);
 			int[] choiceIndices = hrn.getChoiceIndices(r);
@@ -164,7 +162,6 @@ public class HybridReactionNetworkModel implements HybridModel,
 					xDot[s] += v * stochiometry;
 			}
 		}
-//		globalxDot = xDot.clone();
 	}
 
 	@Override
@@ -214,6 +211,19 @@ public class HybridReactionNetworkModel implements HybridModel,
 	@Override
 	public ReactionNetwork getNetwork() {
 		return hrn;
+	}
+
+	@Override
+	public double computePropensitiesAndSum(double t, double[] x, double[] propensities) {
+		double propSum = 0.0;
+		// We don't check the length of x and propensities for performance reasons
+		Arrays.fill(propensities, 0, getNumberOfReactions(), 0.0);
+		for (int r : stochasticReactionIndices) {
+			double propensity = computePropensity(r, t, x);
+			propensities[r] = propensity;
+			propSum += propensity;
+		}
+		return propSum;
 	}
 
 }

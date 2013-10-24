@@ -41,7 +41,7 @@ public class ArrayFiniteTrajectoryRecorder extends ArrayFiniteTrajectory impleme
 
 	@Override
 	public void endRecording(double[] x1) {
-		setState(xSeries[0].length - 1, x1);
+		record(getFinalTime(), x1);
 	}
 
 	@Override

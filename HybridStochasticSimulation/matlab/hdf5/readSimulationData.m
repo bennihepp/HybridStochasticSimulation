@@ -25,7 +25,7 @@ function [tSeries, xSeries] = readSimulationData(filename, dataset, xStart, xCou
     %xStart(length(xStart)) = start;
     if nargin < 4
         %count = xSize(length(xSize));
-        xCount = xSize;
+        xCount = xSize - xStart;
     elseif length(xCount) == 1
         tmp = xSize;
         tmp(length(tmp)) = xCount;
@@ -35,7 +35,9 @@ function [tSeries, xSeries] = readSimulationData(filename, dataset, xStart, xCou
     end
     %xCount = xSize;
     %xCount(length(xSize)) = count;
-    tSeries = h5read(filename, ['/simulations/', dataset, '/tSeries']);
+    tStart = xStart(1);
+    tCount = xCount(1);
+    tSeries = h5read(filename, ['/simulations/', dataset, '/tSeries'], tStart, tCount);
     xSeries = h5read(filename, ['/simulations/', dataset, '/xSeries'], xStart, xCount);
     xSeries = permute(xSeries, fliplr(1:ndims(xSeries)));
     if ndims(xSeries) < 3

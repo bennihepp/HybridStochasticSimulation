@@ -86,7 +86,7 @@ public class LambdaPhageToggleSwitchNetwork extends SimulationConfiguration {
 				km4,
 		};
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
-		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = { "D", "DcI2", "DcI2*", "DcI2cI2", "cI", "cI2" };
 

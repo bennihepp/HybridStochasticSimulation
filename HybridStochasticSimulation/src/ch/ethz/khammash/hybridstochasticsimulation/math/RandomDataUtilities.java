@@ -129,6 +129,7 @@ public class RandomDataUtilities {
 			if (u < v)
 				break;
 		}
+		// TODO: Is it ok to ignore the case when i >= p.length?
 		if (i >= p.length)
 			i = p.length - 1;
 		return i;

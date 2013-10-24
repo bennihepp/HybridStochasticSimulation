@@ -44,11 +44,11 @@ public class DefaultReactionNetworkGraph extends DefaultDirectedGraph<SpeciesVer
     		LinkedList<ReactionEdge> edgeList = new LinkedList<ReactionEdge>();
     		edgeLists.add(edgeList);
     		for (int s1=0; s1 < network.getNumberOfSpecies(); s1++) {
-    			if (network.getConsumptionStochiometry(s1, r) > 0) {
+    			if (network.getConsumptionStoichiometry(s1, r) > 0) {
         			SpeciesVertex v1 = vertices.get(s1);
     	    		for (int s2=0; s2 < network.getNumberOfSpecies(); s2++) {
             			SpeciesVertex v2 = vertices.get(s2);
-    	    			if (network.getProductionStochiometry(s2, r) > 0) {
+    	    			if (network.getProductionStoichiometry(s2, r) > 0) {
     	    				ReactionEdge edge = createReactionEdge(r, network.getReactionLabel(r), network.getRateParameter(r), v1, v2);
     	    				edgeList.add(edge);
     	    				addEdge(v1, v2, edge);

@@ -143,7 +143,10 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 		for (Set<SpeciesVertex> subnetworkSpecies : finiteMarkovChainSubnetworks) {
 			if (filter.apply(subnetworkSpecies)) {
 				SubnetworkInformation subnetworkInfo = subnetworkInformationMap.get(subnetworkSpecies);
+				// Colt
 				DoubleMatrix2D transitionMatrix = computeTransitionMatrix(t, x, subnetworkInfo.getConservedSpeciesRelation(), subnetworkInfo.getModel());
+				// La4j
+//				Matrix transitionMatrix = computeTransitionMatrix(t, x, subnetworkInfo.getConservedSpeciesRelation(), subnetworkInfo.getModel());
 				if (isIrreducible(transitionMatrix)) {
 //					averagingCandidateTransitionMatrixMap.put(subnetworkSpecies, transitionMatrix);
 					averagingCandidates.add(subnetworkSpecies);
@@ -160,7 +163,11 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 		UnaryBinaryStochasticModel subnetworkModel = subnetworkInfo.getModel();
 		DoubleMatrix2D transitionMatrix = computeTransitionMatrix(t, x, relation, subnetworkModel);
 		DoubleMatrix1D stationaryDistribution = computeStationaryDistribution(transitionMatrix);
+//		Matrix transitionMatrix = computeTransitionMatrix(t, x, relation, subnetworkModel);
+//		Vector stationaryDistribution = computeStationaryDistribution(transitionMatrix);
 		int stateIndex = RandomDataUtilities.sampleFromProbabilityMassFunction(rdg, stationaryDistribution.toArray());
+//		double[] stationaryDistributionArray = convertVectorToArray(stationaryDistribution);
+//		int stateIndex = RandomDataUtilities.sampleFromProbabilityMassFunction(rdg, stationaryDistributionArray);
 		SpeciesConservationRelationStateEnumerator stateEnumerator = new SpeciesConservationRelationStateEnumerator(x, relation);
 		Iterator<double[]> it = stateEnumerator.iterator();
 		for (int i=0; i < stateIndex; i++)
@@ -171,6 +178,13 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 			x[v.getSpecies()] = state[indexMap.get(v)];
 		}
 	}
+
+//	private double[] convertVectorToArray(Vector stationaryDistribution) {
+//		double[] array = new double[stationaryDistribution.length()];
+//		for (int i=0; i < array.length; i++)
+//			array[i] = stationaryDistribution.get(i);
+//		return array;
+//	}
 
 	private List<SpeciesConservationRelation> getConservedSpeciesRelations(UnaryBinaryReactionNetwork network) {
 		DenseMatrix64F nullSpace = computeNullSpaceOfReactionNetwork(network);
@@ -221,8 +235,8 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 	private DenseMatrix64F createStochiometryMatrix(UnaryBinaryReactionNetwork network) {
 		DenseMatrix64F matrix = new DenseMatrix64F(network.getNumberOfReactions(), network.getNumberOfSpecies());
 		for (int r=0; r < network.getNumberOfReactions(); r++) {
-			int[] productionStochtiometries = network.getProductionStochiometries(r);
-			int[] consumptionStochtiometries = network.getConsumptionStochiometries(r);
+			int[] productionStochtiometries = network.getProductionStoichiometries(r);
+			int[] consumptionStochtiometries = network.getConsumptionStoichiometries(r);
 			for (int s=0; s < network.getNumberOfSpecies(); s++) {
 				int stochiometry = productionStochtiometries[s] - consumptionStochtiometries[s];
 				matrix.set(r, s, stochiometry);
@@ -249,9 +263,15 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 	private double[] computeAverageStateOfSubnetwork(double t, double[] x, SpeciesConservationRelation relation,
 			UnaryBinaryStochasticModel subnetworkModel) {
 		DoubleMatrix2D transitionMatrix = computeTransitionMatrix(t, x, relation, subnetworkModel);
-		EigenvalueDecomposition eigenDecomposition = new EigenvalueDecomposition(transitionMatrix); 
+//		Matrix transitionMatrix = computeTransitionMatrix(t, x, relation, subnetworkModel);
+		EigenvalueDecomposition eigenDecomposition = new EigenvalueDecomposition(transitionMatrix);
+//		MatrixDecompositor eigenDecompositor = transitionMatrix.withDecompositor(DecompositorFactory.EIGEN);
+//		Matrix[] pdp = eigenDecompositor.decompose(LinearAlgebra.CRS_FACTORY);
+//		Matrix P = pdp[0];
+//		Matrix D = pdp[1];  
 		// TODO: Is this even possible?
 		boolean irreducible = isIrreducible(eigenDecomposition);
+//		boolean irreducible = isIrreducible(P, D);
 		if (!irreducible) {
 			String msg = "Averaging of finite markov chain subnetwork became invalid. The finite markov chain is not irreducible anymore. at t=" + t;
 			if (_stopIfAveragingBecomesInvalid)
@@ -260,16 +280,28 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 				logger.warn(msg);
 		}
 		DoubleMatrix1D stationaryDistribution = computeStationaryDistribution(eigenDecomposition);
+//		Vector stationaryDistribution = computeStationaryDistribution(P, D);
 		double[] xAverage = computeStationaryAverage(x, relation, stationaryDistribution);
 		return xAverage;
 	}
 
 	private boolean isIrreducible(DoubleMatrix2D transitionMatrix) {
-		EigenvalueDecomposition eigenDecomposition = new EigenvalueDecomposition(transitionMatrix); 
+//	private boolean isIrreducible(Matrix transitionMatrix) {
+		EigenvalueDecomposition eigenDecomposition = new EigenvalueDecomposition(transitionMatrix);
+//		double det = transitionMatrix.determinant();
+//		LinearSystemSolver solver = transitionMatrix.withSolver(LinearAlgebra.LEAST_SQUARES);
+//		Vector b = new BasicVector(transitionMatrix.rows());
+//		Vector q = solver.solve(b);
+//		MatrixDecompositor eigenDecompositor = transitionMatrix.withDecompositor(DecompositorFactory.EIGEN);
+//		Matrix[] pdp = eigenDecompositor.decompose(LinearAlgebra.CRS_FACTORY);
+//		Matrix P = pdp[0];
+//		Matrix D = pdp[1]; 
 		return isIrreducible(eigenDecomposition);
+//		return isIrreducible(P, D);
 	}
 
 	private boolean isIrreducible(EigenvalueDecomposition eigenDecomposition) {
+//	private boolean isIrreducible(Matrix P, Matrix D) {
 		// To check for irreducibility we check whether the dimension of the nullspace is <= 1
 		DoubleMatrix2D D = eigenDecomposition.getD();
 		int dimensionOfNullspace = 0;
@@ -281,10 +313,12 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 	}
 
 	private DoubleMatrix2D computeTransitionMatrix(double t, double[] x, SpeciesConservationRelation relation, UnaryBinaryStochasticModel subnetworkModel) {
+//	private Matrix computeTransitionMatrix(double t, double[] x, SpeciesConservationRelation relation, UnaryBinaryStochasticModel subnetworkModel) {
 		// TODO: check for species numbers > 2
 		SpeciesConservationRelationStateEnumerator stateEnumerator = new SpeciesConservationRelationStateEnumerator(x, relation);
 		int numOfStates = stateEnumerator.getNumberOfStates();
 		DoubleMatrix2D transitionMatrix = new SparseDoubleMatrix2D(numOfStates, numOfStates);
+//		Matrix transitionMatrix = new CRSMatrix(numOfStates, numOfStates);
 //		Matrix transitionMatrix = crs.createMatrix(numOfStates, numOfStates);
 		int stateIndex = 0;
 		double[] propensities = new double[subnetworkModel.getNumberOfReactions()];
@@ -298,7 +332,8 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 					double[] newState = state.clone();
 					subnetworkModel.changeState(r, t, newState);
 					int newStateIndex = stateEnumerator.getStateIndex(newState);
-					transitionMatrix.setQuick(newStateIndex, stateIndex, newPropensity);
+//					transitionMatrix.setQuick(newStateIndex, stateIndex, newPropensity);
+					transitionMatrix.set(newStateIndex, stateIndex, newPropensity);
 				}
 			}
 			stateIndex++;
@@ -307,11 +342,18 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 	}
 
 	private DoubleMatrix1D computeStationaryDistribution(DoubleMatrix2D transitionMatrix) {
+//	private Vector computeStationaryDistribution(Matrix transitionMatrix) {
 		EigenvalueDecomposition eigenDecomposition = new EigenvalueDecomposition(transitionMatrix);
+//		MatrixDecompositor eigenDecompositor = transitionMatrix.withDecompositor(DecompositorFactory.EIGEN);
+//		Matrix[] pdp = eigenDecompositor.decompose(LinearAlgebra.CRS_FACTORY);
+//		Matrix P = pdp[0];
+//		Matrix D = pdp[1];
 		return computeStationaryDistribution(eigenDecomposition);
+//		return computeStationaryDistribution(P, D);
 	}
 
 	private DoubleMatrix1D computeStationaryDistribution(EigenvalueDecomposition eigenDecomposition) {
+//	private Vector computeStationaryDistribution(Matrix P, Matrix D) {
 		DoubleMatrix2D D = eigenDecomposition.getD();
 		DoubleMatrix2D P = eigenDecomposition.getV();
 		// Find eigenvector with eigenvalue 0
@@ -325,13 +367,18 @@ public class FiniteMarkovChainAveragingUnit extends AbstractAveragingUnit {
 		double sum = zeroEigenVector.aggregate(Functions.plus, Functions.identity);
 		DoubleMatrix1D result = zeroEigenVector.copy();
 		result = result.assign(Functions.div(sum));
+//		Vector zeroEigenVector = P.getColumn(zeroEigenvalueIndex);
+//		double sum = zeroEigenVector.sum();
+//		Vector result = zeroEigenVector.divide(sum);
 		// Consistency check
 		sum = result.aggregate(Functions.plus, Functions.abs);
+//		sum = result.sum();
 		checkArgument(FastMath.abs(sum - 1.0) <= zeroSumTolerance);
 		return result;
 	}
 
 	private double[] computeStationaryAverage(double[] x, SpeciesConservationRelation relation, DoubleMatrix1D stationaryDistribution) {
+//	private double[] computeStationaryAverage(double[] x, SpeciesConservationRelation relation, Vector stationaryDistribution) {
 		SpeciesConservationRelationStateEnumerator stateEnumerator = new SpeciesConservationRelationStateEnumerator(x, relation);
 		double[] averageState = new double[relation.getConservedSpeciesList().size()];
 		int stateIndex = 0;

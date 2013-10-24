@@ -10,7 +10,7 @@
         <directory>src</directory>
         <excludes>
           <exclude>**/*.java</exclude>
-          <exclude>**/*.groovy</exclude>
+          <!-- <exclude>**/*.groovy</exclude> -->
         </excludes>
       </resource>
     </resources>
@@ -166,6 +166,11 @@
   			<artifactId>colt</artifactId>
   			<version>1.2.0</version>
   		</dependency>
+        <!-- <dependency>
+            <groupId>org.la4j</groupId>
+            <artifactId>la4j</artifactId>
+            <version>0.4.5</version>
+        </dependency> -->
   		<dependency>
   			<groupId>aopalliance</groupId>
   			<artifactId>aopalliance</artifactId>
@@ -221,13 +226,11 @@
             <artifactId>log4j-over-slf4j</artifactId>
             <version>1.7.5</version>
   		</dependency>
-  		<dependency>
+  		<!-- <dependency>
             <groupId>ch.ethz.khammash</groupId>
             <artifactId>JavaOde</artifactId>
             <version>0.1-SNAPSHOT</version>
-            <!-- <scope>system</scope>
-            <systemPath>${project.basedir}/../JavaOde/target/JavaOde-0.1-SNAPSHOT.jar</systemPath> -->
-  		</dependency>
+  		</dependency> -->
         <dependency>
             <groupId>net.sf.opencsv</groupId>
             <artifactId>opencsv</artifactId>

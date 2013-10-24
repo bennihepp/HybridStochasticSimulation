@@ -11,7 +11,11 @@ public class OdeAdapter implements Ode {
 	private long evaluations;
 
 	public OdeAdapter(PDMPModel model) {
-		this.vectorField = model.getVectorField();
+		this(model.getVectorField());
+	}
+
+	public OdeAdapter(FirstOrderDifferentialEquations vectorField) {
+		this.vectorField = vectorField;
 		resetEvaluations();
 	}
 

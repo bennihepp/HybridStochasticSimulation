@@ -34,27 +34,41 @@ public class FastDimerization extends SimulationConfiguration {
 		    { 1,  0,  0,  0 }, // S1
 		    { 0,  0,  0,  1 }, // S2
 		};
+//		int[][] productionStochiometries = {
+//		//   R0  R1
+//		    { 0,  2 }, // S0
+//		    { 1,  0 }, // S1
+//		};
 
 		int[][] consumptionStochiometries = {
-		//   R0  R1  R2
-		    { 2,  0,  1,  0 }, // S0
+		//   R0  R1  R2  R3
+		    { 2,  0,  0,  0 }, // S0
 		    { 0,  1,  0,  1 }, // S1
 		    { 0,  0,  0,  0 }, // S2
 		};
+//		int[][] consumptionStochiometries = {
+//		//   R0  R1
+//		    { 2,  0 }, // S0
+//		    { 0,  1 }, // S1
+//		};
 
-		if (modifiedStochiometries) {
-			consumptionStochiometries[0][2] = 0;
-			consumptionStochiometries[2][2] = 1;
-		}
+//		if (modifiedStochiometries) {
+//			consumptionStochiometries[0][2] = 0;
+//			consumptionStochiometries[2][2] = 1;
+//		}
 
 		double[] x0 = { 540, 730, 0 };
+//		double[] x0 = { 540, 730 };
 
 		double[] rateParameters = new double[productionStochiometries[0].length];
 		/* Reaction propensities */
 		rateParameters[0] = 1.0;
 		rateParameters[1] = 200.0;
 		rateParameters[2] = 0.02;
+		rateParameters[2] = 0.0;
 		rateParameters[3] = 0.004;
+//		rateParameters[0] = 1.0;
+//		rateParameters[1] = 200.0;
 
 		double t0 = 0.0;
 		double t1 = 400.0;
@@ -66,13 +80,17 @@ public class FastDimerization extends SimulationConfiguration {
 		productionStochiometries = transpose(productionStochiometries);
 		consumptionStochiometries = transpose(consumptionStochiometries);
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(x0.length, rateParameters.length);
-		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = {
 		    "S0",
 		    "S1",
 		    "S2",
 		};
+//		String[] speciesNames = {
+//		    "S0",
+//		    "S1",
+//		};
 		double[] plotScales = new double[x0.length];
 		Arrays.fill(plotScales, 1.0);
 

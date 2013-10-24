@@ -20,11 +20,11 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork i
 	}
 
 	public enum ReactionType {
-		NONE, STOCHASTIC, DETERMINISTIC, EXPLODING,
+		NONE, DISCRETE, CONTINUOUS, UNDEFINED,
 	}
 
 	public enum ReactionTermType {
-		NONE, STOCHASTIC, DETERMINISTIC, EXPLODING,
+		NONE, DISCRETE, CONTINUOUS, UNDEFINED,
 	}
 
 	private double delta = 0.5;
@@ -116,11 +116,11 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork i
 		this.logMessages = logMessages;
 	}
 
-	protected boolean getLogMessages() {
+	public boolean getLogMessages() {
 		return logMessages;
 	}
 
-	final protected void invalidateReactionTermTypes() {
+	final public void invalidateReactionTermTypes() {
 		reactionTermTypesInvalid = true;
 	}
 
@@ -318,25 +318,25 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork i
 		return reactionTermTypes[r][s];
 	}
 
-	protected void overrideSpeciesType(int species, SpeciesType speciesType) {
+	public void overrideSpeciesType(int species, SpeciesType speciesType) {
 		if (reactionTermTypesInvalid)
 			computeReactionTermTypes();
 		speciesTypes[species] = speciesType;
 	}
 
-	protected void overrideSpeciesTypes(SpeciesType[] speciesTypes) {
+	public void overrideSpeciesTypes(SpeciesType[] speciesTypes) {
 		for (int s=0; s < getNumberOfSpecies(); s++)
 			this.speciesTypes[s] = speciesTypes[s];
 		reactionTermTypesInvalid = false;
 	}
 
-	protected void overrideReactionType(int reaction, ReactionType reactionType) {
+	public void overrideReactionType(int reaction, ReactionType reactionType) {
 		if (reactionTermTypesInvalid)
 			computeReactionTermTypes();
 		reactionTypes[reaction] = reactionType;
 	}
 
-	protected void overrideReactionTypes(ReactionType[] reactionTypes) {
+	public void overrideReactionTypes(ReactionType[] reactionTypes) {
 		for (int r=0; r < getNumberOfReactions(); r++)
 			this.reactionTypes[r] = reactionTypes[r];
 		reactionTermTypesInvalid = false;
@@ -359,27 +359,27 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork i
 		for (int s=0; s < getNumberOfSpecies(); s++) {
 			ReactionTermType rtt = computeReactionTermType(s, reaction);
 			reactionTermTypes[reaction][s] = rtt;
-			if (rtt == ReactionTermType.EXPLODING) {
-				reactionType = ReactionType.EXPLODING;
+			if (rtt == ReactionTermType.UNDEFINED) {
+				reactionType = ReactionType.UNDEFINED;
 				break;
-			} else if (rtt == ReactionTermType.STOCHASTIC) {
-				reactionType = ReactionType.STOCHASTIC;
+			} else if (rtt == ReactionTermType.DISCRETE) {
+				reactionType = ReactionType.DISCRETE;
 				if (speciesTypes[s] == SpeciesType.UNDEFINED)
 					speciesTypes[s] = SpeciesType.DISCRETE;
 			}
-			else if (reactionType == ReactionType.NONE && rtt == ReactionTermType.DETERMINISTIC)
-				reactionType = ReactionType.DETERMINISTIC;
+			else if (reactionType == ReactionType.NONE && rtt == ReactionTermType.CONTINUOUS)
+				reactionType = ReactionType.CONTINUOUS;
 		}
 		reactionTypes[reaction] = reactionType;
 	}
 
 	protected ReactionTermType computeReactionTermType(int species, int reaction) {
-		if (getStochiometry(species, reaction) == 0)
+		if (getStoichiometry(species, reaction) == 0)
 			return ReactionTermType.NONE;
 		double rho = computeInsideScalingExponent(reaction);
 		double gammaPlusRho = gamma + rho;
 		if (speciesTypes[species] == SpeciesType.CONTINUOUS)
-			return ReactionTermType.DETERMINISTIC;
+			return ReactionTermType.CONTINUOUS;
 		if (alpha[species] >= delta - tolerance) {
 			if (alpha[species] >= gammaPlusRho - tolerance)
 				// TODO: How to incorparate this in a good way
@@ -388,21 +388,21 @@ public class MSHybridReactionNetwork extends DefaultUnaryBinaryReactionNetwork i
 //					return ReactionTermType.NONE;
 //				}
 //				else
-					return ReactionTermType.DETERMINISTIC;
+					return ReactionTermType.CONTINUOUS;
 			else {
 				if (logMessages && logger.isInfoEnabled())
 					logger.error("EXPLODING: alpha[{}]={}, gamma+rho[{}]={}", species, alpha[species], reaction, gammaPlusRho);
-				return ReactionTermType.EXPLODING;
+				return ReactionTermType.UNDEFINED;
 			}
 		} else
-			return ReactionTermType.STOCHASTIC;
+			return ReactionTermType.DISCRETE;
 	}
 
 	public double computeInsideScalingExponent(int reaction) {
-		double rho = beta[reaction];
+		double rho = beta[reaction] + getGamma();
 		for (int s = 0; s < alpha.length; s++)
-			if (getConsumptionStochiometry(s, reaction) > 0)
-				rho += getConsumptionStochiometry(s, reaction) * alpha[s];
+			if (getConsumptionStoichiometry(s, reaction) > 0)
+				rho += getConsumptionStoichiometry(s, reaction) * alpha[s];
 		return rho;
 	}
 

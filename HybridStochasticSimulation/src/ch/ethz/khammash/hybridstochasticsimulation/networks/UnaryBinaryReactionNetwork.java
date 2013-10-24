@@ -4,17 +4,17 @@ import java.util.List;
 
 public interface UnaryBinaryReactionNetwork extends ReactionNetwork {
 
-	int getProductionStochiometry(int species, int reaction);
+	int getProductionStoichiometry(int species, int reaction);
 
-	int getConsumptionStochiometry(int species, int reaction);
+	int getConsumptionStoichiometry(int species, int reaction);
 
-	int[] getProductionStochiometries(int reaction);
+	int[] getProductionStoichiometries(int reaction);
 
-	int[] getConsumptionStochiometries(int reaction);
+	int[] getConsumptionStoichiometries(int reaction);
 
-	int[][] getProductionStochiometries();
+	int[][] getProductionStoichiometries();
 
-	int[][] getConsumptionStochiometries();
+	int[][] getConsumptionStoichiometries();
 
 	double getRateParameter(int reaction);
 

@@ -172,6 +172,17 @@ public class PlotWindow extends ApplicationFrame {
 					}
 				}
 			);
+		// Plot in Matlab separately entry
+		JMenuItem plotInMatlabSeparatelyEntry = new JMenuItem("Plot in Matlab separately");
+		plotInMatlabSeparatelyEntry.setAccelerator(KeyStroke.getKeyStroke('N', InputEvent.CTRL_MASK));
+		plotInMatlabSeparatelyEntry.addActionListener(
+				new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						plotInMatlabSeparately();
+					}
+				}
+			);
 		// Quit entry
 		JMenuItem quitEntry = new JMenuItem("Quit");
 		quitEntry.setAccelerator(KeyStroke.getKeyStroke('Q', InputEvent.CTRL_MASK));
@@ -254,6 +265,7 @@ public class PlotWindow extends ApplicationFrame {
 		JMenu fileMenu = new JMenu("File");
 		fileMenu.add(exportToMatlabFileEntry);
 		fileMenu.add(plotInMatlabEntry);
+		fileMenu.add(plotInMatlabSeparatelyEntry);
 		fileMenu.addSeparator();
 		fileMenu.add(quitEntry);
 		JMenu simulationMenu = new JMenu("Simulation");
@@ -290,9 +302,27 @@ public class PlotWindow extends ApplicationFrame {
 			session.start();
 			MatlabPlotter mp = new MatlabPlotter(session);
 			mp.plot(plotDataList, rows, cols);
-		} catch (MatlabConnectionException e1) {
+		} catch (MatlabConnectionException e) {
+			String errorMsg = "Failed to plot in Matlab:\n" + e.toString();
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(PlotWindow.this, errorMsg, "Error", JOptionPane.ERROR_MESSAGE);
+		} catch (MatlabInvocationException e1) {
 			String errorMsg = "Failed to plot in Matlab:\n" + e1.toString();
 			e1.printStackTrace();
+			JOptionPane.showMessageDialog(PlotWindow.this, errorMsg, "Error", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
+	public void plotInMatlabSeparately() {
+		MatlabSession session = new MatlabSession();
+		try {
+			session.start();
+			MatlabPlotter mp = new MatlabPlotter(session);
+			for (FinitePlotData plotData : plotDataList)
+				mp.plot(plotData);
+		} catch (MatlabConnectionException e) {
+			String errorMsg = "Failed to plot in Matlab:\n" + e.toString();
+			e.printStackTrace();
 			JOptionPane.showMessageDialog(PlotWindow.this, errorMsg, "Error", JOptionPane.ERROR_MESSAGE);
 		} catch (MatlabInvocationException e1) {
 			String errorMsg = "Failed to plot in Matlab:\n" + e1.toString();

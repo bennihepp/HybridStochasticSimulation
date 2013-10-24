@@ -32,7 +32,7 @@ public class UnaryBinaryStochasticModel implements StochasticReactionNetworkMode
     		reactionChoiceIndices2[r] = -1;
     	}
 		modelRateParameters = net.getRateParameters();
-    	reactionStochiometries = net.getStochiometries();
+    	reactionStochiometries = net.getStoichiometries();
 
     	for (int r=0; r < net.getNumberOfReactions(); r++) {
     		int[] choiceIndices = net.getChoiceIndices(r);
@@ -87,6 +87,19 @@ public class UnaryBinaryStochasticModel implements StochasticReactionNetworkMode
 		Arrays.fill(propensities, 0, getNumberOfReactions(), 0.0);
     	for (int r=0; r < getNumberOfReactions(); r++)
     		propensities[r] = computePropensity(r, t, x);
+	}
+
+	@Override
+	public double computePropensitiesAndSum(double t, double[] x, double[] propensities) {
+		double propSum = 0.0;
+		// We don't check the length of x and propensities for performance reasons
+		Arrays.fill(propensities, 0, getNumberOfReactions(), 0.0);
+    	for (int r=0; r < getNumberOfReactions(); r++) {
+    		double propensity = computePropensity(r, t, x); 
+    		propensities[r] = propensity;
+    		propSum += propensity;
+    	}
+    	return propSum;
 	}
 
 	@Override

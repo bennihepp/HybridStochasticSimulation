@@ -56,7 +56,7 @@ public class RegulatedTranscriptionNetwork extends SimulationConfiguration {
 				5.00e-1
 		};
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(productionStochiometries[0].length, productionStochiometries.length);
-		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = { "M", "D", "RNA", "DNA", "DNAD", "DNA2D" };
 

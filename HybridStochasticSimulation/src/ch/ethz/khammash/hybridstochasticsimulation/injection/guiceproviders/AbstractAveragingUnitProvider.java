@@ -10,8 +10,11 @@ import javax.inject.Provider;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.lang3.ArrayUtils;
 
-import ch.ethz.khammash.hybridstochasticsimulation.averaging.MaximumSizeSubnetworkEnumerator;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.AllSubnetworkEnumerator;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.FilteredSubnetworkEnumerator;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.MaximumSizeSubnetworkFilter;
 import ch.ethz.khammash.hybridstochasticsimulation.averaging.ModularAveragingUnit;
+import ch.ethz.khammash.hybridstochasticsimulation.averaging.SubnetworkEnumerator;
 import ch.ethz.khammash.hybridstochasticsimulation.graphs.SpeciesVertex;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.ReactionNetworkUtils;
 import ch.ethz.khammash.hybridstochasticsimulation.networks.UnaryBinaryReactionNetwork;
@@ -49,11 +52,13 @@ public abstract class AbstractAveragingUnitProvider<T extends ModularAveragingUn
 		for (int s : importantSpeciesIndices)
 			importantSpeciesVertices.add(network.getGraph().getSpeciesVertex(s));
 		T averagingUnit = getAveragingUnit(network, importantSpeciesVertices);
+		SubnetworkEnumerator subnetworksEnumerator = new AllSubnetworkEnumerator(network);
 		int maxSize = config().getInt("maxSize", -1);
 		if (maxSize > 0) {
-			MaximumSizeSubnetworkEnumerator subnetworksEnumerator = new MaximumSizeSubnetworkEnumerator(network.getGraph(), maxSize);
-			averagingUnit.setSubnetworkEnumerator(subnetworksEnumerator);
+			MaximumSizeSubnetworkFilter filter = new MaximumSizeSubnetworkFilter(maxSize);
+			subnetworksEnumerator = new FilteredSubnetworkEnumerator(subnetworksEnumerator, filter);
 		}
+		averagingUnit.setSubnetworkEnumerator(subnetworksEnumerator);
 		return averagingUnit;
 	}
 

@@ -152,7 +152,7 @@ public class VilarOscillator extends SimulationConfiguration {
 		productionStochiometries = transpose(productionStochiometries);
 		consumptionStochiometries = transpose(consumptionStochiometries);
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(x0.length, rateParameters.length);
-		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = {
 		    "A",

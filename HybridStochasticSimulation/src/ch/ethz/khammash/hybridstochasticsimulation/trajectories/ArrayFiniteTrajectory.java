@@ -20,7 +20,11 @@ public class ArrayFiniteTrajectory extends AbstractFiniteTrajectory {
 		return createSubTrajectory(tr, ArrayUtils.toObject(subsetStates));
 	}
 
-	public static FiniteTrajectory createSubTrajectory(FiniteTrajectory tr, Integer[] subsetStates) {
+//	public static FiniteTrajectory createSubTrajectory(FiniteTrajectory tr, Integer[] subsetStates) {
+//		return createSubTrajectory(tr, Arrays.asList(subsetStates));
+//	}
+
+	public static FiniteTrajectory createSubTrajectory(FiniteTrajectory tr, Integer... subsetStates) {
 		return createSubTrajectory(tr, Arrays.asList(subsetStates));
 	}
 

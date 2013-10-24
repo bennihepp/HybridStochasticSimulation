@@ -38,6 +38,10 @@ import ch.ethz.khammash.hybridstochasticsimulation.networks.DefaultUnaryBinaryRe
 public class ToggleSwitch extends SimulationConfiguration {
 
 	public ToggleSwitch() {
+		this(false);
+	}
+
+	public ToggleSwitch(boolean modifiedParameters) {
 
 		int[][] productionStochiometries = {
 		//   R0  R1  R2  R3  R4  R5  R6  R7  R8  R9 R10 R11 R12 R13 R14 R15
@@ -75,8 +79,13 @@ public class ToggleSwitch extends SimulationConfiguration {
 		rateParameters[7]  = 20.0;
 		rateParameters[8]  = 0.01;
 		rateParameters[9]  = 0.01;
-		rateParameters[10] = 0.0;
-		rateParameters[11] = 0.0;
+		if (modifiedParameters) {
+			rateParameters[10] = 1.0;
+			rateParameters[11] = 1.0;
+		} else {
+			rateParameters[10] = 0.0;
+			rateParameters[11] = 0.0;
+		}
 		rateParameters[12] = 10.0;
 		rateParameters[13] = 10.0;
 		rateParameters[14] = 0.1;
@@ -116,7 +125,7 @@ public class ToggleSwitch extends SimulationConfiguration {
 		productionStochiometries = transpose(productionStochiometries);
 		consumptionStochiometries = transpose(consumptionStochiometries);
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(x0.length, rateParameters.length);
-		net.setStochiometries(productionStochiometries, consumptionStochiometries);
+		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = {
 		    "mA",

@@ -10,6 +10,7 @@ import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.util.FastMath;
 
+import ch.ethz.khammash.hybridstochasticsimulation.ArrayUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.Utilities;
 import ch.ethz.khammash.hybridstochasticsimulation.math.RandomDataUtilities;
 import ch.ethz.khammash.hybridstochasticsimulation.models.PDMPModel;
@@ -61,31 +62,31 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 		simulationInformationTrajectoryRecorders = new LinkedList<TrajectoryRecorder>();
 	}
 
-	private class DefaultSimulationInformation implements SimulationInformation {
-    	private long integrationCount = 0;
-    	private long reactionCount = 0;
-    	private boolean integrating = false;
-		@Override
-		public long getIntegrationCount() {
-			return integrationCount;
-		}
-		@Override
-		public long getReactionCount() {
-			return reactionCount;
-		}
-		@Override
-		public boolean isIntegrating() {
-			return integrating;
-		}
-		@Override
-		public double[] computeInformationState() {
-			double[] state = new double[3];
-			state[0] = integrating ? 1.0 : -1.0;
-			state[1] = integrationCount;
-			state[2] = reactionCount;
-			return state;
-		}
-	}
+//	private class DefaultSimulationInformation implements SimulationInformation {
+//    	private long integrationCount = 0;
+//    	private long reactionCount = 0;
+//    	private boolean integrating = false;
+//		@Override
+//		public long getIntegrationCount() {
+//			return integrationCount;
+//		}
+//		@Override
+//		public long getReactionCount() {
+//			return reactionCount;
+//		}
+//		@Override
+//		public boolean isIntegrating() {
+//			return integrating;
+//		}
+//		@Override
+//		public double[] computeInformationState() {
+//			double[] state = new double[3];
+//			state[0] = integrating ? 1.0 : -1.0;
+//			state[1] = integrationCount;
+//			state[2] = reactionCount;
+//			return state;
+//		}
+//	}
 
 	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
 //		rdg = new RandomDataGenerator();
@@ -104,9 +105,9 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
     	// Simulation information
 		StateObserverAdapter stateObserver;
 		boolean recordSimulationInformation = simulationInformationTrajectoryRecorders.size() > 0 || printMessages;
-    	DefaultSimulationInformation simInfo = null;
+    	PDMPSimulationInformation simInfo = null;
 		if (recordSimulationInformation) {
-	    	simInfo = new DefaultSimulationInformation();
+	    	simInfo = new PDMPSimulationInformation(model.getNumberOfReactions());
 //	    	simInfo.integrationCount = 0;
 //	    	simInfo.reactionCount = 0;
 //	    	simInfo.integrating = false;
@@ -137,7 +138,6 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 			timepointProvider = new FiniteTimepointProvider(t0, t1);
 
 		double[] propVec = new double[rnm.getNumberOfReactions()];
-    	double[] reactionCounterArray = new double[model.getNumberOfReactions()];
     	double msgDt = (t1 - t0) / 20.0;
     	double nextMsgT = t0 + msgDt;
     	int j = 0;
@@ -167,7 +167,7 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 				boolean propensitiesComputed = false;
 				if (hasDeterministicPart) {
 		        	if (recordSimulationInformation)
-		        		simInfo.integrating = true;
+		        		simInfo.setIntegrationOn();
 					// Evolve ODE until next stochastic reaction fires
 		        	double nextUnitJumpTime = -FastMath.log(rdg.nextUniform(0.0,  1.0));
 		        	// x[x.length - 1] will be < 0
@@ -178,7 +178,7 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 		        	while (true) {
 			        	t = solver.integrate();
 			        	if (recordSimulationInformation)
-			        		simInfo.integrationCount++;
+			        		simInfo.increaseIntegrationSteps();
 			        	if (showProgress)
 							while (t > nextMsgT) {
 								System.out.println("Progress: " + (100 * (nextMsgT - t0)/(t1 - t0)) + "%");
@@ -192,7 +192,7 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 			        		break;
 			        }
 		        	if (recordSimulationInformation)
-		        		simInfo.integrating = false;
+		        		simInfo.setIntegrationOff();
 				} else {
 			        rnm.computePropensities(t, x, propVec);
 			        for (int i=0; i < propVec.length; i++)
@@ -218,47 +218,36 @@ public class PDMPSimulator extends AbstractSimulator<PDMPModel> {
 		        }
 		        int reaction = RandomDataUtilities.sampleFromProbabilityMassFunction(rdg, propVec);
 	    		rnm.changeState(reaction, t, x);
-//		        double u = rdg.nextUniform(0.0, 1.0);
-//		        double w = 0.0;
-//		        int reaction = -1;
-//		        for (int l=0; l < propVec.length; l++) {
-//		        	w = w + propVec[l] / propSum;
-//		        	if (u < w) {
-//		        		reaction = l;
-//		        		rnm.changeState(reaction, t, x);
-//		        		break;
-//		        	}
-//		        }
-		        if (reaction >= 0) {
-		        	if (recordSimulationInformation)
-		        		simInfo.reactionCount++;
-		        	reactionCounterArray[reaction]++;
-		        	stateObserver.report(t, x);
-		        	// TODO: Make this value configurable (coupled to N?)
-		        	if (j > 100) {
-		        		model.checkAndHandleOptionalEvent(t, x);
-		        		j = 0;
-		        	}
-		        	j++;
-		        }
+
+	        	if (recordSimulationInformation)
+	        		simInfo.increaseReactionCount(reaction);
+	        	stateObserver.report(t, x);
+	        	// TODO: Make this value configurable (coupled to N?)
+	        	if (j > 100) {
+	        		model.checkAndHandleOptionalEvent(t, x);
+	        		j = 0;
+	        	}
+	        	j++;
+
 			}
+
 			if (printMessages) {
-				System.out.println("Integrator invocations: " + simInfo.getIntegrationCount());
+				System.out.println("Integrator invocations: " + simInfo.getIntegrationSteps());
 				System.out.println("Observed " + eventObserver.getEventCount() + " events");
 				final long endTime = System.currentTimeMillis();
 				System.out.println("Execution time: " + (endTime - startTime));
 		    	long evaluationCounter = ode.getEvaluations();
-				System.out.println("Total of " + evaluationCounter + " evaluations and " + simInfo.getReactionCount() + " reactions performed");
-				Utilities.printArray("Total reaction counts", reactionCounterArray);
-				for (int r=0; r < reactionCounterArray.length; r++)
-					reactionCounterArray[r] /= simInfo.getReactionCount();
-				Utilities.printArray("Relative reaction counts", reactionCounterArray);
+				System.out.println("Total of " + evaluationCounter + " evaluations and " + simInfo.getTotalReactionCount() + " reactions performed");
+				Utilities.printArray("Total reaction counts", simInfo.getReactionCounts());
+				double[] relativeReactionCounts = simInfo.getRelativeReactionCounts();
+				ArrayUtilities.mult(relativeReactionCounts, 100.0);
+				Utilities.printArray("Relative reaction counts", relativeReactionCounts, "%.2f%%");
 			}
 			for (int i=0; i < x1.length; i++)
 				x1[i] = x[i];
 //	    	for (TrajectoryRecorder<T> handler : trajectoryRecorders)
 //	    		handler.setFinalState(t1, x1);
-        	stateObserver.report(t, x1);
+        	stateObserver.report(t1, x1);
 	    	solver.dispose();
 		}
 		return t;

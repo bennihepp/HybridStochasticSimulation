@@ -3,6 +3,8 @@ package ch.ethz.khammash.hybridstochasticsimulation;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -16,6 +18,7 @@ import org.xml.sax.SAXException;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.BacteriophageT7;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.BirthDeathTunnelNetwork;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ConversionCycleNetwork;
+import ch.ethz.khammash.hybridstochasticsimulation.examples.EnzymeKinetics;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.ExampleConfigurationFactory;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.FastDimerization;
 import ch.ethz.khammash.hybridstochasticsimulation.examples.FastIsomerization;
@@ -604,15 +607,18 @@ public class Examples {
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> haploinsufficiencyNetwork() {
+	public static List<FinitePlotData> haploinsufficiencyNetwork() throws InterruptedException {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
 		SimulationConfiguration nss = new HaploinsufficiencyNetwork();
 
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
-		int numberOfTimePoints = 1001;
-		boolean printMessages = true;
+		int numberOfTimePoints = 10001;
+		boolean printTiming = true;
+		boolean printMessages = false;
+		boolean recordOptionalTrajectory = false;
+		boolean doAveraging = false;
 
 		// Set 1
 		// Adaptive method faster with these parameters (~250ms vs >~8760ms)
@@ -623,6 +629,7 @@ public class Examples {
 		nss.gamma = 0;
 		nss.theta = 1;
 		nss.t1 = 1e6;
+//		nss.t1 = 200000;
 
 		double[] plotScales = { 1000.0, 1.0 };
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
@@ -635,6 +642,42 @@ public class Examples {
 		TrajectoryPlotChartPanel plot;
 
 		int[] states = {1, 2};
+
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printTiming, printMessages);
+//		td.setDescription("Stochastic");
+//		plotDataList.add(td);
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+
+		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, doAveraging);
+		td = tdList.get(0);
+		td.setDescription("Adaptive");
+		plotDataList.add(td);
+		for (int s=0; s < td.getNumberOfStates(); s++)
+			plotDataList.add(td.getSubsetData(s));
+		if (tdList.size() > 1) {
+			td = tdList.get(1);
+			td.setDescription("AdaptiveMSPDMP alpha");
+			plotDataList.add(td);
+			td = tdList.get(2);
+			td.setDescription("AdaptiveMSPDMP rho");
+			plotDataList.add(td);
+			td = tdList.get(3);
+			td.setDescription("AdaptiveMSPDMP beta");
+			plotDataList.add(td);
+			td = tdList.get(4);
+			td.setDescription("AdaptiveMSPDMP z (scaled state)");
+			plotDataList.add(td);
+			td = tdList.get(5);
+			td.setDescription("AdaptiveMSPDMP SpeciesType");
+			plotDataList.add(td);
+			td = tdList.get(6);
+			td.setDescription("AdaptiveMSPDMP ReactionType");
+			plotDataList.add(td);
+			td = tdList.get(7);
+			td.setDescription("AdaptiveMSPDMP Simulation info");
+			plotDataList.add(td);
+		}
 
 //		boolean[] balanceEquations = MSHybridReactionNetwork.checkBalanceEquations(nss.net, nss.alpha, nss.beta, nss.deltaR);
 //		double[] timeScaleConstraintValues = MSHybridReactionNetwork.computeTimeScaleConstraintValues(nss.net, nss.gamma, nss.alpha, nss.beta, nss.deltaR);
@@ -650,11 +693,11 @@ public class Examples {
 //		tdd.setDescription("Stochastic distribution");
 //		plotDataList.add(tdd);
 
-		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
-		tds = td.getSubsetData(states);
-		tds.setDescription("Stochastic");
-		tds.setPlotScales(plotScales);
-		plotDataList.add(tds);
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+//		tds = td.getSubsetData(states);
+//		tds.setDescription("Stochastic");
+//		tds.setPlotScales(plotScales);
+//		plotDataList.add(tds);
 
 //		tdd = simulatePDMPDistribution(PDMPRuns, nss, tVector);
 //		tdd = tdd.getSubsetData(states);
@@ -685,37 +728,37 @@ public class Examples {
 //		tdd.setDescription("AdaptiveMSPDMP distribution");
 //		plotDataList.add(tdd);
 
-		int[] importantSpecies = { 0, 1, 2 };
-		nss.importantSpecies = importantSpecies;
+//		int[] importantSpecies = { 0, 1, 2 };
+//		nss.importantSpecies = importantSpecies;
 
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, true);
-		tds = tdList.get(0).getSubsetData(states);
-		tds.setDescription("AdaptiveMSPDMP");
-		tds.setPlotScales(plotScales);
-		plotDataList.add(tds);
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);	
-			td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+//		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, true);
+//		tds = tdList.get(0).getSubsetData(states);
+//		tds.setDescription("AdaptiveMSPDMP");
+//		tds.setPlotScales(plotScales);
+//		plotDataList.add(tds);
+//		if (tdList.size() > 1) {
+//			td = tdList.get(1);
+//			td.setDescription("AdaptiveMSPDMP alpha");
+//			plotDataList.add(td);
+//			td = tdList.get(2);
+//			td.setDescription("AdaptiveMSPDMP rho");
+//			plotDataList.add(td);
+//			td = tdList.get(3);
+//			td.setDescription("AdaptiveMSPDMP beta");
+//			plotDataList.add(td);
+//			td = tdList.get(4);	
+//			td.setDescription("AdaptiveMSPDMP z (scaled state)");
+//			plotDataList.add(td);
+//			td = tdList.get(5);
+//			td.setDescription("AdaptiveMSPDMP SpeciesType");
+//			plotDataList.add(td);
+//			td = tdList.get(6);
+//			td.setDescription("AdaptiveMSPDMP ReactionType");
+//			plotDataList.add(td);
+//			td = tdList.get(7);
+//			td.setDescription("AdaptiveMSPDMP Simulation info");
+//			plotDataList.add(td);
+//		}
 
 //		tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages);
 //		tds = tdList.get(0).getSubsetData(states);
@@ -1018,17 +1061,20 @@ public class Examples {
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> heatShockResponseNetwork() {
+	public static List<FinitePlotData> heatShockResponseNetwork() throws InterruptedException {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
 		SimulationConfiguration nss = new HeatShockResponseNetwork();
 		nss.rdg = null;
 		nss.rng = null;
 
-		int PDMPRuns = 10;
-		int stochasticRuns = 10;
-		int numberOfTimePoints = 1001;
+		int PDMPRuns = 100;
+		int stochasticRuns = 100;
+		int numberOfTimePoints = 10001;
+		boolean printTiming = true;
 		boolean printMessages = true;
+		boolean recordOptionalTrajectory = false;
+		boolean doAveraging = false;
 
 		// Adaptive method faster with these parameters (~278ms vs ~918ms)
 //		nss.N = 100;
@@ -1052,9 +1098,9 @@ public class Examples {
 		// Set 2
 		// Adaptive method faster with these parameters (~183 vs ~7896)
 		nss.N = 100;
-		nss.eta = 0.5;
 		nss.xi = 1;
 		nss.delta = 1;
+		nss.eta = 0.5;
 		nss.gamma = 0;
 		nss.theta = 0.5;
 		nss.t1 = 100000;
@@ -1067,28 +1113,24 @@ public class Examples {
 //		nss.delta = 0.1;
 ////		nss.gamma = 2;
 //		nss.theta = 10;
-		nss.t1 = 10*FastMath.pow(10, 4);
+//		nss.t1 = 10*FastMath.pow(10, 4);
 
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
 		Utilities.printArray("rates", nss.net.getRateParameters());
 
+		VectorFiniteDistributionPlotData tdd;
+		VectorFiniteDistributionPlotData tdds;
+		TrajectoryDistributionPlotChartPanel dplot;
 		VectorFinitePlotData td;
+		VectorFinitePlotData tds;
+		TrajectoryPlotChartPanel plot;
 
-//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
-//		td.setDescription("Stochastic trajectory");
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printTiming, printMessages);
+//		td.setDescription("Stochastic");
+//		plotDataList.add(td);
 //		for (int s=0; s < td.getNumberOfStates(); s++)
 //			plotDataList.add(td.getSubsetData(s));
-//		plotDataList.add(td);
-//		plotDataList.add(td.getSubsetData(1));
-//		plotDataList.add(td.getSubsetData(2));
-//		plotDataList.add(td.getSubsetData(7));
-//		plotDataList.add(td.getSubsetData(5));
-//		plotDataList.add(td.getSubsetData(6));
-//		plotDataList.add(td.getSubsetData(7));
-//		plotDataList.add(td.getSubsetData(0));
-//		plotDataList.add(td.getSubsetData(3));
-//		plotDataList.add(td.getSubsetData(4));
 
 //		td = SimulationUtilities.simulateLsodarDeterministic(nss, tSeries, printMessages);
 //		td.setDescription("Deterministic trajectory");
@@ -1112,81 +1154,15 @@ public class Examples {
 //		nss.rdg.reSeed(10);
 //		nss.rng.setSeed(10);
 
-		List<VectorFinitePlotData> tdList;
-
-		tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, true);
+		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, doAveraging);
 		td = tdList.get(0);
-		td.setDescription("AdaptiveMSPDMP trajectory");
+		td.setDescription("Adaptive");
+		plotDataList.add(td);
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
-		plotDataList.add(td);
-		plotDataList.add(td.getSubsetData(1));
-		plotDataList.add(td.getSubsetData(2));
-		plotDataList.add(td.getSubsetData(7));
-		plotDataList.add(td.getSubsetData(5));
-		plotDataList.add(td.getSubsetData(6));
-		plotDataList.add(td.getSubsetData(7));
-		plotDataList.add(td.getSubsetData(0));
-		plotDataList.add(td.getSubsetData(3));
-		plotDataList.add(td.getSubsetData(4));
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alphas");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rhos");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP betas");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP STs");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP RTTs");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP z");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP integrator");
-			plotDataList.add(td);
-		}
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
-//		tdList = SimulationUtilities.simulateLsodarAdaptiveMSPDMP(nss, tSeries, printMessages, true);
-//		td = tdList.get(0);
-//		td.setDescription("AdaptiveMSPDMP trajectory");
-//		for (int s=0; s < td.getNumberOfStates(); s++)
-//			plotDataList.add(td.getSubsetData(s));
-//		plotDataList.add(td);
-//		plotDataList.add(td.getSubsetData(1));
-//		plotDataList.add(td.getSubsetData(2));
-//		plotDataList.add(td.getSubsetData(7));
-//		if (tdList.size() > 1) {
-//			td = tdList.get(1);
-//			td.setDescription("AdaptiveMSPDMP alphas");
-//			plotDataList.add(td);
-//			td = tdList.get(2);
-//			td.setDescription("AdaptiveMSPDMP rhos");
-//			plotDataList.add(td);
-//			td = tdList.get(3);
-//			td.setDescription("AdaptiveMSPDMP betas");
-//			plotDataList.add(td);
-//			td = tdList.get(4);
-//			td.setDescription("AdaptiveMSPDMP STs");
-//			plotDataList.add(td);
-//			td = tdList.get(5);
-//			td.setDescription("AdaptiveMSPDMP RTTs");
-//			plotDataList.add(td);
-//			td = tdList.get(6);
-//			td.setDescription("AdaptiveMSPDMP z");
-//			plotDataList.add(td);
-//			td = tdList.get(7);
-//			td.setDescription("AdaptiveMSPDMP integrator");
-//			plotDataList.add(td);
-//		}
-
-		VectorFiniteDistributionPlotData tdd;
+//		VectorFiniteDistributionPlotData tdd;
 
 //		tdd = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
 //		tdd.setDescription("Stochastic distribution");
@@ -1241,7 +1217,7 @@ public class Examples {
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> vilarOscillatorNetwork() {
+	public static List<FinitePlotData> vilarOscillatorNetwork() throws InterruptedException {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
 		boolean modifiedParameters = false;
@@ -1250,15 +1226,19 @@ public class Examples {
 		int PDMPRuns = 10;
 		int stochasticRuns = 10;
 		int numberOfTimePoints = 10001;
+		boolean printTiming = true;
 		boolean printMessages = true;
+		boolean recordOptionalTrajectory = true;
+		boolean doAveraging = true;
 
 		// Set 1
 		nss.N = 100;
 		nss.delta = 1.0;
-		nss.xi = 1.0;
+		nss.xi = 1;
 		nss.eta = 0.5;
 		nss.gamma = 0;
 		nss.theta = 1;
+		nss.t1 = 1e4;
 		nss.t1 = 50;
 
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
@@ -1270,11 +1250,11 @@ public class Examples {
 		VectorFinitePlotData tds;
 		TrajectoryPlotChartPanel plot;
 
-		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
-		td.setDescription("Stochastic");
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
-//		plotDataList.add(td);
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printTiming, printMessages);
+//		td.setDescription("Stochastic");
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+////		plotDataList.add(td);
 
 //		td = SimulationUtilities.simulateDeterministic(nss, tSeries, printMessages);
 //		td.setDescription("Deterministic");
@@ -1330,40 +1310,18 @@ public class Examples {
 //		tdd.setDescription("AdaptiveMSPDMP distribution");
 //		plotDataList.add(tdd);
 
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, true);
+		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, doAveraging);
 		td = tdList.get(0);
 		td.setDescription("Adaptive");
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
 //		plotDataList.add(td);
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> bacteriophageT7Network() {
+	public static List<FinitePlotData> bacteriophageT7Network() throws InterruptedException {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
 		SimulationConfiguration nss = new BacteriophageT7();
@@ -1380,7 +1338,7 @@ public class Examples {
 		nss.eta = 0.5;
 		nss.gamma = 0;
 		nss.theta = 1;
-//		nss.t1 = 100;
+		nss.t1 = 100;
 
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
@@ -1433,29 +1391,7 @@ public class Examples {
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
 //		plotDataList.add(td);
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alphas");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rhos");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP betas");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP STs");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP RTTs");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP z");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP integrator");
-			plotDataList.add(td);
-		}
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
 		return plotDataList;
 	}
@@ -1469,8 +1405,8 @@ public class Examples {
 		int stochasticRuns = 100;
 		int numberOfTimePoints = 10001;
 		boolean printTiming = true;
-		boolean printMessages = false;
-		boolean recordOptionalTrajectory = true;
+		boolean printMessages = true;
+		boolean recordOptionalTrajectory = false;
 		boolean doAveraging = true;
 
 		// Set 1
@@ -1479,8 +1415,8 @@ public class Examples {
 		nss.xi = 1;
 		nss.eta = 0.5;
 		nss.gamma = 0;
-		nss.theta = 1;
-		nss.t1 = 50000;
+		nss.theta = 0.1;
+		nss.t1 = 80000;
 
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
@@ -1503,29 +1439,7 @@ public class Examples {
 		plotDataList.add(td);
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
 //		tdd = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
 //		tdd.setDescription("Stochastic distribution");
@@ -1547,19 +1461,19 @@ public class Examples {
 		int stochasticRuns = 1000;
 		int numberOfTimePoints = 10001;
 		boolean printTiming = true;
-		boolean printMessages = false;
+		boolean printMessages = true;
 		boolean recordOptionalTrajectory = false;
 		boolean doAveraging = true;
 
 
 		// Set 1
-		nss.N = 100;
+		nss.N = 1000;
 		nss.delta = 1;
 		nss.xi = 1;
 		nss.eta = 0.5;
 		nss.gamma = 0;
-		nss.theta = 1;
-		nss.t1 = 10000;
+		nss.theta = 0.1;
+		nss.t1 = 1000;
 
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
@@ -1582,29 +1496,7 @@ public class Examples {
 		plotDataList.add(td);
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
 //		nss.x0[0] = 54;
 //		nss.x0[1] = 73;
@@ -1642,10 +1534,10 @@ public class Examples {
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> repressilator() {
+	public static List<FinitePlotData> repressilator() throws InterruptedException {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		SimulationConfiguration nss = new Repressilator();
+		SimulationConfiguration nss = new Repressilator(true);
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 100;
@@ -1653,16 +1545,24 @@ public class Examples {
 		boolean printTiming = true;
 		boolean printMessages = false;
 		boolean recordOptionalTrajectory = false;
-		boolean doAveraging = true;
+		boolean doAveraging = false;
+
+//		// Set 1
+//		nss.N = 1000;
+//		nss.delta = 1.0;
+//		nss.xi = 1.0;
+//		nss.eta = 0.5;
+//		nss.gamma = 0;
+//		nss.theta = 1;
 
 		// Set 1
 		nss.N = 100;
-		nss.delta = 1;
-		nss.xi = 1;
+		nss.delta = 1.0;
+		nss.xi = 1.0;
 		nss.eta = 0.5;
 		nss.gamma = 0;
 		nss.theta = 1;
-		nss.t1 = 10000;
+		nss.t1 = 500000;
 
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
@@ -1673,23 +1573,23 @@ public class Examples {
 		VectorFinitePlotData tds;
 		TrajectoryPlotChartPanel plot;
 
-		td = SimulationUtilities.simulateDeterministic(nss, tSeries, printTiming, printMessages);
-		td.setDescription("Deterministic");
-		plotDataList.add(td);
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
+//		td = SimulationUtilities.simulateDeterministic(nss, tSeries, printTiming, printMessages);
+//		td.setDescription("Deterministic");
+//		plotDataList.add(td);
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+//
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printTiming, printMessages);
+//		td.setDescription("Stochastic");
+//		plotDataList.add(td);
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
 
-		td = SimulationUtilities.simulateStochastic(nss, tSeries, printTiming, printMessages);
-		td.setDescription("Stochastic");
-		plotDataList.add(td);
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
-
-		td = SimulationUtilities.simulateMSPDMP(nss, tSeries, printTiming, printMessages);
-		td.setDescription("MSPDMP");
-		plotDataList.add(td);
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
+//		td = SimulationUtilities.simulateMSPDMP(nss, tSeries, printTiming, printMessages);
+//		td.setDescription("MSPDMP");
+//		plotDataList.add(td);
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
 
 		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, doAveraging);
 		td = tdList.get(0);
@@ -1697,37 +1597,16 @@ public class Examples {
 		plotDataList.add(td);
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> toggleSwitch() {
+	public static List<FinitePlotData> toggleSwitch() throws InterruptedException {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		SimulationConfiguration nss = new ToggleSwitch();
+		boolean modifiedParameters = false;
+		SimulationConfiguration nss = new ToggleSwitch(modifiedParameters);
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 100;
@@ -1744,7 +1623,7 @@ public class Examples {
 		nss.eta = 0.5;
 		nss.gamma = 0;
 		nss.theta = 1;
-		nss.t1 = 1e4;
+		nss.t1 = 1e3;
 
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
@@ -1766,42 +1645,20 @@ public class Examples {
 		plotDataList.add(td);
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
+//
+//		td = SimulationUtilities.simulateMSPDMP(nss, tSeries, printTiming, printMessages);
+//		td.setDescription("MSPDMP");
+//		plotDataList.add(td);
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
 
-		td = SimulationUtilities.simulateMSPDMP(nss, tSeries, printTiming, printMessages);
-		td.setDescription("MSPDMP");
-		plotDataList.add(td);
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
-
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, doAveraging);
-		td = tdList.get(0);
-		td.setDescription("Adaptive");
-		plotDataList.add(td);
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+//		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, doAveraging);
+//		td = tdList.get(0);
+//		td.setDescription("Adaptive");
+//		plotDataList.add(td);
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+//		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
 		return plotDataList;
 	}
@@ -1841,98 +1698,66 @@ public class Examples {
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
 		plotDataList.add(td);
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);
-			td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
 		return plotDataList;
 	}
 
-	public static List<FinitePlotData> enzymeKinetics1() throws ParserConfigurationException, SAXException, IOException, FileFormatException {
+	public static List<FinitePlotData> enzymeKinetics1() throws InterruptedException, ParserConfigurationException, SAXException, IOException, FileFormatException {
 		List<FinitePlotData> plotDataList = new LinkedList<FinitePlotData>();
 
-		File inputFile = new File("models/enzyme_kinetics_1.xml");
-		SimulationConfiguration nss = StochKitNetworkReader.readSimulationConfiguration(inputFile);
+		SimulationConfiguration nss = new EnzymeKinetics();
+//		File inputFile = new File("models/enzyme_kinetics_1.xml");
+//		SimulationConfiguration nss = StochKitNetworkReader.readSimulationConfiguration(inputFile);
 
-		int PDMPRuns = 10;
-		int stochasticRuns = 10;
-		int numberOfTimePoints = 1001;
+		int PDMPRuns = 100;
+		int stochasticRuns = 100;
+		int numberOfTimePoints = 10001;
+		boolean printTiming = true;
 		boolean printMessages = true;
+		boolean recordOptionalTrajectory = false;
+		boolean doAveraging = true;
 
 		// Set 1
-		nss.N = 100;
+		nss.N = 1000;
 		nss.delta = 1;
 		nss.xi = 1;
 		nss.eta = 0.5;
 		nss.gamma = 0;
-		nss.theta = 0.5;
+		nss.theta = 0.2;
 
 		nss.t1 = 1000;
 
 		double[] tSeries = MathUtilities.computeTimeSeries(numberOfTimePoints, nss.t0, nss.t1);
 
+		VectorFiniteDistributionPlotData tdd;
+		VectorFiniteDistributionPlotData tdds;
+		TrajectoryDistributionPlotChartPanel dplot;
 		VectorFinitePlotData td;
+		VectorFinitePlotData tds;
+		TrajectoryPlotChartPanel plot;
 
-//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printMessages);
+//		td = SimulationUtilities.simulateStochastic(nss, tSeries, printTiming, printMessages);
 //		td.setDescription("Stochastic");
 //		plotDataList.add(td);
 //		for (int s=0; s < td.getNumberOfStates(); s++)
 //			plotDataList.add(td.getSubsetData(s));
 
-//		td = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
-//		td.setDescription("Stochastic distribution");
-//		plotDataList.add(td);
-//		for (int s=0; s < td.getNumberOfStates(); s++)
-//			plotDataList.add(td.getSubsetData(s));
-
-		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printMessages, true);
+		List<VectorFinitePlotData> tdList = SimulationUtilities.simulateAdaptiveMSPDMP(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, doAveraging);
 		td = tdList.get(0);
 		td.setDescription("Adaptive");
-//		for (int s=0; s < td.getNumberOfStates(); s++)
-//			plotDataList.add(td.getSubsetData(s));
 		plotDataList.add(td);
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);		td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+		for (int s=0; s < td.getNumberOfStates(); s++)
+			plotDataList.add(td.getSubsetData(s));
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
+
+//		tdd = SimulationUtilities.simulateStochasticDistribution(stochasticRuns, nss, tSeries, printMessages);
+//		tdd.setDescription("Stochastic distribution");
+//		plotDataList.add(tdd);
+
+//		tdd = SimulationUtilities.simulateAdaptiveMSPDMPDistribution(PDMPRuns, nss, tSeries, printMessages);
+//		tdd.setDescription("AdaptiveMSPDMP distribution");
+//		plotDataList.add(tdd);
 
 		return plotDataList;
 	}
@@ -1985,28 +1810,7 @@ public class Examples {
 //		for (int s=0; s < td.getNumberOfStates(); s++)
 //			plotDataList.add(td.getSubsetData(s));
 		plotDataList.add(td);
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);		td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
 		return plotDataList;
 	}
@@ -2062,28 +1866,7 @@ public class Examples {
 		plotDataList.add(td);
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
-		if (tdList.size() > 1) {
-			td = tdList.get(1);
-			td.setDescription("AdaptiveMSPDMP alpha");
-			plotDataList.add(td);
-			td = tdList.get(2);
-			td.setDescription("AdaptiveMSPDMP rho");
-			plotDataList.add(td);
-			td = tdList.get(3);
-			td.setDescription("AdaptiveMSPDMP beta");
-			plotDataList.add(td);
-			td = tdList.get(4);		td.setDescription("AdaptiveMSPDMP z (scaled state)");
-			plotDataList.add(td);
-			td = tdList.get(5);
-			td.setDescription("AdaptiveMSPDMP SpeciesType");
-			plotDataList.add(td);
-			td = tdList.get(6);
-			td.setDescription("AdaptiveMSPDMP ReactionType");
-			plotDataList.add(td);
-			td = tdList.get(7);
-			td.setDescription("AdaptiveMSPDMP Simulation info");
-			plotDataList.add(td);
-		}
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
 		return plotDataList;
 	}
@@ -2160,8 +1943,15 @@ public class Examples {
 		plotDataList.add(subTd);
 		for (int s=0; s < td.getNumberOfStates(); s++)
 			plotDataList.add(td.getSubsetData(s));
+		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
+
+		return plotDataList;
+	}
+
+	private static Collection<? extends FinitePlotData> getOptionalTrajectoryPlots(List<VectorFinitePlotData> tdList) {
 		if (tdList.size() > 1) {
-			td = tdList.get(1);
+			Collection<FinitePlotData> plotDataList = new ArrayList<>(8);
+			VectorFinitePlotData td = tdList.get(1);
 			td.setDescription("AdaptiveMSPDMP alpha");
 			plotDataList.add(td);
 			td = tdList.get(2);
@@ -2182,9 +1972,9 @@ public class Examples {
 			td = tdList.get(7);
 			td.setDescription("AdaptiveMSPDMP Simulation info");
 			plotDataList.add(td);
-		}
-
-		return plotDataList;
+			return plotDataList;
+		} else
+			return Collections.emptyList();
 	}
 
 }

@@ -121,13 +121,13 @@ public class StochKitNetworkReader {
 			for (Entry<String, Integer> entry : reactantMap.entrySet()) {
 				int species = speciesMap.get(entry.getKey());
 				int consumption = entry.getValue();
-				network.setConsumptionStochiometry(species, reaction, consumption);
+				network.setConsumptionStoichiometry(species, reaction, consumption);
 			}
 			Map<String,Integer> productMap = readProducts(childElement);
 			for (Entry<String, Integer> entry : productMap.entrySet()) {
 				int species = speciesMap.get(entry.getKey());
 				int production = entry.getValue();
-				network.setProductionStochiometry(species, reaction, production);
+				network.setProductionStoichiometry(species, reaction, production);
 			}
 		}
 	}

@@ -18,15 +18,12 @@ for d in $DIRS; do
 	elif [[ -d "$PATH" ]]; then
 		#echo entering "$PATH"
 		q=`/bin/bash countjavalines.sh "$PATH"`
-        echo "q=$q"
-		#/bin/bash countjavalines.sh $PATH
-        w=1
-		L=$((L + w))
+		L=$((L + q))
 	elif [[ -f "$PATH" ]]; then
         #echo "found a file"
-		if [[ "$PATH" =~ ".*\.java$" ]]; then
-			WCOUT=`/bin/wc -l "$PATH"`
-            echo "wcout=$WCOUT"
+		#if [[ "$PATH" =~ ".*\.java$" ]]; then
+		if [[ "$PATH" =~ ".java" ]]; then
+			WCOUT=`/usr/bin/wc -l "$PATH"`
 			for w in $WCOUT; do
 				L=$((L+w))
 				break

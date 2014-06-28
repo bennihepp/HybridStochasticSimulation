@@ -3,7 +3,7 @@
 #include <memory.h>
 #include <math.h>
 
-#include "ch_ethz_khammash_ode_lsodar_LsodarSolver.h"
+#include "ch_ethz_bhepp_ode_lsodar_LsodarSolver.h"
 #include "jni_utils.h"
 
 #ifndef max
@@ -126,7 +126,7 @@ void g_bridge(int neq[], double* t, double y[], int* ng, double gout[]) {
  * Method:    jni_initialize
  * Signature: (LLsodarOde;LLsodarTimepointIterator;)V
  */
-JNIEXPORT jlong JNICALL Java_ch_ethz_khammash_ode_lsodar_LsodarSolver_jni_1initialize
+JNIEXPORT jlong JNICALL Java_ch_ethz_bhepp_ode_lsodar_LsodarSolver_jni_1initialize
   (JNIEnv *env, jobject obj, jobject ode, jobject ef, jdouble relTol, jdouble absTol) {
     // Get references to classes and some methods and find out the
     // values of neq (number of equations) and ng (number of event functions)
@@ -288,7 +288,7 @@ JNIEXPORT jlong JNICALL Java_ch_ethz_khammash_ode_lsodar_LsodarSolver_jni_1initi
  * Method:    jni_dispose
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_ch_ethz_khammash_ode_lsodar_LsodarSolver_jni_1dispose
+JNIEXPORT void JNICALL Java_ch_ethz_bhepp_ode_lsodar_LsodarSolver_jni_1dispose
   (JNIEnv *env, jobject obj, jlong jni_pointer) {
     struct lsodar_data* data = (struct lsodar_data*)jni_pointer;
     jni_free(env, data->y);
@@ -308,7 +308,7 @@ JNIEXPORT void JNICALL Java_ch_ethz_khammash_ode_lsodar_LsodarSolver_jni_1dispos
  * Method:    jni_integrate
  * Signature: (D[DD)D
  */
-JNIEXPORT jdouble JNICALL Java_ch_ethz_khammash_ode_lsodar_LsodarSolver_jni_1integrate
+JNIEXPORT jdouble JNICALL Java_ch_ethz_bhepp_ode_lsodar_LsodarSolver_jni_1integrate
   (JNIEnv *env, jobject obj, jlong jni_pointer, jdouble t0, jobject jy0, jdouble t1) {
     struct lsodar_data* data = (struct lsodar_data*)jni_pointer;
     // Copy initial state vector
@@ -339,21 +339,21 @@ JNIEXPORT jdouble JNICALL Java_ch_ethz_khammash_ode_lsodar_LsodarSolver_jni_1int
             return NAN;
         }
         // dlsodar failed so we throw an exception
-        jclass excpClass = (*env)->FindClass(env, "ch/ethz/khammash/ode/lsodar$JniException");
+        jclass excpClass = (*env)->FindClass(env, "ch/ethz/bhepp/ode/lsodar$JniException");
         if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-            fprintf(stderr, "jni_integrate: Failed to find class ch.ethz.khammash.ode.lsodar.JniException\n");
+            fprintf(stderr, "jni_integrate: Failed to find class ch.ethz.bhepp.ode.lsodar.JniException\n");
             return NAN;
         }
         jmethodID constructorMethodID = (*env)->GetMethodID(env, excpClass, "<init>", "(ID)V");
         if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-            fprintf(stderr, "jni_integrate: Failed to get method ID of constructor for ch.ethz.khammash.ode.lsodar.JniException\n");
+            fprintf(stderr, "jni_integrate: Failed to get method ID of constructor for ch.ethz.bhepp.ode.lsodar.JniException\n");
             // Reset istate for next integration
             data->istate = 1;
             return 0;
         }
         jobject excp = (*env)->NewObject(env, excpClass, constructorMethodID, data->istate, data->t);
         if ((*env)->ExceptionCheck(env) == JNI_TRUE) {
-            fprintf(stderr, "jni_integrate: Failed to create ch.ethz.khammash.ode.lsodar.JniException object\n");
+            fprintf(stderr, "jni_integrate: Failed to create ch.ethz.bhepp.ode.lsodar.JniException object\n");
             // Reset istate for next integration
             data->istate = 1;
             return NAN;

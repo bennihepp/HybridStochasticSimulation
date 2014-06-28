@@ -23,8 +23,9 @@ OBJECTS = $(SOURCES:.c=.o)
 LOBJECTS = $(SOURCES:.c=.lo)
 EXTERNAL_LOBJECTS = ../src/jni_utils.lo
 JAVACLASSPATH=../../target/classes
-JAVACLASS = ch.ethz.khammash.ode.cvode.CVodeSolver
-JAVACLASSFILE = $(JAVACLASSPATH)/ch/ethz/khammash/ode/cvode/CVodeSolver.class
+JAVACLASSPATH=../../bin
+JAVACLASS = ch.ethz.bhepp.ode.cvode.CVodeSolver
+JAVACLASSFILE = $(JAVACLASSPATH)/ch/ethz/bhepp/ode/cvode/CVodeSolver.class
 
 all: $(SOTARGET)
 
@@ -37,10 +38,6 @@ $(TARGET): $(LOBJECTS) $(EXTERNAL_LOBJECTS)
 
 $(LOBJECTS): $(HEADERS) $(SOURCES_DEPS)
 
-#jniheaders: $(JAVACLASSFILE)
-jniheaders:
-	CLASSPATH=$(JAVACLASSPATH) $(JAVAH) -d include -jni $(JAVACLASS)
-
 %.lo: %.c $(HEADERS) jniheaders
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) $(CDEFS) $(INCLUDES) -c $< -o $@
 
@@ -49,4 +46,7 @@ jniheaders:
 
 clean:
 	rm -f $(SOTARGET) $(TARGET) $(LOBJECTS) $(OBJECTS)
+
+jniheaders: $(JAVACLASSFILE)
+	CLASSPATH=$(JAVACLASSPATH) $(JAVAH) -d include -jni $(JAVACLASS)
 

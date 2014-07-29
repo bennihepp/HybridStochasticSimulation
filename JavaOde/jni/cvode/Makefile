@@ -1,18 +1,19 @@
 SHELL = /bin/sh
 CC    = gcc
-LIBTOOL = libtool
+#LIBTOOL = glibtool
 JAVAH   = javah
 CFLAGS = -O2 -fno-strict-aliasing -D_JNI_IMPLEMENTATION_ -Wall -fPIC
 CDEFS = 
 JDKDIR = $(JAVA_HOME)
+PLATFORM=darwin
 #JDKDIR = /usr/lib/jvm/java-7-oracle
 #JDKDIR = /usr/local/bsse/el6/java/jdk7
 JDKINCLUDEDIR = $(JDKDIR)/include
-JDKPLATFORMDIR = $(JDKINCLUDEDIR)/linux
+JDKPLATFORMDIR = $(JDKINCLUDEDIR)/$(PLATFORM)
 #JDKDIR = /c/Program\ Files/Java/jdk1.7.0_21/include
 #JDKPLATFORMDIR = /c/Program\ Files/Java/jdk1.7.0_21/include/win32
-LDFLAGS = -shared -L$(SUNDIALS_HOME)/lib -lsundials_cvode -lsundials_nvecserial -lgfortran -fno-omit-frame-pointer
-INCLUDES = -I../include -I./include/ -I$(SUNDIALS_HOME)/include -I$(JDKINCLUDEDIR) -I$(JDKPLATFORMDIR)
+LDFLAGS = -shared -L$(SUNDIALS_HOME)/lib -lsundials_cvode -lsundials_nvecserial -fno-omit-frame-pointer
+INCLUDES = -I../include -I$(SUNDIALS_HOME)/include -I$(JDKINCLUDEDIR) -I$(JDKPLATFORMDIR)
 
 SOTARGET = lib/libcvodejni.so
 TARGET = lib/libcvodejni.la
@@ -33,20 +34,22 @@ $(SOTARGET): $(TARGET)
 	ln -f -s .libs/libcvodejni.so lib/libcvodejni.so
 
 $(TARGET): $(LOBJECTS) $(EXTERNAL_LOBJECTS)
-	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(LOBJECTS) $(EXTERNAL_LOBJECTS) \
+	$(LIBTOOL) --tag=CC --mode=link $(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(LOBJECTS) $(EXTERNAL_LOBJECTS) \
 		-rpath /usr/local/lib
 
 $(LOBJECTS): $(HEADERS) $(SOURCES_DEPS)
 
 %.lo: %.c $(HEADERS) jniheaders
-	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) $(CDEFS) $(INCLUDES) -c $< -o $@
+	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(CFLAGS) $(CDEFS) $(INCLUDES) -c $< -o $@
 
 #%.o: %.c $(HEADERS)
-#	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+#	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
 	rm -f $(SOTARGET) $(TARGET) $(LOBJECTS) $(OBJECTS)
 
-jniheaders: $(JAVACLASSFILE)
-	CLASSPATH=$(JAVACLASSPATH) $(JAVAH) -d include -jni $(JAVACLASS)
+jniheaders:
+
+#jniheaders: $(JAVACLASSFILE)
+#	CLASSPATH=$(JAVACLASSPATH) $(JAVAH) -d include -jni $(JAVACLASS)
 

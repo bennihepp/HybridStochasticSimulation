@@ -31,6 +31,18 @@ public interface AdaptiveStepSolver {
 	void prepareStep(double t0, double[] x0, double t1) throws IllegalStateException;
 
     /**
+     * Prepare a call to {@link #integrateStep()}.
+     *
+     * @param t0 defines the current timepoint for the integration
+     * @param x0 defines the current state for the integration
+     * @param t1 defines the end timepoint for the integration
+     * @param dt0 defines the initial step size
+     * 
+     * @throws IllegalStateException if {@link #initialize} has not been called before
+     */
+	void prepareStep(double t0, double[] x0, double t1, double dt0) throws IllegalStateException;
+
+    /**
      * Integrate the ODE with a single step. {@link #prepareStep} has to be called before calling this method.
      * 
      * @return the new timepoint after the integration step

@@ -16,9 +16,9 @@ import ch.ethz.bhepp.hybridstochasticsimulation.networks.DefaultUnaryBinaryReact
 //R2: A -> A + B
 //R3: B -> ~
 
-public class TrivialNetwork extends SimulationConfiguration {
+public class SimpleNetwork extends SimulationConfiguration {
 
-	public TrivialNetwork() {
+	public SimpleNetwork() {
 
         int[][] productionStochiometries = {
         //    S0  S1

@@ -4,61 +4,128 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.Arrays;
 
+import org.apache.commons.math3.analysis.UnivariateFunction;
+import org.apache.commons.math3.analysis.solvers.AllowedSolution;
+import org.apache.commons.math3.analysis.solvers.BracketedUnivariateSolver;
+import org.apache.commons.math3.analysis.solvers.BracketingNthOrderBrentSolver;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.random.RandomDataGenerator;
+import org.apache.commons.math3.util.FastMath;
 
+import JaCoP.scala.network;
 import ch.ethz.bhepp.hybridstochasticsimulation.ArrayUtilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.Utilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.math.distributions.DiscreteProbabilityDistribution;
+import ch.ethz.bhepp.hybridstochasticsimulation.math.distributions.PoissonDistribution;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.AlfonsiAdaptivePDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
+import ch.ethz.bhepp.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
 import ch.ethz.bhepp.hybridstochasticsimulation.simulators.ode.OdeAdapter;
-import ch.ethz.bhepp.ode.FixedStepSolver;
-import ch.ethz.bhepp.ode.nonstiff.EulerSolver;
+import ch.ethz.bhepp.ode.AdaptiveStepSolver;
+import ch.ethz.bhepp.ode.Ode;
+import ch.ethz.bhepp.ode.cvode.CVodeSolver;
 
-public class FixedStepPDMPSimulator extends StepPDMPSimulator {
+public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 
-	private FixedStepSolver solver;
+	private AdaptiveStepSolver solver;
 
-	public FixedStepPDMPSimulator() {
+	public AdaptiveStepTauPDMPSimulator() {
 		this(null, null);
 	}
 
-	public FixedStepPDMPSimulator(RandomDataGenerator rdg) {
+	public AdaptiveStepTauPDMPSimulator(RandomDataGenerator rdg) {
 		this(null, rdg);
 	}
 
-	public FixedStepPDMPSimulator(FixedStepSolver solver) {
+	public AdaptiveStepTauPDMPSimulator(AdaptiveStepSolver solver) {
 		this(solver, null);
 	}
 
-	public FixedStepPDMPSimulator(FixedStepSolver solver, RandomDataGenerator rdg) {
+	public AdaptiveStepTauPDMPSimulator(AdaptiveStepSolver solver, RandomDataGenerator rdg) {
 		super(rdg);
 		if (solver == null)
-			solver = new EulerSolver(1.0);
+			solver = new CVodeSolver();
 		this.solver = solver;
 	}
 
-	private double findTimepointOfReaction(double u, double t1, double propSum1, double t2, double propSum2) {
-		double slope = (propSum2 - propSum1) / (t2 - t1);
-		double dt = (u - propSum1) / slope;
-		double t = t1 + dt;
-		return t;
+	private double findRoot(BracketedUnivariateSolver<UnivariateFunction> rootSolver, UnivariateFunction f, double t1, double t2) {
+		int maxEval = 100;
+		try {
+			double t = rootSolver.solve(maxEval, f, t1, t2, (t1 + t2) / 2.0, AllowedSolution.LEFT_SIDE);
+//			System.out.println(String.format("Needed %d evaluations", rootSolver.getEvaluations()));
+			return t;
+		} catch (RuntimeException e) {
+			throw e;
+		}
+//		final double TOL = 1e-6;
+		// TODO: use interpolated solutions
+//		double t;
+//		while (true) {
+//			t = (t1 + t2) / 2.0;
+//			double u = computePropSum(solver, t);
+//			if (FastMath.abs(target - u) <= TOL)
+//				break;
+//			if (u > target)
+//				t2 = t;
+//			else
+//				t1 = t;
+//		}
+//		return t;
 	}
 
-	private void interpolateState(double t, double[] xOut, double t1, double[] x1, double t2, double[] x2) {
-		double w1 = (t2 - t) / (t2 - t1);
-		if (w1 < 0.0 || w1 > 1.0)
-			throw new IllegalArgumentException(String.format("Expected t1 <= t <= t2 and t1 < t2 but got t=%f, t1=%f, t2=%f", t, t1, t2));
-		double w2 = 1.0 - w1;
-		for (int i=0; i < xOut.length; i++) {
-			double v1 = x1[i];
-			double v2 = x2[i];
-			double v = v1 * w1 + v2 * w2;
-			xOut[i] = v;
+	private class PropSumIntFunction implements UnivariateFunction {
+
+        double[] xTemp;
+
+		@Override
+		public double value(double t) {
+			solver.computeInterpolatedSolution(t, xTemp);
+			double v = xTemp[xTemp.length - 1];
+			return v;
 		}
+
+	}
+
+	private class ExtendedOde implements Ode {
+
+		Ode baseOde;
+		AdaptiveMSHRNModel msModel;
+
+		@Override
+		public void computeVectorField(double t, double[] x, double[] xDot) {
+			baseOde.computeVectorField(t, x, xDot);
+			for (int r=0; r < msModel.getNumberOfReactions(); r++) {
+				if (msModel.getNetwork().getReactionType(r) == ReactionType.DISCRETE) {
+					xDot[baseOde.getDimensionOfVectorField() + r] = msModel.computePropensity(r, t, x);
+				} else {
+					xDot[baseOde.getDimensionOfVectorField() + r] = 0.0;
+				}
+			}
+		}
+
+		@Override
+		public int getDimensionOfVectorField() {
+			return baseOde.getDimensionOfVectorField() + msModel.getNumberOfReactions();
+		}
+		
+	}
+
+	private class RootFunction implements UnivariateFunction {
+
+    	double offset = 0.0;
+		private UnivariateFunction f;
+
+        public RootFunction(UnivariateFunction f) {
+        	this.f = f;
+        }
+
+		@Override
+		public double value(double t) {
+			return f.value(t) - offset;
+		}
+
 	}
 
 	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
@@ -81,7 +148,7 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 				model.getNumberOfSpecies(), x0.length);
 
 		double t = t0;
-		double[] x = new double[x0.length + 1];
+		double[] x = new double[x0.length + 1 + msModel.getNumberOfReactions()];
 		for (int i=0; i < x0.length; i++)
 			x[i] = x0[i];
     	model.initialize(t, x);
@@ -90,12 +157,62 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
         double[] xReaction = new double[x.length];
         double[] xTemp = new double[x.length];
 
-        double[] deltaX = new double[x.length];
+        PropSumIntFunction propSumIntFunction = new PropSumIntFunction();
+        propSumIntFunction.xTemp = new double[x.length];
+        RootFunction rootFunction = new RootFunction(propSumIntFunction);
+        BracketedUnivariateSolver<UnivariateFunction> rootSolver = new BracketingNthOrderBrentSolver(1e-2, 5);
 
 		StochasticReactionNetworkModel rnm = model.getTransitionMeasure();
     	FirstOrderDifferentialEquations vectorField = model.getVectorField();
 
-		OdeAdapter ode = new OdeAdapter(vectorField);
+		OdeAdapter baseOde = new OdeAdapter(vectorField);
+		ExtendedOde ode = new ExtendedOde();
+		ode.baseOde = baseOde;
+		ode.msModel = msModel;
+
+		class TauStepSizeComputer {
+			double epsilon = 0.03;
+			double g = 3.0;
+			AdaptiveMSHRNModel msModel;
+			double[] mu;
+			double[] sigmaSquared;
+			double[] propensities;
+
+			private TauStepSizeComputer(AdaptiveMSHRNModel msModel) {
+				this.msModel = msModel;
+				mu = new double[msModel.getNumberOfSpecies()];
+				sigmaSquared = new double[msModel.getNumberOfSpecies()];
+				propensities = new double[msModel.getNumberOfReactions()];
+			}
+
+			private void computeMuAndSigmaSquared(double t, double[] x) {
+				msModel.computeAllPropensities(t, x, propensities);
+				for (int s=0; s < msModel.getNumberOfSpecies(); s++) {
+					mu[s] = 0.0;
+					for (int r=0; r < msModel.getNumberOfReactions(); r++) {
+						double temp1 = msModel.getNetwork().getStoichiometry(s, r) * propensities[r];
+						double temp2 = temp1 * msModel.getNetwork().getStoichiometry(s, r);
+						mu[s] = temp1;
+						sigmaSquared[s] = temp2;
+					}
+				}
+			}
+
+			private double computeTauStepSize(double t, double[] x) {
+				computeMuAndSigmaSquared(t, x);
+				double stepSize = Double.POSITIVE_INFINITY;
+				for (int s=0; s < msModel.getNumberOfSpecies(); s++) {
+					double numerator = epsilon * x[s] / g;
+					numerator = FastMath.max(numerator, 1.0);
+					double temp1 = numerator / FastMath.abs(mu[s]);
+					double temp2 = numerator * numerator / FastMath.abs(sigmaSquared[s]);
+					stepSize = FastMath.min(stepSize, temp1);
+					stepSize = FastMath.min(stepSize, temp2);
+				}
+				return stepSize;
+			}
+		}
+		TauStepSizeComputer tss = new TauStepSizeComputer(msModel);
 
 		double[] propVec = new double[rnm.getNumberOfReactions()];
     	double msgDt = (t1 - t0) / 20.0;
@@ -128,31 +245,10 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 
 				boolean hasDeterministicPart = model.hasVectorField();
 
-//				double integrationTimeStep = 0.0;
-
-				// FIXME
-//				afModel.computePropensities(t, x, propVec);
-//				if (t >= 660.178)
-//				    t = t;
-//                if (t >= 660.1)
-//                    t = t;
-//				if (t >= 660.179)
-//				    t = t;
-
 				if (msModel != null && hasDeterministicPart) {
 
 					double deterministicPropensitySum = msModel.computeDeterministicPropensitiesSum(t, x);
 					double stochasticPropensitySum = msModel.computePropensitySum(t, x);
-//					double coupledPropensitiesSum = model.computeCoupledPropensitiesSum(t, x);
-
-//		        	final double alpha = 0.8;
-//		        	if (coupledPropensitiesSum > 0.0) {
-//			        	integrationTimeStep = - FastMath.log(1 - alpha) / coupledPropensitiesSum;
-//	//	        		integrationTimeStep = 1 / coupledPropensitiesSum;
-//		        		integrationTimeStep = FastMath.min(t1 - t, integrationTimeStep);
-//					} else
-//		        		integrationTimeStep = (t1 - t);
-
 
 					if (deterministicPropensitySum / stochasticPropensitySum < MIN_DETERMINISTIC_TO_STOCHASTIC_RATIO)
 						hasDeterministicPart = false;
@@ -168,20 +264,25 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 //			        model.checkAndHandleOptionalEvent(t, x);
 
 					// Compute the next unit time when a stochastic reaction fires (random-time-change formulation)
-		        	double nextUnitJumpTime = computeUnitJumpTime();
-		        	x[x.length - 1] = 0.0;
+//		        	double nextUnitJumpTime = computeUnitJumpTime();
+//		        	x[x.length - 1] = 0.0;
 
 		        	while (true) {
 
+				        double[] pm = model.computePrimaryState(t, x).clone();
+
+		        		double tauStepSize = tss.computeTauStepSize(t, pm);
+
 //		        		integrationTimeStep = 0.1;
-//				        double[] pm = model.computePrimaryState(t, x).clone();
-		        		double tNext = solver.integrateStep(t, x, t1, xNext);
+			        	solver.prepareStep(t, x, t1);
+		        		solver.setCurrentStepSize(tauStepSize);
+				        double tNext = solver.integrateStep(xNext);
 		        		for (int i=0; i < model.getNumberOfSpecies(); i++)
 		        			if (xNext[i] < 0.0) {
 		        				xNext[i] = 0.0;
 //		        				throw new RuntimeException("Negative states are not allowed!");
 		        			}
-//				        double[] pmNext = model.computePrimaryState(tNext, xNext);
+				        double[] pmNext = model.computePrimaryState(tNext, xNext);
 //		        		double tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
 //		        		if (xNext[1] < 0) {
 //		        			double[] xOut = new double[x.length];
@@ -190,75 +291,19 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 //			        		tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
 //		        		}
 
-				        Arrays.fill(deltaX, 0.0);
-				        boolean deltaXChanged = false;
-
-				        while (xNext[xNext.length - 1] >= nextUnitJumpTime) {
-				        	// A stochastic reaction occured during the intergration step
-				        	double tReaction = findTimepointOfReaction(nextUnitJumpTime, t, x[x.length - 1], tNext, xNext[xNext.length - 1]);
-
-				        	interpolateState(tReaction, xReaction, t, x, tNext, xNext);
-				        	ArrayUtilities.copySum(xTemp, xReaction, deltaX);
-				        	double propSum = stModel.computePropensitiesAndSum(tReaction, xTemp, propVec);
-
-				        	int reaction = -1;
-				        	try {
-			        		reaction = DiscreteProbabilityDistribution.sample(rdg, propVec, propSum);
-				        	} catch (Exception e) {
-				        		// TODO
-					        	propSum = stModel.computePropensitiesAndSum(tReaction, xTemp, propVec);
-				        		reaction = DiscreteProbabilityDistribution.sample(rdg, propVec, propSum);
+				        for (int r=0; r < msModel.getNumberOfReactions(); r++) {
+				        	if (msModel.getNetwork().getReactionType(r) == ReactionType.DISCRETE) {
+				        		double lambda = xNext[baseOde.getDimensionOfVectorField() + r] - x[baseOde.getDimensionOfVectorField() + r];
+				        		if (lambda > 0) {
+					        		double q = PoissonDistribution.sample(rdg, lambda);
+					        		for (int i=0; i < q; i++)
+					        			rnm.changeState(r, tNext, xNext);
+				        		}
 				        	}
-				        	if (simInfo != null)
-				        		simInfo.increaseReactionCount(reaction);
-
-				        	// Here we prevent accumulation of numerical errors when finding the timepoint of the reaction
- 				        	nextUnitJumpTime = xReaction[xReaction.length - 1];
-
- 							// Update the next unit time when a stochastic reaction fires (random-time-change formulation)
-							nextUnitJumpTime += computeUnitJumpTime();
-
-//							System.out.println(String.format("  Stochastic reaction r=%d took place at t=%f", reaction, tReaction));
-					        if (msModel == null || msModel.coupledStochasticReactions.contains(reaction)) {
-//					        	System.out.println("  Stochastic reaction is coupled to vector field");
-//								System.out.println(String.format("  Rewinding to t=%f, lost %f of %f (%f%%)", tReaction, tNext - tReaction, tNext - t, 100 * (tNext-tReaction)/(tNext - t)));
-					        	stModel.changeState(reaction, tReaction, xTemp);
-					        	if (msModel != null)
-					        		msModel.handleReaction(reaction, tReaction, xTemp);
-//						        rnm.changeState(reaction, tReaction, deltaX);
-					        	// Set tReaction and xReaction to be the next state
-					        	tNext = tReaction;
-					        	ArrayUtilities.copyDifference(xNext, xTemp, deltaX);
-					        	break;
-					        } else {
-					        	stModel.changeState(reaction, tReaction, deltaX);
-					        	ArrayUtilities.copySum(xTemp, xReaction, deltaX);
-					        	if (msModel != null)
-					        		msModel.handleReaction(reaction, tReaction, xTemp);
-						        // Estimate the new propensity sum at tNext
-					        	double f = msModel.computePropensitySum(tReaction, xTemp);
-								double dt = tNext - tReaction;
-								double dy = f * dt;
-								double y = xReaction[xReaction.length - 1] + dy;
-								xNext[xNext.length - 1] = y;
-								// Set tReaction and xTemp to be the current state
-								t = tReaction;
-					        	ArrayUtilities.copy(x, xReaction);
-					        	deltaXChanged = true;
-					        }
-
-			        		for (int i=0; i < model.getNumberOfSpecies(); i++)
-			        			if (xNext[i] < 0.0)
-			        				throw new RuntimeException("Negative states are not allowed!");
-
 				        }
 
-				    	// Set tNext and xNext to be the current state
 				        t = tNext;
-				        if (deltaXChanged)
-				        	ArrayUtilities.copySum(x, xNext, deltaX);
-				        else
-				        	ArrayUtilities.copy(x, xNext);
+			        	ArrayUtilities.copy(x, xNext);
 
 			        	if (simInfo != null)
 			        		simInfo.increaseIntegrationSteps();
@@ -288,7 +333,7 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 
 				} else {
 
-//			        double[] pm = model.computePrimaryState(t, x);
+			        double[] pm = model.computePrimaryState(t, x);
 
 			        if (afModel != null) {
     			        if (previousStepWasHybrid) {
@@ -327,7 +372,7 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 		        	if (msModel != null)
 		        		msModel.handleReaction(reaction, t, x);
 
-//                    double[] pmNext = model.computePrimaryState(t, x);
+                    double[] pmNext = model.computePrimaryState(t, x);
 
 	        		for (int i=0; i < model.getNumberOfSpecies(); i++)
 	        			if (x[i] < 0.0)
@@ -357,7 +402,7 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 //				System.out.println("Observed " + eventObserver.getEventCount() + " events");
 				final long endTime = System.currentTimeMillis();
 				System.out.println("Execution time: " + (endTime - startTime));
-		    	long evaluationCounter = ode.getEvaluations();
+		    	long evaluationCounter = baseOde.getEvaluations();
 				System.out.println("Total of " + evaluationCounter + " evaluations and " + simInfo.getTotalReactionCount() + " reactions performed");
 				Utilities.printArray("Total reaction counts", simInfo.getReactionCounts());
 				double[] relativeReactionCounts = simInfo.getRelativeReactionCounts();

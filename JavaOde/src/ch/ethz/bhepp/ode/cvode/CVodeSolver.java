@@ -58,10 +58,10 @@ public class CVodeSolver implements Solver, AdaptiveStepSolver {
 		}
 	}
 
-    public static int MULTISTEPTYPE_ADAMS = 1;
-    public static int MULTISTEPTYPE_BDF = 2;
-    public static int ITERATIONTYPE_FUNCTIONAL = 1;
-    public static int ITERATIONTYPE_NEWTON = 2;
+    public static final int MULTISTEPTYPE_ADAMS = 1;
+    public static final int MULTISTEPTYPE_BDF = 2;
+    public static final int ITERATIONTYPE_FUNCTIONAL = 1;
+    public static final int ITERATIONTYPE_NEWTON = 2;
 
     private boolean initialized = false;
     private long jni_pointer;
@@ -89,6 +89,7 @@ public class CVodeSolver implements Solver, AdaptiveStepSolver {
 	private int maxNumOfSteps = 0;
 	private double minStep = Double.NaN;
 	private double maxStep = Double.NaN;
+
 
     public CVodeSolver() {
     	this(1e-6, 1e-3);
@@ -126,6 +127,8 @@ public class CVodeSolver implements Solver, AdaptiveStepSolver {
     private native void jni_setMinStep(long jni_pointer, double minStep);
 
     private native void jni_setMaxStep(long jni_pointer, double maxStep);
+
+    private native void jni_setStopTime(long jni_pointer, double stopTime);
 
     private native void jni_reinitialize(long jni_pointer, double t);
 
@@ -250,6 +253,12 @@ public class CVodeSolver implements Solver, AdaptiveStepSolver {
 		jni_reinitializeOneStep(jni_pointer, t0);
 		resetEventOccuredFlags();
 		this.t1 = t1;
+	}
+
+	@Override
+	public void prepareStep(double t0, double[] x0, double t1, double dt0) throws IllegalStateException {
+		prepareStep(t0, x0, t1);
+		setCurrentStepSize(dt0);
 	}
 
 	@Override
@@ -531,5 +540,9 @@ public class CVodeSolver implements Solver, AdaptiveStepSolver {
 	public void setMaximumStepSize(double maxStepSize) throws IllegalStateException, UnsupportedOperationException {
 		jni_setMaxStep(jni_pointer, maxStepSize);
 	}
+
+    public void setStopTime(double stopTime) {
+    	jni_setStopTime(jni_pointer, stopTime);
+    }
 
 }

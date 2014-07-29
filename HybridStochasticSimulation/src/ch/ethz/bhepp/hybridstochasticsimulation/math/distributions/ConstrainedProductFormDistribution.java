@@ -136,6 +136,7 @@ public class ConstrainedProductFormDistribution implements MultivariateDistribut
 
 	public ConstrainedProductFormDistribution(RandomDataGenerator rdg, int n, final double[] c, final int[] alpha) {
 		checkArgument(c.length == alpha.length);
+		checkArgument(n >= 0);
 //		double sumC = MathUtilities.sum(c);
 //		int nn = (int)FastMath.round(sumC);
 //		double[] p = new double[c.length];

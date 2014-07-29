@@ -43,8 +43,10 @@ public class GUI {
 //                            List<FinitePlotData> plotDataList = Examples.fastProduction();
 //                            List<FinitePlotData> plotDataList = Examples.veryFastProduction();
 //							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
+							List<FinitePlotData> plotDataList = Examples.transcriptionTranslation();
 //							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
 //							List<FinitePlotData> plotDataList = Examples.fastDimerization();
+//							List<FinitePlotData> plotDataList = Examples.fastDimerizationComparison();
 //							List<FinitePlotData> plotDataList = Examples.extendedFastDimerization();
 //							List<FinitePlotData> plotDataList = Examples.cycleTest(10000);
 //							List<FinitePlotData> plotDataList = Examples.haploinsufficiencyNetwork();
@@ -55,7 +57,7 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.reversibleReaction();
 //                            List<FinitePlotData> plotDataList = Examples.rareEvent();
 //							List<FinitePlotData> plotDataList = Examples.repressilator();
-							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
+//							List<FinitePlotData> plotDataList = Examples.toggleSwitch();
 //							try {
 //								List<FinitePlotData> plotDataList = Examples.heatShockMassAction();
 //								List<FinitePlotData> plotDataList = Examples.enzymeKinetics1();

@@ -588,6 +588,7 @@ public class ZeroDeficiencyAveragingUnit extends AbstractAveragingUnit implement
 				int j = it.next();
 //				x[subnetworkInfo.getIndexMap().get(i)] = stationarySolution[i];
 				x[j] = stationarySolution[i];
+				++i;
 			}
 
 		}

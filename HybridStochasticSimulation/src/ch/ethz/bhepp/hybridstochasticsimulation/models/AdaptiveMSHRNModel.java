@@ -50,7 +50,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 //	private int optionalEventSpeciesIndex;
 //	private double[] tmpPropensities;
 //	private double[] tmpxDot;
-	private int numberOfAdapations;
+	private int numberOfAdaptations;
 	private double[] optionalState;
 	private int parentOptionalStateSize;
 
@@ -81,7 +81,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		optionalEventObserverList.add(observerCollector);
 //		tmpPropensities = new double[getNumberOfReactions()];
 //		tmpxDot = new double[getNumberOfSpecies()];
-		numberOfAdapations = 0;
+		numberOfAdaptations = 0;
 
 		coupledDiscreteSpecies = new HashSet<>(hrn.getNumberOfSpecies());
 		coupledStochasticReactions = new HashSet<>(hrn.getNumberOfReactions());
@@ -182,7 +182,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		EventHandler eh = stateBoundObservers.get(r + getNumberOfSpecies());
 		ReactionRateBoundObserver reh = (ReactionRateBoundObserver)eh;
 		// FIXME
-		if (hrn.getReactionType(r) == ReactionType.CONTINUOUS) {
+		if (hrn.getReactionType(r) == ReactionType.CONTINUOUS && rate != 0.0) {
     		double lowerBound = rate * FastMath.pow(hrn.getN(), -hrn.getEta());
     		double upperBound = rate * FastMath.pow(hrn.getN(),  hrn.getEta());
     //        double lowerBound = FastMath.pow(rate, 1.0 - hrn.getEta());
@@ -211,11 +211,12 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 			double lowerBound1 = x * FastMath.pow(hrn.getN(), -hrn.getEta());
 			// TODO:
 //			double lowerBound2 = hrn.getInverseSpeciesScaleFactor(s) * FastMath.pow(hrn.getN(), hrn.getXi() - hrn.getEta());
+			double lowerBound2 = hrn.getInverseSpeciesScaleFactor(s) * FastMath.pow(hrn.getN(), hrn.getMu() - hrn.getEta());
 			// FIXME: Make 0.9 configurable
-			double lowerBound2 = hrn.getInverseSpeciesScaleFactor(s) * FastMath.pow(hrn.getN(), hrn.getMu());
+//			double lowerBound2 = hrn.getInverseSpeciesScaleFactor(s) * FastMath.pow(hrn.getN(), hrn.getMu());
 			double lowerBound = FastMath.max(lowerBound1, lowerBound2);
 			lowerBound = FastMath.min(lowerBound, x);
-			double upperBound = x * FastMath.pow(hrn.getN(),  hrn.getEta());
+			double upperBound = x * FastMath.pow(hrn.getN(), hrn.getEta());
 			upperBound = FastMath.max(upperBound, x);
 			// FIXME
 //            lowerBound = FastMath.pow(hrn.getN(), 1.0 - hrn.getEta());
@@ -228,11 +229,11 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 	}
 
 	public int getNumberOfAdapations() {
-		return numberOfAdapations;
+		return numberOfAdaptations;
 	}
 
 	public void resetNumberOfAdapations() {
-		numberOfAdapations = 0;
+		numberOfAdaptations = 0;
 	}
 
 	@Override
@@ -435,7 +436,7 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		hrn.scaleStateInPlace(x);
 
 		updateOptionalEventHandlers(x);
-		numberOfAdapations++;
+		numberOfAdaptations++;
 	}
 
 	private void samplePreviouslyAveragedSubnetworks(double t, double[] x,

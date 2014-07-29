@@ -57,7 +57,7 @@ public class AdaptiveEulerSolver extends EulerSolver {
 			double halfStep = curStep / 2.0;
 			findNextStateExplicitFixed(t, x, curStep, out1V.getData());
 			findNextStateExplicitFixed(t, x, halfStep, out2V.getData());
-			findNextStateExplicitFixed(t, out2V.getData(), halfStep, out2V.getData());
+			findNextStateExplicitFixed(t + halfStep, out2V.getData(), halfStep, out2V.getData());
 			CommonOps.sub(out2V, out1V, errV);
 //			double errNorm = NormOps.fastNormP2(errV);
 			double err = Double.NaN;

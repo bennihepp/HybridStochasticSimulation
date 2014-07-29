@@ -1,13 +1,14 @@
 SHELL = /bin/sh
 CC    = gcc
-LIBTOOL = libtool
+#LIBTOOL = libtool
 CFLAGS = -O2 -fno-strict-aliasing -D_JNI_IMPLEMENTATION_ -Wall -fPIC
 CDEFS = 
 JDKDIR = $(JAVA_HOME)
+PLATFORM=darwin
 #JDKDIR = /usr/lib/jvm/java-7-oracle
 #JDKDIR = /usr/local/bsse/el6/java/jdk7
 JDKINCLUDEDIR = $(JDKDIR)/include
-JDKPLATFORMDIR = $(JDKINCLUDEDIR)/linux
+JDKPLATFORMDIR = $(JDKINCLUDEDIR)/$(PLATFORM)
 #JDKDIR = /c/Program\ Files/Java/jdk1.7.0_21/include
 #JDKPLATFORMDIR = /c/Program\ Files/Java/jdk1.7.0_21/include/win32
 INCLUDES = -I./include/ -I$(JDKINCLUDEDIR) -I$(JDKPLATFORMDIR)
@@ -20,7 +21,8 @@ LOBJECTS = $(SOURCES:.c=.lo)
 TARGET1 = lib/liblsodarjni.so
 TARGET2 = lib/libcvodejni.so
 
-all: $(TARGET1) $(TARGET2)
+#all: $(TARGET1) $(TARGET2)
+all: $(TARGET2)
 
 liblsodar: $(TARGET1)
 
@@ -50,5 +52,5 @@ cvode_clean:
 $(LOBJECTS): $(HEADERS) $(SOURCES)
 
 %.lo: %.c $(HEADERS)
-	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) $(CDEFS) $(INCLUDES) -c $< -o $@
+	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(CFLAGS) $(CDEFS) $(INCLUDES) -c $< -o $@
 

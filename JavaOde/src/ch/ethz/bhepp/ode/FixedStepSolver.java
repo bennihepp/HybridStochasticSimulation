@@ -71,4 +71,11 @@ public interface FixedStepSolver {
      */
 	double integrateStep(double t, double[] x, double[] xOut, double step);
 
+	/**
+	 * Set step size of integration.
+	 * 
+	 * @param stepSize new step size for integration
+	 * @throws UnsupportedOperationException if changing step size is not possible
+	 */
+	void setStepSize(double stepSize) throws UnsupportedOperationException;
 }

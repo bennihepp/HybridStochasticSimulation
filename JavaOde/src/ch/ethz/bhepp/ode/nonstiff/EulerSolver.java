@@ -282,4 +282,9 @@ public class EulerSolver implements Solver, FixedStepSolver {
 
     }
 
+	@Override
+	public void setStepSize(double stepSize) throws UnsupportedOperationException {
+		this.stepSize = stepSize;
+	}
+
 }

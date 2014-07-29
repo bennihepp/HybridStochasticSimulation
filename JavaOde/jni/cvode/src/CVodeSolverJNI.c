@@ -814,3 +814,21 @@ JNIEXPORT void JNICALL Java_ch_ethz_bhepp_ode_cvode_CVodeSolver_jni_1setMaxStep
     }
     return;
 }
+
+/*
+ * Class:     ch_ethz_bhepp_ode_cvode_CVodeSolver
+ * Method:    jni_setStopTime
+ * Signature: (D)V
+ */
+JNIEXPORT void JNICALL Java_ch_ethz_bhepp_ode_cvode_CVodeSolver_jni_1setStopTime
+(JNIEnv *env, jobject obj, jlong jni_pointer, jdouble stopTime) {
+    struct cvode_solver_data* data = (struct cvode_solver_data*)jni_pointer;
+    int flag;
+    flag = CVodeSetStopTime(data->cvode_mem, stopTime);
+    if (flag < 0) {
+        throw_java_exception_error_code(env, "jni_integrate: CVodeSetStopTime failed\n", flag);
+        return;
+    }
+    return;
+
+}

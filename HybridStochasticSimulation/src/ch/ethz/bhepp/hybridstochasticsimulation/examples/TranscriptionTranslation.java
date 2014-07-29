@@ -8,36 +8,39 @@ import org.apache.commons.math3.random.RandomDataGenerator;
 import ch.ethz.bhepp.hybridstochasticsimulation.networks.DefaultUnaryBinaryReactionNetwork;
 
 
-// Reversible reaction.
+// Simple constant transcription and translation.
 // species:
-//  S0
-//  S1
+//  M
+//  P
 // reactions:
-//  R0:  S0 -> S1   [50.0]
-//  R1:  S1 -> S0   [50.0]
+//  R0:  ~ -> M
+//  R1:  M -> M + P
+//  R2:  M -> ~
+//  R3:  P -> ~
 
-public class ReversibleReaction extends SimulationConfiguration {
+public class TranscriptionTranslation extends SimulationConfiguration {
 
-	public ReversibleReaction() {
+	public TranscriptionTranslation() {
 
 		int[][] productionStochiometries = {
-		//    S0  S1
-		    { 0,  1 }, // R0
-		    { 1,  0 }, // R1
+		//   R0  R1  R2  R3
+		    { 1,  1,  0,  0 }, // M
+		    { 0,  1,  0,  0 }, // P
 		};
-
 		int[][] consumptionStochiometries = {
-		//    S0  S1
-		    { 1,  0 }, // R0
-		    { 0,  1 }, // R1
+		//   R0  R1  R2  R3
+		    { 0,  1,  1,  0 }, // M
+		    { 0,  0,  0,  1 }, // P
 		};
 
-		double[] x0 = { 1000, 0 };
+		double[] x0 = { 10, 1000 };
 
-		double[] rateParameters = new double[productionStochiometries.length];
+		double[] rateParameters = new double[productionStochiometries[0].length];
 		/* Reaction propensities */
-		rateParameters[0] = 50.0;
-		rateParameters[1] = 20.0;
+		rateParameters[0] = 10.0;
+		rateParameters[1] = 100.0;
+		rateParameters[2] = 1.0;
+		rateParameters[3] = 1.0;
 
 		double t0 = 0.0;
 		double t1 = 1000.0;
@@ -46,16 +49,17 @@ public class ReversibleReaction extends SimulationConfiguration {
 		double[] alpha = new double[x0.length];
 		double[] beta = new double[rateParameters.length];
 
+		productionStochiometries = transpose(productionStochiometries);
+		consumptionStochiometries = transpose(consumptionStochiometries);
 		DefaultUnaryBinaryReactionNetwork net = new DefaultUnaryBinaryReactionNetwork(x0.length, rateParameters.length);
 		net.setStoichiometries(productionStochiometries, consumptionStochiometries);
 		net.setRateParameters(rateParameters);
 		String[] speciesNames = {
-		    "S1",
-		    "S2",
+		    "M",
+		    "P",
 		};
 		double[] plotScales = new double[x0.length];
 		Arrays.fill(plotScales, 1.0);
-		int[] importantSpecies = { 0, 1 };
 
 		this.net = net;
 		this.N = N;
@@ -67,9 +71,16 @@ public class ReversibleReaction extends SimulationConfiguration {
 		this.x0 = x0;
 		this.plotScales = plotScales;
 		this.speciesNames = speciesNames;
-		this.importantSpecies = importantSpecies;
 		this.rng = new MersenneTwister();
 		this.rdg = new RandomDataGenerator(this.rng);
+	}
+
+	private int[][] transpose(int[][] matrix) {
+		int[][] result = new int[matrix[0].length][matrix.length];
+		for (int i=0; i < matrix.length; i++)
+			for (int j=0; j < matrix[i].length; j++)
+				result[j][i] = matrix[i][j];
+		return result;
 	}
 
 }

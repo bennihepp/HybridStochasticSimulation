@@ -42,8 +42,8 @@ public class GUI {
 //							List<FinitePlotData> plotDataList = Examples.switchingExpression();
 //                            List<FinitePlotData> plotDataList = Examples.fastProduction();
 //                            List<FinitePlotData> plotDataList = Examples.veryFastProduction();
-//							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
-							List<FinitePlotData> plotDataList = Examples.transcriptionTranslation();
+							List<FinitePlotData> plotDataList = Examples.bacteriophageT7Network();
+//							List<FinitePlotData> plotDataList = Examples.transcriptionTranslation();
 //							List<FinitePlotData> plotDataList = Examples.fastIsomerization();
 //							List<FinitePlotData> plotDataList = Examples.fastDimerization();
 //							List<FinitePlotData> plotDataList = Examples.fastDimerizationComparison();

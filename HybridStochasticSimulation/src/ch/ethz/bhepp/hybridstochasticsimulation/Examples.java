@@ -1442,21 +1442,21 @@ public class Examples {
 			plotDataList.add(td.getSubsetData(s));
 		plotDataList.addAll(getOptionalTrajectoryPlots(tdList));
 
-		tdList = SimulationUtilities.simulateAlfonsiPDMP(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, stepSize);
-		td = tdList.get(0);
-		td.setDescription("Alfonsi");
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
-//		plotDataList.add(td);
-		plotDataList.addAll(getOptionalAlfonsiTrajectoryPlots(tdList));
+//		tdList = SimulationUtilities.simulateAlfonsiPDMP(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, stepSize);
+//		td = tdList.get(0);
+//		td.setDescription("Alfonsi");
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+////		plotDataList.add(td);
+//		plotDataList.addAll(getOptionalAlfonsiTrajectoryPlots(tdList));
 
-		tdList = SimulationUtilities.simulateAlfonsiPDMPAd(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory);
-		td = tdList.get(0);
-		td.setDescription("Alfonsi Ad");
-		for (int s=0; s < td.getNumberOfStates(); s++)
-			plotDataList.add(td.getSubsetData(s));
-//		plotDataList.add(td);
-		plotDataList.addAll(getOptionalAlfonsiTrajectoryPlots(tdList));
+//		tdList = SimulationUtilities.simulateAlfonsiPDMPAd(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory);
+//		td = tdList.get(0);
+//		td.setDescription("Alfonsi Ad");
+//		for (int s=0; s < td.getNumberOfStates(); s++)
+//			plotDataList.add(td.getSubsetData(s));
+////		plotDataList.add(td);
+//		plotDataList.addAll(getOptionalAlfonsiTrajectoryPlots(tdList));
 
 
 //		int[] dR = { };
@@ -1855,7 +1855,7 @@ public class Examples {
 
 		int PDMPRuns = 100;
 		int stochasticRuns = 100;
-		int numberOfTimePoints = 10001;
+		int numberOfTimePoints = 1001;
 		boolean printTiming = true;
 		boolean printMessages = false;
 		boolean recordOptionalTrajectory = false;

@@ -16,13 +16,12 @@ import org.slf4j.LoggerFactory;
 
 import ch.ethz.bhepp.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.bhepp.hybridstochasticsimulation.averaging.SubnetworkDescription;
-import ch.ethz.bhepp.hybridstochasticsimulation.averaging.ZeroDeficiencyAveragingUnit;
 import ch.ethz.bhepp.hybridstochasticsimulation.math.MathUtilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.StateBoundObserver.BoundType;
 import ch.ethz.bhepp.hybridstochasticsimulation.networks.AdaptiveMSHRN;
-import ch.ethz.bhepp.hybridstochasticsimulation.networks.SpeciesTimescaleSeparationFunction;
 import ch.ethz.bhepp.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
 import ch.ethz.bhepp.hybridstochasticsimulation.networks.MSHybridReactionNetwork.SpeciesType;
+import ch.ethz.bhepp.hybridstochasticsimulation.networks.SpeciesTimescaleSeparationFunction;
 import ch.ethz.bhepp.hybridstochasticsimulation.simulators.FilterUtilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.simulators.PDMPEventObserver;
 import ch.ethz.bhepp.hybridstochasticsimulation.simulators.PDMPEventObserverCollector;
@@ -55,13 +54,10 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 	private int parentOptionalStateSize;
 
 	private Optional<AveragingUnit> averagingUnitOptional;
-	private SpeciesTimescaleSeparationFunction timescaleSeparationFunction;
 //	private SubnetworkEnumerator subnetworkEnumerator;
 	private List<SubnetworkDescription> subnetworksToAverage;
 	private Set<Integer> reactionsToAverage;
-	private Predicate<Set<Integer>> speciesSubsetFilter;
 	private Predicate<Set<Integer>> reactionSubsetFilter;
-	private Predicate<SubnetworkDescription> subnetworkFilter;
 
 	public AdaptiveMSHRNModel(AdaptiveMSHRN hrn, double observationTime) {
 		super(hrn);
@@ -70,7 +66,6 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		stateBoundObservers = new ArrayList<PDMPEventObserver>(this.hrn.getNumberOfSpecies());
 		for (int s=0; s < this.hrn.getNumberOfSpecies(); s++)
 			stateBoundObservers.add(new StateBoundObserver(this, s));
-		// FIXME
 		for (int r=0; r < this.hrn.getNumberOfReactions(); r++)
 			stateBoundObservers.add(new ReactionRateBoundObserver(this, this, r));
 		hasOptionalEventOccured = false;
@@ -88,7 +83,6 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		uncoupledStochasticReactions = new HashSet<>(hrn.getNumberOfReactions());
 
 		averagingUnitOptional = Optional.absent();
-		timescaleSeparationFunction = new SpeciesTimescaleSeparationFunction();
 		subnetworksToAverage = Collections.emptyList();
 		reactionsToAverage = new HashSet<>();
 	}
@@ -173,7 +167,6 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 			// FIXME
 			double t = 0.0;
 			double rate = computePropensity(r, t, x);
-			// FIXME
 			updateReactionRateBoundObserver(r, rate);
 		}
 	}
@@ -181,13 +174,9 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 	private void updateReactionRateBoundObserver(int r, double rate) {
 		EventHandler eh = stateBoundObservers.get(r + getNumberOfSpecies());
 		ReactionRateBoundObserver reh = (ReactionRateBoundObserver)eh;
-		// FIXME
 		if (hrn.getReactionType(r) == ReactionType.CONTINUOUS && rate != 0.0) {
     		double lowerBound = rate * FastMath.pow(hrn.getN(), -hrn.getEta());
     		double upperBound = rate * FastMath.pow(hrn.getN(),  hrn.getEta());
-    //        double lowerBound = FastMath.pow(rate, 1.0 - hrn.getEta());
-    //        double upperBound = FastMath.pow(rate, 1.0 + hrn.getEta());
-//            logger.info("reaction {}: rate={}, lowerBound={}, upperBound={}", r, rate, lowerBound, upperBound);
     		reh.setLowerBound(lowerBound);
     		reh.setUpperBound(upperBound);
     		reh.setBoundType(ReactionRateBoundObserver.BoundType.BOTH);
@@ -206,22 +195,12 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 			seh.setUpperBound(upperBound);
 			seh.setBoundType(BoundType.UPPER);
 		} else {
-			// TODO: Multiply by x oder not?
-			// TOOD: Which lower bounds
 			double lowerBound1 = x * FastMath.pow(hrn.getN(), -hrn.getEta());
-			// TODO:
-//			double lowerBound2 = hrn.getInverseSpeciesScaleFactor(s) * FastMath.pow(hrn.getN(), hrn.getXi() - hrn.getEta());
 			double lowerBound2 = hrn.getInverseSpeciesScaleFactor(s) * FastMath.pow(hrn.getN(), hrn.getMu() - hrn.getEta());
-			// FIXME: Make 0.9 configurable
-//			double lowerBound2 = hrn.getInverseSpeciesScaleFactor(s) * FastMath.pow(hrn.getN(), hrn.getMu());
 			double lowerBound = FastMath.max(lowerBound1, lowerBound2);
 			lowerBound = FastMath.min(lowerBound, x);
 			double upperBound = x * FastMath.pow(hrn.getN(), hrn.getEta());
 			upperBound = FastMath.max(upperBound, x);
-			// FIXME
-//            lowerBound = FastMath.pow(hrn.getN(), 1.0 - hrn.getEta());
-//            upperBound = FastMath.pow(hrn.getN(), 1.0 + hrn.getEta());
-//            logger.info("species {}: x={}, lowerBound={}, upperBound={}", s, x, lowerBound, upperBound);
 			seh.setLowerBound(lowerBound);
 			seh.setUpperBound(upperBound);
 			seh.setBoundType(BoundType.BOTH);
@@ -375,59 +354,15 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 							SubnetworkInformation subnetworkInfo = new SubnetworkInformation(subnetwork, subnetworkTau, surroundingTau);
 							subnetworkCandidates.add(subnetworkInfo);
 						}
-//						Set<Integer> species = new HashSet<>();
-//						for (int r : subnetworkReactions)
-//							species.addAll(hrn.getInvolvedSpecies(r));
-//						Set<Set<Integer>> speciesPowerSet = Sets.powerSet(species);
-//						for (Set<Integer> subnetworkSpecies : FilterUtilities.filter(speciesPowerSet, speciesSubsetFilter)) {
-//							SubnetworkDescription subnetwork = new SubnetworkDescription(subnetworkSpecies, subnetworkReactions, hrn);
-//							if (!au.getSubnetworkFilter().apply(subnetwork))
-//								continue;
-//							double subnetworkTau = reactionTimescales[i];
-//							double surroundingTau = SpeciesTimescaleSeparationFunction.computeMinTimescale(subnetwork.getSurroundingReactions(), reactionTimescales);
-//							SubnetworkInformation subnetworkInfo = new SubnetworkInformation(subnetwork, subnetworkTau, surroundingTau);
-//							subnetworkCandidates.add(subnetworkInfo);
-//						}
 					}
 				}
 			}
 
-//			List<SubnetworkInformation> subnetworkCandidates = new LinkedList<>();
-//			timescaleSeparationFunction.initialize(hrn, t, x);
-//			SpeciesSubsetEnumerator speciesSubsetEnumerator = new SpeciesSubsetEnumerator();
-//			SubnetworkEnumerator subnetworkEnumerator = new SubnetworkEnumerator();
-//			Predicate<SubnetworkDescription> combinedSubnetworkFilter = FilterUtilities.and(averagingUnit.getSubnetworkFilter(), subnetworkFilter);
-//			for (Set<Integer> subnetworkSpecies : FilterUtilities.filter(speciesSubsetEnumerator, speciesSubsetFilter)) {
-//				double maxDeltaTau = hrn.getTheta();
-//				SubnetworkInformation maxDeltaTauSubnetwork = null;
-//				Iterable<SubnetworkDescription> filteredEnumerator = FilterUtilities.filter(
-//						subnetworkEnumerator.getIterable(subnetworkSpecies), combinedSubnetworkFilter);
-//				for (SubnetworkDescription subnetwork : filteredEnumerator) {
-//					double subnetworkTau = timescaleSeparationFunction.computeMaxTimescale(subnetwork.getSubnetworkReactions(), reactionTimescales);
-//					double surroundingTau = timescaleSeparationFunction.computeMinTimescale(subnetwork.getSurroundingReactions(), reactionTimescales);
-////					double deltaTau = timescaleSeparationFunction.value(subnetwork);
-//					SubnetworkInformation subnetworkInfo = new SubnetworkInformation(subnetwork, subnetworkTau, surroundingTau);
-//					double deltaTau = subnetworkInfo.deltaTau;
-//					if (deltaTau > maxDeltaTau) {
-//						maxDeltaTau = deltaTau;
-//						maxDeltaTauSubnetwork = subnetworkInfo;
-//					}
-//				}
-//				if (maxDeltaTauSubnetwork != null)
-//					subnetworkCandidates.add(maxDeltaTauSubnetwork);
-//			}
 			List<SubnetworkDescription> previousSubnetworksToAverage = subnetworksToAverage;
 			subnetworksToAverage = greedySelectSubnetworksToAverage(subnetworkCandidates);
 			samplePreviouslyAveragedSubnetworks(t, x, au, subnetworksToAverage, previousSubnetworksToAverage);
 			au.reset();
 			averageSubnetworks(t, x, subnetworksToAverage);
-
-//			List<Set<SpeciesVertex>> subnetworksToAverage
-//				= averagingUnit.getSubnetworksToAverageAndResampleState(t, x, reactionTimescales);
-//			Predicate<SubnetworkDescription> subnetworkFilter = averagingUnit.getSubnetworkFilter();
-//			subnetworksToAverage
-//				= averagingUnit.getSubnetworksToAverageAndResampleState(t, x, subnetworkFilter.getFilterPredicate(t, x));
-//			averageSubnetworks(t, x, subnetworksToAverage);
 
 			// TODO: Is this necessary?
 			updateCoupling();
@@ -458,7 +393,6 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		// as long as they don't share any species with already chosen subnetworks
 		// (this is a simple greedy strategy but should be good enough).
 		// Sort candidate subnetworks in decreasing order of their size
-		// TODO: How to select subnetworks for averaging
 		Collections.sort(averagingCandidates, new Comparator<SubnetworkInformation>() {
 
 			@Override
@@ -719,16 +653,8 @@ public class AdaptiveMSHRNModel extends PDMPMSHRNModel implements StateBoundEven
 		reactionChoiceIndices2[reaction] = choiceIndex;
 	}
 
-	public void setSpeciesSubsetFilter(Predicate<Set<Integer>> speciesSubsetFilter) {
-		this.speciesSubsetFilter = speciesSubsetFilter;
-	}
-
 	public void setReactionSubsetFilter(Predicate<Set<Integer>> reactionSubsetFilter) {
 		this.reactionSubsetFilter = reactionSubsetFilter;
-	}
-
-	public void setSubnetworkFilter(Predicate<SubnetworkDescription> subnetworkFilter) {
-		this.subnetworkFilter = subnetworkFilter;
 	}
 
 }

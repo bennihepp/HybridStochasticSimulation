@@ -205,61 +205,6 @@ public class PlotWindow extends ApplicationFrame {
 				}
 			}
 		);
-		// Benchmark entry
-		JMenuItem bechmarkEntry = new JMenuItem("Benchmark");
-		bechmarkEntry.setAccelerator(KeyStroke.getKeyStroke('B', InputEvent.CTRL_MASK));
-		bechmarkEntry.addActionListener(
-			new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					getActionEventBus().post(new GUIEvent(EventType.BENCHMARK, e));
-				}
-			}
-		);
-//		// Script entries
-//		final LinkedList<JMenuItem> scriptEntryList = new LinkedList<JMenuItem>();
-//		File scriptDirectory = new File("scripts");
-//		if (scriptDirectory.isDirectory()) {
-//			File[] scriptFiles = scriptDirectory.listFiles(new FileFilter() {
-//				@Override
-//				public boolean accept(File file) {
-//					String extension = Files.getFileExtension(file.getName());
-//					return extension.equalsIgnoreCase("groovy");
-//				}
-//			});
-//			for (final File scriptFile : scriptFiles) {
-//				JMenuItem scriptEntry = new JMenuItem("Script \"" + scriptFile.getName() + "\"");
-//				scriptEntry.addActionListener(
-//					new ActionListener() {
-//						@Override
-//						public void actionPerformed(ActionEvent e) {
-//							interactiveConsole.loadScriptFile(scriptFile);
-//							interactiveConsole.runScript();
-//						}
-//					}
-//				);
-//				scriptEntry.setEnabled(false);
-//				scriptEntryList.add(scriptEntry);
-//			}
-//		}
-//		// Console entry
-//		JMenuItem consoleEntry = new JMenuItem("Interactive Console");
-//		consoleEntry.setAccelerator(KeyStroke.getKeyStroke('C', InputEvent.CTRL_MASK));
-//		consoleEntry.addActionListener(
-//			new ActionListener() {
-//				@Override
-//				public void actionPerformed(ActionEvent e) {
-//					if (interactiveConsole == null) {
-//						interactiveConsole = new Console(getClass().getClassLoader(), new Binding());
-//						interactiveConsole.run();
-//						for (JMenuItem item : scriptEntryList)
-//							item.setEnabled(true);
-//					}
-//					interactiveConsole.setVariable("plotDataList", plotDataList);
-//					interactiveConsole.setVariable("window", this);
-//				}
-//			}
-//		);
 		// Add entries to menubar
 		JMenuBar menubar = new JMenuBar();
 		JMenu fileMenu = new JMenu("File");
@@ -270,7 +215,6 @@ public class PlotWindow extends ApplicationFrame {
 		fileMenu.add(quitEntry);
 		JMenu simulationMenu = new JMenu("Simulation");
 		simulationMenu.add(runEntry);
-		simulationMenu.add(bechmarkEntry);
 //		JMenu scriptMenu = new JMenu("Script");
 //		scriptMenu.add(consoleEntry);
 //		if (scriptEntryList.size() > 0)

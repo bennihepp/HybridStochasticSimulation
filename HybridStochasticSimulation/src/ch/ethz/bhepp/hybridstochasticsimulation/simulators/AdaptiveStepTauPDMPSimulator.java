@@ -2,23 +2,16 @@ package ch.ethz.bhepp.hybridstochasticsimulation.simulators;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import java.util.Arrays;
-
 import org.apache.commons.math3.analysis.UnivariateFunction;
-import org.apache.commons.math3.analysis.solvers.AllowedSolution;
-import org.apache.commons.math3.analysis.solvers.BracketedUnivariateSolver;
-import org.apache.commons.math3.analysis.solvers.BracketingNthOrderBrentSolver;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.util.FastMath;
 
-import JaCoP.scala.network;
 import ch.ethz.bhepp.hybridstochasticsimulation.ArrayUtilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.Utilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.math.distributions.DiscreteProbabilityDistribution;
 import ch.ethz.bhepp.hybridstochasticsimulation.math.distributions.PoissonDistribution;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
-import ch.ethz.bhepp.hybridstochasticsimulation.models.AlfonsiAdaptivePDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
@@ -48,31 +41,6 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 		if (solver == null)
 			solver = new CVodeSolver();
 		this.solver = solver;
-	}
-
-	private double findRoot(BracketedUnivariateSolver<UnivariateFunction> rootSolver, UnivariateFunction f, double t1, double t2) {
-		int maxEval = 100;
-		try {
-			double t = rootSolver.solve(maxEval, f, t1, t2, (t1 + t2) / 2.0, AllowedSolution.LEFT_SIDE);
-//			System.out.println(String.format("Needed %d evaluations", rootSolver.getEvaluations()));
-			return t;
-		} catch (RuntimeException e) {
-			throw e;
-		}
-//		final double TOL = 1e-6;
-		// TODO: use interpolated solutions
-//		double t;
-//		while (true) {
-//			t = (t1 + t2) / 2.0;
-//			double u = computePropSum(solver, t);
-//			if (FastMath.abs(target - u) <= TOL)
-//				break;
-//			if (u > target)
-//				t2 = t;
-//			else
-//				t1 = t;
-//		}
-//		return t;
 	}
 
 	private class PropSumIntFunction implements UnivariateFunction {
@@ -112,22 +80,6 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 		
 	}
 
-	private class RootFunction implements UnivariateFunction {
-
-    	double offset = 0.0;
-		private UnivariateFunction f;
-
-        public RootFunction(UnivariateFunction f) {
-        	this.f = f;
-        }
-
-		@Override
-		public double value(double t) {
-			return f.value(t) - offset;
-		}
-
-	}
-
 	public double simulate(PDMPModel model, final double t0, final double[] x0, double t1, double[] x1) {
 
 		final int STOCHASTIC_RECORD_INTERVAL = 1;
@@ -140,10 +92,6 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 			msModel = (AdaptiveMSHRNModel)model;
 		StochasticReactionNetworkModel stModel = (StochasticReactionNetworkModel)model;
 
-		AlfonsiAdaptivePDMPModel afModel = null;
-		if (model instanceof AlfonsiAdaptivePDMPModel)
-		    afModel = (AlfonsiAdaptivePDMPModel)model;
-
 		checkArgument(model.getNumberOfSpecies() == x0.length, "Expected model.getNumberOfSpecies() == x0.length but found %s != %s",
 				model.getNumberOfSpecies(), x0.length);
 
@@ -154,13 +102,9 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
     	model.initialize(t, x);
 
         double[] xNext = new double[x.length];
-        double[] xReaction = new double[x.length];
-        double[] xTemp = new double[x.length];
 
         PropSumIntFunction propSumIntFunction = new PropSumIntFunction();
         propSumIntFunction.xTemp = new double[x.length];
-        RootFunction rootFunction = new RootFunction(propSumIntFunction);
-        BracketedUnivariateSolver<UnivariateFunction> rootSolver = new BracketingNthOrderBrentSolver(1e-2, 5);
 
 		StochasticReactionNetworkModel rnm = model.getTransitionMeasure();
     	FirstOrderDifferentialEquations vectorField = model.getVectorField();
@@ -233,8 +177,6 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 
 			final long startTime = System.currentTimeMillis();
 
-            boolean previousStepWasHybrid = false;
-
 			while (true) {
 
 				if (showProgress)
@@ -255,8 +197,6 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 				}
 
 		        if (hasDeterministicPart) {
-
-		            previousStepWasHybrid = true;
 
 		        	if (simInfo != null)
 		        		simInfo.setIntegrationOn();
@@ -280,16 +220,7 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 		        		for (int i=0; i < model.getNumberOfSpecies(); i++)
 		        			if (xNext[i] < 0.0) {
 		        				xNext[i] = 0.0;
-//		        				throw new RuntimeException("Negative states are not allowed!");
 		        			}
-				        double[] pmNext = model.computePrimaryState(tNext, xNext);
-//		        		double tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
-//		        		if (xNext[1] < 0) {
-//		        			double[] xOut = new double[x.length];
-//		        			model.computeDerivativesAndPropensitiesSum(t, x, xOut);
-//		        			model.computeDerivativesAndPropensitiesSum(t, x, xOut);
-//			        		tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
-//		        		}
 
 				        for (int r=0; r < msModel.getNumberOfReactions(); r++) {
 				        	if (msModel.getNetwork().getReactionType(r) == ReactionType.DISCRETE) {
@@ -333,16 +264,6 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 
 				} else {
 
-			        double[] pm = model.computePrimaryState(t, x);
-
-			        if (afModel != null) {
-    			        if (previousStepWasHybrid) {
-        					for (int s=0; s < model.getNumberOfSpecies(); s++)
-        						x[s] = Math.round(x[s]);
-        					previousStepWasHybrid = false;
-    			        }
-			        }
-
 					double propSum;
 					if (msModel != null)
 						propSum = msModel.computeAllPropensitiesAndSum(t, x, propVec);
@@ -352,11 +273,6 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 			        if (propSum < 0 || Double.isNaN(propSum)) {
 			        	throw new RuntimeException("Negative propensities are not allowed to occur!");
 			        }
-
-//			        if (propSum == 0) {
-//			        	t = t1;
-//			        	break;
-//			        }
 
 			        // Find next reaction time point
 			        double tau = rdg.nextExponential(1 / propSum);
@@ -371,8 +287,6 @@ public class AdaptiveStepTauPDMPSimulator extends StepPDMPSimulator {
 		        	stModel.changeState(reaction, t, x);
 		        	if (msModel != null)
 		        		msModel.handleReaction(reaction, t, x);
-
-                    double[] pmNext = model.computePrimaryState(t, x);
 
 	        		for (int i=0; i < model.getNumberOfSpecies(); i++)
 	        			if (x[i] < 0.0)

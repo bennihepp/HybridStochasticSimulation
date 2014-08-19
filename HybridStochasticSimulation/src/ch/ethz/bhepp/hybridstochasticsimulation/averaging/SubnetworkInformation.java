@@ -6,11 +6,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.math3.util.FastMath;
 import org.ejml.data.DenseMatrix64F;
 
 import ch.ethz.bhepp.hybridstochasticsimulation.math.BoundedBroydenRootSolver;
-import ch.ethz.bhepp.hybridstochasticsimulation.math.BroydenRootSolver;
 import ch.ethz.bhepp.hybridstochasticsimulation.math.MultivariateFunction;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.UnaryBinaryDeterministicModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.UnaryBinaryStochasticModel;

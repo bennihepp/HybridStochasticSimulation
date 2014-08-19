@@ -1,0 +1,3 @@
+To compile you run:
+> mvn compile
+

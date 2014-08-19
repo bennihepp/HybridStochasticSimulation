@@ -1,0 +1,5 @@
+You need to have Java 1.7 installed on your system.
+First you have to compile the JavaOde project. See the INSTALL file in the JavaOde directory.
+
+To run the program see the README file in the HybridStochasticSimulation directory.
+

@@ -11,7 +11,6 @@ import ch.ethz.bhepp.hybridstochasticsimulation.ArrayUtilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.Utilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.math.distributions.DiscreteProbabilityDistribution;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
-import ch.ethz.bhepp.hybridstochasticsimulation.models.AlfonsiAdaptivePDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.simulators.ode.OdeAdapter;
@@ -73,10 +72,6 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 			msModel = (AdaptiveMSHRNModel)model;
 		StochasticReactionNetworkModel stModel = (StochasticReactionNetworkModel)model;
 
-		AlfonsiAdaptivePDMPModel afModel = null;
-		if (model instanceof AlfonsiAdaptivePDMPModel)
-		    afModel = (AlfonsiAdaptivePDMPModel)model;
-
 		checkArgument(model.getNumberOfSpecies() == x0.length, "Expected model.getNumberOfSpecies() == x0.length but found %s != %s",
 				model.getNumberOfSpecies(), x0.length);
 
@@ -116,8 +111,6 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 
 			final long startTime = System.currentTimeMillis();
 
-            boolean previousStepWasHybrid = false;
-
 			while (true) {
 
 				if (showProgress)
@@ -128,39 +121,16 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 
 				boolean hasDeterministicPart = model.hasVectorField();
 
-//				double integrationTimeStep = 0.0;
-
-				// FIXME
-//				afModel.computePropensities(t, x, propVec);
-//				if (t >= 660.178)
-//				    t = t;
-//                if (t >= 660.1)
-//                    t = t;
-//				if (t >= 660.179)
-//				    t = t;
-
 				if (msModel != null && hasDeterministicPart) {
 
 					double deterministicPropensitySum = msModel.computeDeterministicPropensitiesSum(t, x);
 					double stochasticPropensitySum = msModel.computePropensitySum(t, x);
-//					double coupledPropensitiesSum = model.computeCoupledPropensitiesSum(t, x);
-
-//		        	final double alpha = 0.8;
-//		        	if (coupledPropensitiesSum > 0.0) {
-//			        	integrationTimeStep = - FastMath.log(1 - alpha) / coupledPropensitiesSum;
-//	//	        		integrationTimeStep = 1 / coupledPropensitiesSum;
-//		        		integrationTimeStep = FastMath.min(t1 - t, integrationTimeStep);
-//					} else
-//		        		integrationTimeStep = (t1 - t);
-
 
 					if (deterministicPropensitySum / stochasticPropensitySum < MIN_DETERMINISTIC_TO_STOCHASTIC_RATIO)
 						hasDeterministicPart = false;
 				}
 
 		        if (hasDeterministicPart) {
-
-		            previousStepWasHybrid = true;
 
 		        	if (simInfo != null)
 		        		simInfo.setIntegrationOn();
@@ -181,14 +151,6 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 		        				xNext[i] = 0.0;
 //		        				throw new RuntimeException("Negative states are not allowed!");
 		        			}
-//				        double[] pmNext = model.computePrimaryState(tNext, xNext);
-//		        		double tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
-//		        		if (xNext[1] < 0) {
-//		        			double[] xOut = new double[x.length];
-//		        			model.computeDerivativesAndPropensitiesSum(t, x, xOut);
-//		        			model.computeDerivativesAndPropensitiesSum(t, x, xOut);
-//			        		tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
-//		        		}
 
 				        Arrays.fill(deltaX, 0.0);
 				        boolean deltaXChanged = false;
@@ -202,13 +164,7 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 				        	double propSum = stModel.computePropensitiesAndSum(tReaction, xTemp, propVec);
 
 				        	int reaction = -1;
-				        	try {
 			        		reaction = DiscreteProbabilityDistribution.sample(rdg, propVec, propSum);
-				        	} catch (Exception e) {
-				        		// TODO
-					        	propSum = stModel.computePropensitiesAndSum(tReaction, xTemp, propVec);
-				        		reaction = DiscreteProbabilityDistribution.sample(rdg, propVec, propSum);
-				        	}
 				        	if (simInfo != null)
 				        		simInfo.increaseReactionCount(reaction);
 
@@ -288,16 +244,6 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 
 				} else {
 
-//			        double[] pm = model.computePrimaryState(t, x);
-
-			        if (afModel != null) {
-    			        if (previousStepWasHybrid) {
-        					for (int s=0; s < model.getNumberOfSpecies(); s++)
-        						x[s] = Math.round(x[s]);
-        					previousStepWasHybrid = false;
-    			        }
-			        }
-
 					double propSum;
 					if (msModel != null)
 						propSum = msModel.computeAllPropensitiesAndSum(t, x, propVec);
@@ -307,11 +253,6 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 			        if (propSum < 0 || Double.isNaN(propSum)) {
 			        	throw new RuntimeException("Negative propensities are not allowed to occur!");
 			        }
-
-//			        if (propSum == 0) {
-//			        	t = t1;
-//			        	break;
-//			        }
 
 			        // Find next reaction time point
 			        double tau = rdg.nextExponential(1 / propSum);
@@ -326,8 +267,6 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 		        	stModel.changeState(reaction, t, x);
 		        	if (msModel != null)
 		        		msModel.handleReaction(reaction, t, x);
-
-//                    double[] pmNext = model.computePrimaryState(t, x);
 
 	        		for (int i=0; i < model.getNumberOfSpecies(); i++)
 	        			if (x[i] < 0.0)
@@ -354,7 +293,6 @@ public class FixedStepPDMPSimulator extends StepPDMPSimulator {
 			}
 			if (printMessages) {
 				System.out.println("Integrator invocations: " + simInfo.getIntegrationSteps());
-//				System.out.println("Observed " + eventObserver.getEventCount() + " events");
 				final long endTime = System.currentTimeMillis();
 				System.out.println("Execution time: " + (endTime - startTime));
 		    	long evaluationCounter = ode.getEvaluations();

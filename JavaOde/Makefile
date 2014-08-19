@@ -1,5 +1,3 @@
-TARGET = jni/lib/liblsodarjni.so
-
 all:
 	$(MAKE) -C jni/
 

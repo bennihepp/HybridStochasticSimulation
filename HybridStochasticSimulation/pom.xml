@@ -110,10 +110,10 @@
   <!-- <dependencyManagement> -->
 
 	<repositories>
-		<repository>
-			<id>lib</id>
-			<url>file://${project.basedir}/lib</url>
-		</repository>
+		<!-- <repository>
+			<id>mvn-repo</id>
+			<url>file://${project.basedir}/../mvn-repo</url>
+		</repository> -->
 	</repositories>
 
   	<dependencies>
@@ -208,6 +208,8 @@
   			<groupId>com.googlecode.matlabcontrol</groupId>
   			<artifactId>matlabcontrol</artifactId>
   			<version>4.1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../lib/matlabcontrol-4.1.0.jar</systemPath>
   		</dependency>
   		<dependency>
   			<groupId>net.sourceforge.jmatio</groupId>
@@ -219,16 +221,16 @@
   			<artifactId>jgrapht-jdk1.5</artifactId>
   			<version>0.7.3</version>
   		</dependency>
-  		<dependency>
+  		<!-- <dependency>
   			<groupId>de.root1.simon</groupId>
   			<artifactId>simon</artifactId>
   			<version>1.1.4</version>
-  		</dependency>
-  		<dependency>
+  		</dependency> -->
+  		<!-- <dependency>
   			<groupId>org.mpj-express.mpj</groupId>
   			<artifactId>mpj</artifactId>
   			<version>0.38</version>
-  		</dependency>
+  		</dependency> -->
   		<dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
@@ -238,13 +240,15 @@
             <groupId>ch.ethz.khammash</groupId>
             <artifactId>JavaOde</artifactId>
             <version>0.1-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../JavaOde/target/JavaOde-0.1-SNAPSHOT.jar</systemPath>
   		</dependency>
         <dependency>
             <groupId>net.sf.opencsv</groupId>
             <artifactId>opencsv</artifactId>
             <version>2.3</version>
         </dependency>
-        <dependency>
+        <!-- <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor_2.10</artifactId>
             <version>2.2.0</version>
@@ -258,7 +262,7 @@
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-kernel_2.10</artifactId>
             <version>2.2.0</version>
-        </dependency>
+        </dependency> -->
         <!-- <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-all</artifactId>
@@ -268,21 +272,29 @@
             <groupId>org.hdfgroup</groupId>
             <artifactId>jhdf5</artifactId>
             <version>2.9</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../lib/jarhdf5-2.10.1.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.hdfgroup</groupId>
             <artifactId>jhdf5obj</artifactId>
             <version>2.9</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../lib/jarh5obj.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.hdfgroup</groupId>
             <artifactId>jhdf</artifactId>
             <version>2.9</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../lib/jarhdf-2.10.1.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.hdfgroup</groupId>
             <artifactId>jhdfobj</artifactId>
             <version>2.9</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../lib/jarhdfobj.jar</systemPath>
         </dependency>
   	</dependencies>
   <!-- </dependencyManagement> -->

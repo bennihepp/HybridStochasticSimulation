@@ -5,17 +5,12 @@ JAVAH   = javah
 CFLAGS = -O2 -fno-strict-aliasing -D_JNI_IMPLEMENTATION_ -Wall -fPIC
 CDEFS = 
 JDKDIR = $(JAVA_HOME)
-PLATFORM=darwin
-#JDKDIR = /usr/lib/jvm/java-7-oracle
-#JDKDIR = /usr/local/bsse/el6/java/jdk7
 JDKINCLUDEDIR = $(JDKDIR)/include
 JDKPLATFORMDIR = $(JDKINCLUDEDIR)/$(PLATFORM)
-#JDKDIR = /c/Program\ Files/Java/jdk1.7.0_21/include
-#JDKPLATFORMDIR = /c/Program\ Files/Java/jdk1.7.0_21/include/win32
 LDFLAGS = -shared -L$(SUNDIALS_HOME)/lib -lsundials_cvode -lsundials_nvecserial -fno-omit-frame-pointer
 INCLUDES = -I../include -I$(SUNDIALS_HOME)/include -I$(JDKINCLUDEDIR) -I$(JDKPLATFORMDIR)
 
-SOTARGET = lib/libcvodejni.so
+SOTARGET = lib/libcvodejni.$(DLLEXT)
 TARGET = lib/libcvodejni.la
 SOURCES = $(wildcard src/*.c)
 SOURCES_DEPS = $(wildcard src/*.h)
@@ -24,14 +19,13 @@ OBJECTS = $(SOURCES:.c=.o)
 LOBJECTS = $(SOURCES:.c=.lo)
 EXTERNAL_LOBJECTS = ../src/jni_utils.lo
 JAVACLASSPATH=../../target/classes
-JAVACLASSPATH=../../bin
-JAVACLASS = ch.ethz.bhepp.ode.cvode.CVodeSolver
-JAVACLASSFILE = $(JAVACLASSPATH)/ch/ethz/bhepp/ode/cvode/CVodeSolver.class
+#JAVACLASS = ch.ethz.bhepp.ode.cvode.CVodeSolver
+#JAVACLASSFILE = $(JAVACLASSPATH)/ch/ethz/bhepp/ode/cvode/CVodeSolver.class
 
 all: $(SOTARGET)
 
 $(SOTARGET): $(TARGET)
-	ln -f -s .libs/libcvodejni.so lib/libcvodejni.so
+	ln -f -s .libs/libcvodejni.$(DLLEXT) lib/libcvodejni.$(DLLEXT)
 
 $(TARGET): $(LOBJECTS) $(EXTERNAL_LOBJECTS)
 	$(LIBTOOL) --tag=CC --mode=link $(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(LOBJECTS) $(EXTERNAL_LOBJECTS) \

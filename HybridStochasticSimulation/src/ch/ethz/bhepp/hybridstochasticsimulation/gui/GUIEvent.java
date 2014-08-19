@@ -5,7 +5,7 @@ import java.awt.event.ActionEvent;
 public class GUIEvent {
 
 	public static enum EventType {
-		SIMULATION, BENCHMARK,
+		SIMULATION,
 	}
 
 	private EventType type;

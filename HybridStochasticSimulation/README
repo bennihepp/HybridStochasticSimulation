@@ -1,0 +1,8 @@
+To run the program you can use the script run.sh
+> bash run.sh
+
+To change parameters and examples edit the GUI.java or Examples.java file.
+We recommend using Eclipse for editing, compiling and running the code.
+
+Results can be exported to Matlab MAT files with the 'File' menu.
+

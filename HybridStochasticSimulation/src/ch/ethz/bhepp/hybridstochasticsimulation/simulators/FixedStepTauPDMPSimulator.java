@@ -12,7 +12,6 @@ import ch.ethz.bhepp.hybridstochasticsimulation.ArrayUtilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.Utilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.math.distributions.PoissonDistribution;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
-import ch.ethz.bhepp.hybridstochasticsimulation.models.AlfonsiAdaptivePDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.networks.MSHybridReactionNetwork.ReactionType;
@@ -53,10 +52,6 @@ public class FixedStepTauPDMPSimulator extends StepPDMPSimulator {
 		AdaptiveMSHRNModel msModel = null;
 		if (model instanceof AdaptiveMSHRNModel)
 			msModel = (AdaptiveMSHRNModel)model;
-
-		AlfonsiAdaptivePDMPModel afModel = null;
-		if (model instanceof AlfonsiAdaptivePDMPModel)
-		    afModel = (AlfonsiAdaptivePDMPModel)model;
 
 		checkArgument(model.getNumberOfSpecies() == x0.length, "Expected model.getNumberOfSpecies() == x0.length but found %s != %s",
 				model.getNumberOfSpecies(), x0.length);
@@ -150,8 +145,6 @@ public class FixedStepTauPDMPSimulator extends StepPDMPSimulator {
 
 			final long startTime = System.currentTimeMillis();
 
-            boolean previousStepWasHybrid = false;
-
 			while (true) {
 
 				if (showProgress)
@@ -162,31 +155,10 @@ public class FixedStepTauPDMPSimulator extends StepPDMPSimulator {
 
 				boolean hasDeterministicPart = model.hasVectorField();
 
-//				double integrationTimeStep = 0.0;
-
-				// FIXME
-//				afModel.computePropensities(t, x, propVec);
-//				if (t >= 660.178)
-//				    t = t;
-//                if (t >= 660.1)
-//                    t = t;
-//				if (t >= 660.179)
-//				    t = t;
-
 				if (msModel != null && hasDeterministicPart) {
 
 					double deterministicPropensitySum = msModel.computeDeterministicPropensitiesSum(t, x);
 					double stochasticPropensitySum = msModel.computePropensitySum(t, x);
-//					double coupledPropensitiesSum = model.computeCoupledPropensitiesSum(t, x);
-
-//		        	final double alpha = 0.8;
-//		        	if (coupledPropensitiesSum > 0.0) {
-//			        	integrationTimeStep = - FastMath.log(1 - alpha) / coupledPropensitiesSum;
-//	//	        		integrationTimeStep = 1 / coupledPropensitiesSum;
-//		        		integrationTimeStep = FastMath.min(t1 - t, integrationTimeStep);
-//					} else
-//		        		integrationTimeStep = (t1 - t);
-
 
 					if (deterministicPropensitySum / stochasticPropensitySum < MIN_DETERMINISTIC_TO_STOCHASTIC_RATIO)
 						hasDeterministicPart = false;
@@ -194,14 +166,11 @@ public class FixedStepTauPDMPSimulator extends StepPDMPSimulator {
 
 		        if (hasDeterministicPart) {
 
-		            previousStepWasHybrid = true;
-
 		        	if (simInfo != null)
 		        		simInfo.setIntegrationOn();
 
 //			        model.checkAndHandleOptionalEvent(t, x);
 
-//		        		integrationTimeStep = 0.1;
 			        double[] pm = model.computePrimaryState(t, x).clone();
 
 			        double tau = tss.computeTauStepSize(t, pm);
@@ -216,14 +185,6 @@ public class FixedStepTauPDMPSimulator extends StepPDMPSimulator {
 //		        				throw new RuntimeException("Negative states are not allowed!");
 	        			}
 	        		}
-			        double[] pmNext = model.computePrimaryState(tNext, xNext);
-//		        		double tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
-//		        		if (xNext[1] < 0) {
-//		        			double[] xOut = new double[x.length];
-//		        			model.computeDerivativesAndPropensitiesSum(t, x, xOut);
-//		        			model.computeDerivativesAndPropensitiesSum(t, x, xOut);
-//			        		tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
-//		        		}
 
 			        for (int r=0; r < msModel.getNumberOfReactions(); r++) {
 			        	if (msModel.getNetwork().getReactionType(r) == ReactionType.DISCRETE) {
@@ -261,14 +222,6 @@ public class FixedStepTauPDMPSimulator extends StepPDMPSimulator {
 		        		break;
 
 				} else {
-
-			        if (afModel != null) {
-    			        if (previousStepWasHybrid) {
-        					for (int s=0; s < model.getNumberOfSpecies(); s++)
-        						x[s] = Math.round(x[s]);
-        					previousStepWasHybrid = false;
-    			        }
-			        }
 
 			        double[] pm = model.computePrimaryState(t, x);
 

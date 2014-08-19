@@ -10,13 +10,11 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 
 import ch.ethz.bhepp.hybridstochasticsimulation.averaging.AveragingUnit;
 import ch.ethz.bhepp.hybridstochasticsimulation.averaging.MaximumSizeFilter;
-import ch.ethz.bhepp.hybridstochasticsimulation.averaging.SubnetworkDescription;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.networks.AdaptiveMSHRN;
 import ch.ethz.bhepp.hybridstochasticsimulation.simulators.FilterUtilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.simulators.NonEmptyFilter;
-import ch.ethz.bhepp.hybridstochasticsimulation.simulators.NonEmptySubnetworkFilter;
 
 import com.google.common.base.Predicate;
 import com.google.inject.Inject;
@@ -60,10 +58,7 @@ public class AdaptiveMSHRNModelProvider extends AbstractProvider<PDMPModel> impl
 		int maxSize = averagingConfig.getInt("maxSize", DEFAULT_MAXSIZE);
 		Predicate<Set<Integer>> maximumSizeFilter = new MaximumSizeFilter<Integer, Set<Integer>>(maxSize);
 		Predicate<Set<Integer>> nonEmptyFilter = new NonEmptyFilter<Integer, Set<Integer>>();
-		Predicate<SubnetworkDescription> nonEmptySubnetworkFilter = new NonEmptySubnetworkFilter();
-		hrnModel.setSpeciesSubsetFilter(FilterUtilities.<Set<Integer>>and(nonEmptyFilter, maximumSizeFilter));
 		hrnModel.setReactionSubsetFilter(FilterUtilities.<Set<Integer>>and(nonEmptyFilter, maximumSizeFilter));
-		hrnModel.setSubnetworkFilter(nonEmptySubnetworkFilter);
 		return hrnModel;
 	}
 

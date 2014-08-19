@@ -1,6 +1,5 @@
 SHELL = /bin/sh
 FORTRAN = gfortran
-LIBTOOL = libtool
 FFLAGS  = -O2 -W -Wunused -Wuninitialized -fPIC -fno-strict-aliasing
 
 SOURCES = $(wildcard src/*.f)

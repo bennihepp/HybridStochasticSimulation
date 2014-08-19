@@ -15,7 +15,6 @@ import ch.ethz.bhepp.hybridstochasticsimulation.ArrayUtilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.Utilities;
 import ch.ethz.bhepp.hybridstochasticsimulation.math.distributions.DiscreteProbabilityDistribution;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.AdaptiveMSHRNModel;
-import ch.ethz.bhepp.hybridstochasticsimulation.models.AlfonsiAdaptivePDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.PDMPModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.models.StochasticReactionNetworkModel;
 import ch.ethz.bhepp.hybridstochasticsimulation.simulators.ode.OdeAdapter;
@@ -169,10 +168,6 @@ public class AdaptiveStepPDMPSimulator extends StepPDMPSimulator {
 			msModel = (AdaptiveMSHRNModel)model;
 		StochasticReactionNetworkModel stModel = (StochasticReactionNetworkModel)model;
 
-		AlfonsiAdaptivePDMPModel afModel = null;
-		if (model instanceof AlfonsiAdaptivePDMPModel)
-		    afModel = (AlfonsiAdaptivePDMPModel)model;
-
 		checkArgument(model.getNumberOfSpecies() == x0.length, "Expected model.getNumberOfSpecies() == x0.length but found %s != %s",
 				model.getNumberOfSpecies(), x0.length);
 
@@ -234,9 +229,6 @@ public class AdaptiveStepPDMPSimulator extends StepPDMPSimulator {
 
 			final long startTime = System.currentTimeMillis();
 
-            boolean previousStepWasHybrid = false;
-
-//            int counter = 0;
 			while (true) {
 
 				if (showProgress)
@@ -258,8 +250,6 @@ public class AdaptiveStepPDMPSimulator extends StepPDMPSimulator {
 
 		        if (hasDeterministicPart) {
 
-		            previousStepWasHybrid = true;
-
 		        	if (simInfo != null)
 		        		simInfo.setIntegrationOn();
 
@@ -274,10 +264,6 @@ public class AdaptiveStepPDMPSimulator extends StepPDMPSimulator {
 		        	double currentStepSize = Double.NaN;
 		        	while (true) {
 
-//						++counter;
-
-//		        		integrationTimeStep = 0.1;
-//				        double[] pm = model.computePrimaryState(t, x).clone();
 				        if (prepareStep) {
 				        	if (hadPreviousStep)
 					        	solver.prepareStep(t, x, t1, currentStepSize);
@@ -290,14 +276,6 @@ public class AdaptiveStepPDMPSimulator extends StepPDMPSimulator {
 		        				xNext[i] = 0.0;
 //		        				throw new RuntimeException("Negative states are not allowed!");
 		        			}
-//				        double[] pmNext = model.computePrimaryState(tNext, xNext);
-//		        		double tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
-//		        		if (xNext[1] < 0) {
-//		        			double[] xOut = new double[x.length];
-//		        			model.computeDerivativesAndPropensitiesSum(t, x, xOut);
-//		        			model.computeDerivativesAndPropensitiesSum(t, x, xOut);
-//			        		tNext = solver.integrateStep(t, x, xNext, integrationTimeStep);
-//		        		}
 
 				        hadPreviousStep = true;
 				        currentStepSize = solver.getCurrentStepSize();
@@ -499,16 +477,6 @@ public class AdaptiveStepPDMPSimulator extends StepPDMPSimulator {
 		        		break;
 
 				} else {
-
-//			        double[] pm = model.computePrimaryState(t, x);
-
-			        if (afModel != null) {
-    			        if (previousStepWasHybrid) {
-        					for (int s=0; s < model.getNumberOfSpecies(); s++)
-        						x[s] = Math.round(x[s]);
-        					previousStepWasHybrid = false;
-    			        }
-			        }
 
 					double propSum;
 					if (msModel != null)

@@ -1885,11 +1885,78 @@ public class Examples {
 		TrajectoryPlotChartPanel plot;
 		List<VectorFinitePlotData> tdList;
 
-		List<MLArray> mList = new ArrayList<>(12);
+		List<MLArray> mList;
 		int runs = 10000;
 		double data1[][] = new double[tSeries.length][runs];
 		double data2[][] = new double[tSeries.length][runs];
 		double data3[][] = new double[tSeries.length][runs];
+
+		MLDouble mtSeries;
+		MLDouble mxSeries1;
+		MLDouble mxSeries2;
+		MLDouble mxSeries3;
+
+		File f;
+
+//		for (int run=0; run < runs; run++) {
+//			System.out.println("Adaptive run #" + run);
+//			tdList = SimulationUtilities.simulateAdaptiveMSPDMPAd(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, false);
+//			td = tdList.get(0);
+//			double[] xSeries1 = td.getxSeries(0);
+//			double[] xSeries2 = td.getxSeries(1);
+//			double[] xSeries3 = td.getxSeries(2);
+//			for (int i=0; i < tSeries.length; i++) {
+//				data1[i][run] = xSeries1[i];
+//				data2[i][run] = xSeries2[i];
+//				data3[i][run] = xSeries3[i];
+//			}
+//		}
+//		mList = new ArrayList<>(4);
+//		mtSeries = MatlabDataExporter.buildDouble("tSeries", tSeries);
+//		mxSeries1 = MatlabDataExporter.buildDouble("xSeries1", data1);
+//		mxSeries2 = MatlabDataExporter.buildDouble("xSeries2", data2);
+//		mxSeries3 = MatlabDataExporter.buildDouble("xSeries3", data3);
+//		mList.add(mtSeries);
+//		mList.add(mxSeries1);
+//		mList.add(mxSeries2);
+//		mList.add(mxSeries3);
+//
+//		f = new File("fast_dimerization_alfonsi_comparison_10000_mspdmp.mat");
+//		try {
+//			MatlabDataExporter.writeMatlabDataToFile(f, mList);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//
+//		for (int run=0; run < runs; run++) {
+//			System.out.println("Alfonsi run #" + run);
+//			tdList = SimulationUtilities.simulateAlfonsiPDMPAd(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory);
+//			td = tdList.get(0);
+//			double[] xSeries1 = td.getxSeries(0);
+//			double[] xSeries2 = td.getxSeries(1);
+//			double[] xSeries3 = td.getxSeries(2);
+//			for (int i=0; i < tSeries.length; i++) {
+//				data1[i][run] = xSeries1[i];
+//				data2[i][run] = xSeries2[i];
+//				data3[i][run] = xSeries3[i];
+//			}
+//		}
+//		mList = new ArrayList<>(4);
+//		mtSeries = MatlabDataExporter.buildDouble("tSeries", tSeries);
+//		mxSeries1 = MatlabDataExporter.buildDouble("xSeries1", data1);
+//		mxSeries2 = MatlabDataExporter.buildDouble("xSeries2", data2);
+//		mxSeries3 = MatlabDataExporter.buildDouble("xSeries3", data3);
+//		mList.add(mtSeries);
+//		mList.add(mxSeries1);
+//		mList.add(mxSeries2);
+//		mList.add(mxSeries3);
+//
+//		f = new File("fast_dimerization_alfonsi_comparison_10000_alfonsi.mat");
+//		try {
+//			MatlabDataExporter.writeMatlabDataToFile(f, mList);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 
 		for (int run=0; run < runs; run++) {
 			System.out.println("Stochastic run #" + run);
@@ -1903,58 +1970,22 @@ public class Examples {
 				data3[i][run] = xSeries3[i];
 			}
 		}
-		MLDouble mtSeries = MatlabDataExporter.buildDouble("tSeriesSt", tSeries);
-		MLDouble mxSeries1 = MatlabDataExporter.buildDouble("xSeries1St", data1);
-		MLDouble mxSeries2 = MatlabDataExporter.buildDouble("xSeries2St", data2);
-		MLDouble mxSeries3 = MatlabDataExporter.buildDouble("xSeries3St", data3);
+		mList = new ArrayList<>(4);
+		mtSeries = MatlabDataExporter.buildDouble("tSeries", tSeries);
+		mxSeries1 = MatlabDataExporter.buildDouble("xSeries1", data1);
+		mxSeries2 = MatlabDataExporter.buildDouble("xSeries2", data2);
+		mxSeries3 = MatlabDataExporter.buildDouble("xSeries3", data3);
 		mList.add(mtSeries);
 		mList.add(mxSeries1);
 		mList.add(mxSeries2);
 		mList.add(mxSeries3);
 
-		for (int run=0; run < runs; run++) {
-			System.out.println("Adaptive run #" + run);
-			tdList = SimulationUtilities.simulateAdaptiveMSPDMPAd(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory, false);
-			td = tdList.get(0);
-			double[] xSeries1 = td.getxSeries(0);
-			double[] xSeries2 = td.getxSeries(1);
-			double[] xSeries3 = td.getxSeries(2);
-			for (int i=0; i < tSeries.length; i++) {
-				data1[i][run] = xSeries1[i];
-				data2[i][run] = xSeries2[i];
-				data3[i][run] = xSeries3[i];
-			}
+		f = new File("fast_dimerization_alfonsi_comparison_10000_stoch2.mat");
+		try {
+			MatlabDataExporter.writeMatlabDataToFile(f, mList);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		mtSeries = MatlabDataExporter.buildDouble("tSeriesAd", tSeries);
-		mxSeries1 = MatlabDataExporter.buildDouble("xSeries1Ad", data1);
-		mxSeries2 = MatlabDataExporter.buildDouble("xSeries2Ad", data2);
-		mxSeries3 = MatlabDataExporter.buildDouble("xSeries3Ad", data3);
-		mList.add(mtSeries);
-		mList.add(mxSeries1);
-		mList.add(mxSeries2);
-		mList.add(mxSeries3);
-
-		for (int run=0; run < runs; run++) {
-			System.out.println("Alfonsi run #" + run);
-			tdList = SimulationUtilities.simulateAlfonsiPDMPAd(nss, tSeries, printTiming, printMessages, recordOptionalTrajectory);
-			td = tdList.get(0);
-			double[] xSeries1 = td.getxSeries(0);
-			double[] xSeries2 = td.getxSeries(1);
-			double[] xSeries3 = td.getxSeries(2);
-			for (int i=0; i < tSeries.length; i++) {
-				data1[i][run] = xSeries1[i];
-				data2[i][run] = xSeries2[i];
-				data3[i][run] = xSeries3[i];
-			}
-		}
-		mtSeries = MatlabDataExporter.buildDouble("tSeriesAl", tSeries);
-		mxSeries1 = MatlabDataExporter.buildDouble("xSeries1Al", data1);
-		mxSeries2 = MatlabDataExporter.buildDouble("xSeries2Al", data2);
-		mxSeries3 = MatlabDataExporter.buildDouble("xSeries3Al", data3);
-		mList.add(mtSeries);
-		mList.add(mxSeries1);
-		mList.add(mxSeries2);
-		mList.add(mxSeries3);
 
 //		tdd = SimulationUtilities.simulateAlfonsiPDMPAdDistribution(PDMPRuns, nss, tSeries, printTiming, printMessages, false);
 //		tdd.setDescription("Alfonsi");
@@ -1982,13 +2013,13 @@ public class Examples {
 //			}
 //		}
 
-//		File f = new File("/Users/bhepp/Documents/Projects/HybridPDMP/alfonsi_comparison/fast_dimerization_alfonsi_comparison_10000.mat");
-		File f = new File("fast_dimerization_alfonsi_comparison_10000.mat");
-		try {
-			MatlabDataExporter.writeMatlabDataToFile(f, mList);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+////		File f = new File("/Users/bhepp/Documents/Projects/HybridPDMP/alfonsi_comparison/fast_dimerization_alfonsi_comparison_10000.mat");
+//		File f = new File("fast_dimerization_alfonsi_comparison_10000_stoch.mat");
+//		try {
+//			MatlabDataExporter.writeMatlabDataToFile(f, mList);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 
 		return plotDataList;
 	}

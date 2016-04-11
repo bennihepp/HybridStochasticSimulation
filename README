@@ -1,0 +1,8 @@
+This code relies on third-party libraries, either trough Maven dependencies or supplied together with this code. The supplied libraries and their corresponding web location can be found in the lib/ directory.
+
+You need to have Java 1.7 installed on your system.
+
+First you have to compile the JavaOde project. See the INSTALL file in the JavaOde directory.
+
+To run the program see the README file in the HybridStochasticSimulation directory.
+

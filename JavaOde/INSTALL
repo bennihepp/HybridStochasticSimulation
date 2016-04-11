@@ -1,20 +1,21 @@
 To build this project you have to define some environment variables:
-LIBTOOL - The libtool binary to use (usually libtool)
-PLATFORM - The platform to build for (linux for Linux, darwin for Mac OS X)
-DLLEXT - Extension of dynamic libraries (.so for Linux, .dylib for Mac OS X)
-JAVA_HOME - This is the path to the jdk to compile against
-SUNDIALS_HOME - $SUNDIALS_HOME/lib and $SUNDIALS_HOME/include should contain the appropriate libraries and headers for CVode
-BOOST_HOME - $BOOST_HOME/include should contain the headers of the boost library
+ LIBTOOL - The libtool binary to use (usually libtool)
+ PLATFORM - The platform to build for (linux for Linux, darwin for Mac OS X)
+ DLLEXT - Extension of dynamic libraries (.so for Linux, .dylib for Mac OS X)
+ JAVA_HOME - This is the path to the jdk to compile against
+ SUNDIALS_HOME - $SUNDIALS_HOME/lib and $SUNDIALS_HOME/include should contain the appropriate libraries and headers for CVode
+ BOOST_HOME - $BOOST_HOME/include should contain the headers of the boost library
+See jni/make_linux.sh or jni/make_mac_osx.sh for examples.
 
 To compile you run:
 > mvn compile
 > mvn -f pom_jni.xml compile
-The libboostjni, libcvodejni and liblsodarjni libraries will recide in the jni/lib directory.
+The libboostjni, libcvode and liblsodar libraries will recide in the jni/lib directory.
 
 To manually compile the cvode, boost or lsodar wrappers, change into the jni directory and run
-make libcvode
-make libboostjni
-make liblsodar
+> make libcvode
+> make libboostjni
+> make liblsodar
 
 To create a package you run:
 > mvn package
